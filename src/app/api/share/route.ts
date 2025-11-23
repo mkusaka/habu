@@ -2,35 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
   try {
-    // Web Share Target may send data via query params or form data
-    const { searchParams } = request.nextUrl;
+    // Web Share Target sends data as application/x-www-form-urlencoded
+    const formData = await request.formData();
 
-    console.log("Share POST received:", {
-      url: request.url,
-      searchParams: Object.fromEntries(searchParams.entries()),
-      contentType: request.headers.get("content-type"),
-    });
-
-    // Try to get data from query params first (Chrome Android behavior)
-    let url = searchParams.get("url") || "";
-    let title = searchParams.get("title") || "";
-    let text = searchParams.get("text") || "";
-
-    // If not in query params, try form data
-    if (!url && !title && !text) {
-      const formData = await request.formData();
-      const urlForm = formData.get("url")?.toString() || "";
-      const titleForm = formData.get("title")?.toString() || "";
-      const textForm = formData.get("text")?.toString() || "";
-
-      if (urlForm) url = urlForm;
-      if (titleForm) title = titleForm;
-      if (textForm) text = textForm;
-    }
+    let url = formData.get("url")?.toString() || "";
+    const title = formData.get("title")?.toString() || "";
+    let text = formData.get("text")?.toString() || "";
 
     // Sometimes the URL comes in the 'text' field instead of 'url'
     if (!url && text) {
-      // Check if text looks like a URL
       try {
         new URL(text);
         url = text;
@@ -41,10 +21,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Redirect to the share page with query params
-    // Use nextUrl.clone() for better compatibility with Cloudflare Workers
     const shareUrl = request.nextUrl.clone();
     shareUrl.pathname = "/share";
-    shareUrl.search = ""; // Clear existing query params
+    shareUrl.search = "";
 
     if (url) shareUrl.searchParams.set("url", url);
     if (title) shareUrl.searchParams.set("title", title);
@@ -53,7 +32,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.redirect(shareUrl);
   } catch (error) {
     console.error("Share POST error:", error);
-    // Fallback to share page without params
     const fallbackUrl = request.nextUrl.clone();
     fallbackUrl.pathname = "/share";
     fallbackUrl.search = "";

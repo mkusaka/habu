@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getRequestToken, getAuthorizeUrl } from "@/lib/hatena-oauth";
-import { getHabuSession } from "@/lib/auth";
 
 export const runtime = "edge";
 

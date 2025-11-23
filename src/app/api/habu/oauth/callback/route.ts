@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAccessToken } from "@/lib/hatena-oauth";
-import { auth } from "@/lib/auth";
 
 export const runtime = "edge";
 

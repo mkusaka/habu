@@ -99,7 +99,9 @@ export async function getAccessToken(
   const authorized = oauth.authorize(requestData, { key: token, secret: tokenSecret });
 
   // Remove oauth_verifier from Authorization header to avoid double-sending
-  const { oauth_verifier, ...headerParams } = authorized;
+  // We need to remove it manually since toHeader() includes all data params
+  const headerParams = { ...authorized };
+  delete (headerParams as Record<string, unknown>).oauth_verifier;
   const authHeader = oauth.toHeader(headerParams);
 
   // Send oauth_verifier only in POST body

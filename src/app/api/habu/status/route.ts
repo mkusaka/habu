@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getHabuSession } from "@/lib/auth";
 
 export const runtime = "edge";
 

@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getHabuSession } from "@/lib/auth";
 import { createSignedRequest } from "@/lib/hatena-oauth";
 import type { BookmarkRequest, BookmarkResponse } from "@/types/habu";
 

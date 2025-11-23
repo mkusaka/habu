@@ -11,7 +11,6 @@ import { toast } from "sonner";
 function SettingsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [hasHatena, setHasHatena] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -46,7 +45,6 @@ function SettingsContent() {
 
       if (response.ok) {
         const status = await response.json() as { authenticated: boolean; hasHatena: boolean };
-        setIsAuthenticated(status.authenticated);
         setHasHatena(status.hasHatena);
       }
     } catch (error) {

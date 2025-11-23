@@ -31,31 +31,41 @@ export async function getRequestToken(
     data: { oauth_callback: callbackUrl },
   };
 
-  const headers = oauth.toHeader(oauth.authorize(requestData));
+  const authHeader = oauth.toHeader(oauth.authorize(requestData));
+
+  console.log("[Hatena OAuth] Request Token - URL:", HATENA_REQUEST_TOKEN_URL);
+  console.log("[Hatena OAuth] Request Token - Callback:", callbackUrl);
+  console.log("[Hatena OAuth] Request Token - Auth Header:", authHeader);
 
   const response = await fetch(HATENA_REQUEST_TOKEN_URL, {
     method: "POST",
     headers: {
-      ...headers,
-      "Content-Type": "application/x-www-form-urlencoded",
+      ...authHeader,
+      // Do NOT send oauth_callback in the body - it's already in the Authorization header
     },
-    body: new URLSearchParams({ oauth_callback: callbackUrl }).toString(),
   });
 
+  console.log("[Hatena OAuth] Response Status:", response.status, response.statusText);
+
   if (!response.ok) {
-    throw new Error(`Failed to get request token: ${response.statusText}`);
+    const errorText = await response.text();
+    console.error("[Hatena OAuth] Error Response:", errorText);
+    throw new Error(`Failed to get request token: ${response.status} ${response.statusText} - ${errorText}`);
   }
 
   const text = await response.text();
+  console.log("[Hatena OAuth] Response Body:", text);
+
   const params = new URLSearchParams(text);
 
   const token = params.get("oauth_token");
   const tokenSecret = params.get("oauth_token_secret");
 
   if (!token || !tokenSecret) {
-    throw new Error("Invalid response from Hatena OAuth");
+    throw new Error("Invalid response from Hatena OAuth: missing token or secret");
   }
 
+  console.log("[Hatena OAuth] Got tokens - token:", token.substring(0, 10) + "...");
   return { token, tokenSecret };
 }
 
@@ -76,41 +86,48 @@ export async function getAccessToken(
     url: HATENA_ACCESS_TOKEN_URL,
     method: "POST",
     data: {
-      oauth_token: token,
       oauth_verifier: verifier,
+      // Do NOT include oauth_callback here - it will cause parameter_rejected error
     },
   };
 
-  const headers = oauth.toHeader(
+  const authHeader = oauth.toHeader(
     oauth.authorize(requestData, { key: token, secret: tokenSecret })
   );
+
+  console.log("[Hatena OAuth] Access Token - URL:", HATENA_ACCESS_TOKEN_URL);
+  console.log("[Hatena OAuth] Access Token - Verifier:", verifier);
+  console.log("[Hatena OAuth] Access Token - Auth Header:", authHeader);
 
   const response = await fetch(HATENA_ACCESS_TOKEN_URL, {
     method: "POST",
     headers: {
-      ...headers,
-      "Content-Type": "application/x-www-form-urlencoded",
+      ...authHeader,
+      // Do NOT send parameters in the body - they're already in the Authorization header
     },
-    body: new URLSearchParams({
-      oauth_token: token,
-      oauth_verifier: verifier,
-    }).toString(),
   });
 
+  console.log("[Hatena OAuth] Access Token Response Status:", response.status, response.statusText);
+
   if (!response.ok) {
-    throw new Error(`Failed to get access token: ${response.statusText}`);
+    const errorText = await response.text();
+    console.error("[Hatena OAuth] Access Token Error Response:", errorText);
+    throw new Error(`Failed to get access token: ${response.status} ${response.statusText} - ${errorText}`);
   }
 
   const text = await response.text();
+  console.log("[Hatena OAuth] Access Token Response Body:", text);
+
   const params = new URLSearchParams(text);
 
   const accessToken = params.get("oauth_token");
   const accessTokenSecret = params.get("oauth_token_secret");
 
   if (!accessToken || !accessTokenSecret) {
-    throw new Error("Invalid response from Hatena OAuth");
+    throw new Error("Invalid response from Hatena OAuth: missing access token or secret");
   }
 
+  console.log("[Hatena OAuth] Got access tokens - token:", accessToken.substring(0, 10) + "...");
   return { accessToken, accessTokenSecret };
 }
 

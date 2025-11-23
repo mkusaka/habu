@@ -8,17 +8,21 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { ExternalLink } from "lucide-react";
+import { OAuthButton } from "@/components/ui/oauth-button";
 
 interface ShareFormProps {
   initialUrl: string;
   initialTitle: string;
   initialComment: string;
+  hasHatena: boolean;
 }
 
 export function ShareForm({
   initialUrl,
   initialTitle,
   initialComment,
+  hasHatena,
 }: ShareFormProps) {
   const router = useRouter();
   const [url, setUrl] = useState(initialUrl);
@@ -50,6 +54,17 @@ export function ShareForm({
         <CardTitle>Save Bookmark</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        {!hasHatena && (
+          <div className="space-y-3 pb-4 border-b">
+            <p className="text-sm text-muted-foreground">
+              Connect your Hatena account to save bookmarks
+            </p>
+            <OAuthButton url="/api/habu/oauth/start?redirect=/share" className="w-full">
+              <ExternalLink className="w-4 h-4 mr-2" />
+              Connect Hatena
+            </OAuthButton>
+          </div>
+        )}
         <div className="space-y-2">
           <Label htmlFor="url">URL</Label>
           <Input
@@ -84,7 +99,7 @@ export function ShareForm({
         <div className="flex gap-2">
           <Button
             onClick={handleSave}
-            disabled={!url || saving}
+            disabled={!url || saving || !hasHatena}
             className="flex-1"
           >
             {saving ? "Saving..." : "Save"}

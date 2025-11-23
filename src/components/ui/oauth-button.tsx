@@ -1,9 +1,11 @@
 "use client";
 
-import { Button, type ButtonProps } from "./button";
+import { type ReactNode, type ComponentProps } from "react";
+import { Button } from "./button";
 
-interface OAuthButtonProps extends ButtonProps {
+interface OAuthButtonProps extends Omit<ComponentProps<typeof Button>, "onClick"> {
   url: string;
+  children?: ReactNode;
 }
 
 export function OAuthButton({ url, children, ...props }: OAuthButtonProps) {

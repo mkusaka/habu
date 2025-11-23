@@ -1,10 +1,11 @@
 "use client";
 
-import { useTransition } from "react";
-import { Button, type ButtonProps } from "./button";
+import { useTransition, type ReactNode, type ComponentProps } from "react";
+import { Button } from "./button";
 
-interface ActionButtonProps extends ButtonProps {
+interface ActionButtonProps extends Omit<ComponentProps<typeof Button>, "onClick"> {
   action: () => Promise<void>;
+  children?: ReactNode;
 }
 
 export function ActionButton({

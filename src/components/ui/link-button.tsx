@@ -1,10 +1,12 @@
 "use client";
 
+import { type ReactNode, type ComponentProps } from "react";
 import { useRouter } from "next/navigation";
-import { Button, type ButtonProps } from "./button";
+import { Button } from "./button";
 
-interface LinkButtonProps extends ButtonProps {
+interface LinkButtonProps extends Omit<ComponentProps<typeof Button>, "onClick"> {
   href: string;
+  children?: ReactNode;
 }
 
 export function LinkButton({ href, children, ...props }: LinkButtonProps) {

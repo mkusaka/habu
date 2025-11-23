@@ -86,7 +86,7 @@ export const hatenaTokens = sqliteTable("hatena_tokens", {
 });
 
 // Relations
-export const usersRelations = relations(users, ({ one, many }) => ({
+export const usersRelations = relations(users, ({ many }) => ({
   sessions: many(sessions),
   accounts: many(accounts),
   hatenaTokens: many(hatenaTokens),

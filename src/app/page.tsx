@@ -5,7 +5,6 @@ import { getDb } from "@/db/client";
 import { hatenaTokens } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Bookmark, List, Settings, Plus, ExternalLink } from "lucide-react";
 import { LinkButton } from "@/components/ui/link-button";
 import { OAuthButton } from "@/components/ui/oauth-button";

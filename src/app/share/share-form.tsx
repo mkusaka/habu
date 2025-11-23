@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { saveBookmarkOptimistic } from "@/lib/queue-sync";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,6 +29,15 @@ export function ShareForm({
   const [title, setTitle] = useState(initialTitle);
   const [comment, setComment] = useState(initialComment);
   const [saving, setSaving] = useState(false);
+
+  // Auto-save on mount if enabled and has URL
+  useEffect(() => {
+    const autoSave = localStorage.getItem("habu-auto-save") === "true";
+    if (autoSave && initialUrl && hasHatena) {
+      // Auto-save the bookmark
+      handleSave();
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSave = async () => {
     if (!url) {

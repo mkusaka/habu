@@ -10,6 +10,7 @@ import { CheckCircle2, AlertCircle, Home, ExternalLink } from "lucide-react";
 import { LinkButton } from "@/components/ui/link-button";
 import { OAuthButton } from "@/components/ui/oauth-button";
 import { ActionButton } from "@/components/ui/action-button";
+import { AutoSaveToggle } from "@/components/auto-save-toggle";
 import { ToastHandler } from "./toast-handler";
 import { disconnectHatena } from "./actions";
 
@@ -106,6 +107,14 @@ async function SettingsContent({ searchParams }: SettingsContentProps) {
                     </div>
                   </>
                 )}
+              </div>
+
+              <Separator />
+
+              {/* Auto-save Setting */}
+              <div>
+                <h3 className="text-sm font-medium mb-3">Preferences</h3>
+                <AutoSaveToggle />
               </div>
 
               <Separator />

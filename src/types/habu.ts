@@ -1,0 +1,49 @@
+// Hatena OAuth types
+export interface HatenaTokens {
+  accessToken: string;
+  accessTokenSecret: string;
+}
+
+// Better Auth user payload extension
+export interface HabuUser {
+  id: string;
+  email: string;
+  name?: string;
+  hatenaAccessToken?: string;
+  hatenaAccessTokenSecret?: string;
+}
+
+// IndexedDB Queue types
+export type QueueStatus = 'queued' | 'sending' | 'done' | 'error';
+
+export interface BookmarkQueue {
+  id?: number;
+  url: string;
+  title?: string;
+  comment?: string;
+  status: QueueStatus;
+  createdAt: Date;
+  updatedAt: Date;
+  lastError?: string;
+  nextRetryAt?: Date;
+  retryCount: number;
+}
+
+// API types
+export interface BookmarkRequest {
+  url: string;
+  comment?: string;
+}
+
+export interface BookmarkResponse {
+  success: boolean;
+  error?: string;
+}
+
+// Hatena API types
+export interface HatenaBookmarkApiResponse {
+  url: string;
+  comment?: string;
+  tags?: string[];
+  created?: string;
+}

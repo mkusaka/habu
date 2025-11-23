@@ -1,2 +1,11 @@
 # Load .env.development* files when running `wrangler dev`
 NEXTJS_ENV=development
+
+# Better Auth (stateless mode)
+# Generate a secure random string for production
+BETTER_AUTH_SECRET=change-this-secret-in-production
+
+# Hatena OAuth credentials
+# Register your app at: https://www.hatena.ne.jp/oauth/develop
+HATENA_CONSUMER_KEY=your-consumer-key
+HATENA_CONSUMER_SECRET=your-consumer-secret

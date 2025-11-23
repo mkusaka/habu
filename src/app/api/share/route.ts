@@ -5,9 +5,21 @@ export async function POST(request: NextRequest) {
     // Web Share Target sends data as application/x-www-form-urlencoded
     const formData = await request.formData();
 
-    const url = formData.get("url")?.toString() || "";
+    let url = formData.get("url")?.toString() || "";
     const title = formData.get("title")?.toString() || "";
-    const text = formData.get("text")?.toString() || "";
+    let text = formData.get("text")?.toString() || "";
+
+    // Sometimes the URL comes in the 'text' field instead of 'url'
+    if (!url && text) {
+      // Check if text looks like a URL
+      try {
+        new URL(text);
+        url = text;
+        text = "";
+      } catch {
+        // text is not a URL, keep it as is
+      }
+    }
 
     // Redirect to the share page with query params
     const shareUrl = new URL("/share", request.url);

@@ -42,25 +42,28 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Update user session with Hatena tokens
-    // In Better Auth stateless mode, we need to update the session payload
-    // This is done by calling the updateUser method which will re-issue the token
-    await auth.api.updateUser({
-      headers: request.headers,
-      body: {
-        userId: session.user.id,
-        // Add Hatena tokens to user metadata
-        data: {
-          hatenaAccessToken: accessToken,
-          hatenaAccessTokenSecret: accessTokenSecret,
-        },
-      },
-    });
-
-    // Redirect to settings with success
+    // Store Hatena tokens in cookies (stateless approach)
+    // In Better Auth stateless mode without DB, we store tokens separately
     const response = NextResponse.redirect(
       new URL("/settings?success=hatena_connected", request.url)
     );
+
+    // Store Hatena tokens as secure httpOnly cookies
+    response.cookies.set("hatena_access_token", accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 60 * 60 * 24 * 365, // 1 year
+      path: "/",
+    });
+
+    response.cookies.set("hatena_access_token_secret", accessTokenSecret, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 60 * 60 * 24 * 365, // 1 year
+      path: "/",
+    });
 
     // Clear the temporary OAuth secret cookie
     response.cookies.delete("hatena_oauth_secret");

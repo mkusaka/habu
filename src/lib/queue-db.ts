@@ -31,7 +31,7 @@ export async function addToQueue(
     updatedAt: now,
     retryCount: 0,
   });
-  return id;
+  return id as number;
 }
 
 export async function getQueuedItems(): Promise<BookmarkQueue[]> {

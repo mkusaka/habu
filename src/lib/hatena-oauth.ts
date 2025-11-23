@@ -1,5 +1,5 @@
 import OAuth from "oauth-1.0a";
-import crypto from "crypto";
+import CryptoJS from "crypto-js";
 
 const HATENA_REQUEST_TOKEN_URL = "https://www.hatena.com/oauth/initiate";
 const HATENA_AUTHORIZE_URL = "https://www.hatena.ne.jp/oauth/authorize";
@@ -14,7 +14,7 @@ function createOAuthClient() {
     },
     signature_method: "HMAC-SHA1",
     hash_function(base_string, key) {
-      return crypto.createHmac("sha1", key).update(base_string).digest("base64");
+      return CryptoJS.HmacSHA1(base_string, key).toString(CryptoJS.enc.Base64);
     },
   });
 }

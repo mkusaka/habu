@@ -12,7 +12,6 @@ import { syncQueue } from "@/lib/queue-sync";
 import type { BookmarkQueue } from "@/types/habu";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import {
   CheckCircle2,
   Clock,

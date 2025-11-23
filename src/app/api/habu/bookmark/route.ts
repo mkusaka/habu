@@ -18,8 +18,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if Hatena is connected
-    const { hatenaAccessToken, hatenaAccessTokenSecret } = session.user;
+    // Get Hatena tokens from cookies
+    const hatenaAccessToken = request.cookies.get("hatena_access_token")?.value;
+    const hatenaAccessTokenSecret = request.cookies.get("hatena_access_token_secret")?.value;
+
     if (!hatenaAccessToken || !hatenaAccessTokenSecret) {
       return NextResponse.json(
         { success: false, error: "Hatena not connected" } as BookmarkResponse,

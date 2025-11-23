@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { CheckCircle2, AlertCircle, Home, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 
-export default function SettingsPage() {
+function SettingsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -40,14 +40,14 @@ export default function SettingsPage() {
 
   const checkAuthStatus = async () => {
     try {
-      const response = await fetch("/api/auth/session", {
+      const response = await fetch("/api/habu/status", {
         credentials: "include",
       });
 
       if (response.ok) {
-        const session = await response.json();
-        setIsAuthenticated(!!session?.user);
-        setHasHatena(!!(session?.user?.hatenaAccessToken));
+        const status = await response.json() as { authenticated: boolean; hasHatena: boolean };
+        setIsAuthenticated(status.authenticated);
+        setHasHatena(status.hasHatena);
       }
     } catch (error) {
       console.error("Failed to check auth status:", error);
@@ -171,5 +171,14 @@ export default function SettingsPage() {
         </Card>
       </div>
     </div>
+  );
+}
+
+
+export default function SettingsPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="text-muted-foreground">Loading...</div></div>}>
+      <SettingsContent />
+    </Suspense>
   );
 }

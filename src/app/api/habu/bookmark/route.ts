@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { createSignedRequest } from "@/lib/hatena-oauth";
 import type { BookmarkRequest, BookmarkResponse } from "@/types/habu";
 
-export const runtime = "edge";
-
 const HATENA_BOOKMARK_API_URL = "https://bookmark.hatenaapis.com/rest/1/my/bookmark";
 
 export async function POST(request: NextRequest) {

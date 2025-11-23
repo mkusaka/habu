@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getRequestToken, getAuthorizeUrl } from "@/lib/hatena-oauth";
 
-export const runtime = "edge";
-
 export async function GET(request: NextRequest) {
   try {
     // Get the callback URL

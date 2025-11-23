@@ -5,6 +5,15 @@ export async function POST(request: NextRequest) {
     // Web Share Target sends data as application/x-www-form-urlencoded
     const formData = await request.formData();
 
+    // Log all incoming data for debugging
+    console.log("Share POST received:", {
+      url: request.url,
+      nextUrl: request.nextUrl.href,
+      method: request.method,
+      contentType: request.headers.get("content-type"),
+      formDataEntries: Array.from(formData.entries()),
+    });
+
     let url = formData.get("url")?.toString() || "";
     const title = formData.get("title")?.toString() || "";
     let text = formData.get("text")?.toString() || "";

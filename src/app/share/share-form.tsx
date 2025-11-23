@@ -40,7 +40,14 @@ export function ShareForm({
     try {
       await saveBookmarkOptimistic(url, title, comment);
       toast.success("Bookmark saved!");
-      router.replace("/saved");
+
+      // Try to close the window (works when opened from share target)
+      // If it fails, redirect to saved page
+      setTimeout(() => {
+        window.close();
+        // If window.close() didn't work (same tab), redirect
+        router.replace("/saved");
+      }, 500);
     } catch (error) {
       console.error("Failed to save bookmark:", error);
       toast.error("Failed to save bookmark");

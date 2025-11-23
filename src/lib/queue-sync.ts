@@ -88,12 +88,10 @@ export function startBackgroundSync(intervalSeconds = 30): void {
     syncQueue().catch(console.error);
   }, intervalSeconds * 1000);
 
-  // Sync on visibility change (when user comes back to tab)
+  // Sync on visibility change (when user comes back to tab or leaves tab)
   if (typeof document !== "undefined") {
     document.addEventListener("visibilitychange", () => {
-      if (!document.hidden) {
-        syncQueue().catch(console.error);
-      }
+      syncQueue().catch(console.error);
     });
   }
 

@@ -39,15 +39,22 @@ export async function getRequestToken(
   console.log("[Hatena OAuth] Request Token - Authorized data:", authorized);
   console.log("[Hatena OAuth] Request Token - Auth Header:", authHeader);
 
-  // The oauth_callback is included in the Authorization header by oauth-1.0a
-  // We need to also send it as a query parameter or form body
+  // Send oauth_callback and scope in the request body
+  // Scope is critical for Hatena - without it, you can't access bookmark API
+  const bodyParams = new URLSearchParams({
+    oauth_callback: callbackUrl,
+    scope: "read_public,read_private,write_public,write_private",
+  });
+
+  console.log("[Hatena OAuth] Request Body:", bodyParams.toString());
+
   const response = await fetch(HATENA_REQUEST_TOKEN_URL, {
     method: "POST",
     headers: {
       ...authHeader,
       "Content-Type": "application/x-www-form-urlencoded",
     },
-    body: new URLSearchParams({ oauth_callback: callbackUrl }).toString(),
+    body: bodyParams.toString(),
   });
 
   console.log("[Hatena OAuth] Response Status:", response.status, response.statusText);

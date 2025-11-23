@@ -47,3 +47,4 @@ next-env.d.ts
 # test scripts
 test-oauth.js
 test-oauth-access.js
+public/sw.js

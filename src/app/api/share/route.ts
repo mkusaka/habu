@@ -29,12 +29,12 @@ export async function POST(request: NextRequest) {
     if (title) shareUrl.searchParams.set("title", title);
     if (text) shareUrl.searchParams.set("text", text);
 
-    return NextResponse.redirect(shareUrl);
+    return NextResponse.redirect(shareUrl, 303);
   } catch (error) {
     console.error("Share POST error:", error);
     const fallbackUrl = request.nextUrl.clone();
     fallbackUrl.pathname = "/share";
     fallbackUrl.search = "";
-    return NextResponse.redirect(fallbackUrl);
+    return NextResponse.redirect(fallbackUrl, 303);
   }
 }

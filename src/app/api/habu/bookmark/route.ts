@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSignedRequest } from "@/lib/hatena-oauth";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { getDb } from "@/db/client";
+import { hatenaTokens } from "@/db/schema";
+import { eq } from "drizzle-orm";
+import { createAuth } from "@/lib/auth";
 import type { BookmarkRequest, BookmarkResponse } from "@/types/habu";
 
 const HATENA_BOOKMARK_API_URL = "https://bookmark.hatenaapis.com/rest/1/my/bookmark";
@@ -31,16 +36,39 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Get Hatena tokens from cookies
-    const hatenaAccessToken = request.cookies.get("hatena_access_token")?.value;
-    const hatenaAccessTokenSecret = request.cookies.get("hatena_access_token_secret")?.value;
+    // Get DB connection for auth
+    const { env } = getCloudflareContext();
+    const auth = createAuth(env.DB);
 
-    if (!hatenaAccessToken || !hatenaAccessTokenSecret) {
+    // Get current user session
+    const session = await auth.api.getSession({
+      headers: request.headers,
+    });
+
+    if (!session?.user) {
+      return NextResponse.json(
+        { success: false, error: "Not authenticated" } as BookmarkResponse,
+        { status: 401 }
+      );
+    }
+
+    // Get Hatena tokens from database
+    const db = getDb(env.DB);
+
+    const tokens = await db
+      .select()
+      .from(hatenaTokens)
+      .where(eq(hatenaTokens.userId, session.user.id))
+      .get();
+
+    if (!tokens) {
       return NextResponse.json(
         { success: false, error: "Hatena not connected" } as BookmarkResponse,
         { status: 400 }
       );
     }
+
+    const { accessToken: hatenaAccessToken, accessTokenSecret: hatenaAccessTokenSecret } = tokens;
 
     // Parse request body
     const body: BookmarkRequest = await request.json();

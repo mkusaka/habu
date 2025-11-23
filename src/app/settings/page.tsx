@@ -1,163 +1,134 @@
-"use client";
-
-import { Suspense, useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { cookies } from "next/headers";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { createAuth } from "@/lib/auth";
+import { getDb } from "@/db/client";
+import { hatenaTokens } from "@/db/schema";
+import { eq } from "drizzle-orm";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { CheckCircle2, AlertCircle, Home, ExternalLink } from "lucide-react";
-import { toast } from "sonner";
+import { LinkButton } from "@/components/ui/link-button";
+import { OAuthButton } from "@/components/ui/oauth-button";
+import { ActionButton } from "@/components/ui/action-button";
+import { ToastHandler } from "./toast-handler";
+import { disconnectHatena } from "./actions";
 
-function SettingsContent() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const [hasHatena, setHasHatena] = useState(false);
-  const [loading, setLoading] = useState(true);
+interface SettingsContentProps {
+  searchParams: Promise<{ error?: string; success?: string }>;
+}
 
-  useEffect(() => {
-    // Check URL params for OAuth result
-    const error = searchParams.get("error");
-    const success = searchParams.get("success");
+async function SettingsContent({ searchParams }: SettingsContentProps) {
+  const params = await searchParams;
 
-    if (error) {
-      const errorMessages: Record<string, string> = {
-        missing_params: "OAuth parameters missing",
-        missing_secret: "OAuth session expired",
-        not_authenticated: "Please sign in first",
-        oauth_failed: "Hatena connection failed",
-      };
-      toast.error(errorMessages[error] || "An error occurred");
-    }
+  // Check Hatena connection status on server
+  const cookieStore = await cookies();
+  const { env } = getCloudflareContext();
+  const auth = createAuth(env.DB);
 
-    if (success === "hatena_connected") {
-      toast.success("Successfully connected to Hatena!");
-    }
+  const session = await auth.api.getSession({
+    headers: {
+      cookie: cookieStore.toString(),
+    },
+  });
 
-    // Check authentication status
-    checkAuthStatus();
-  }, [searchParams]);
+  let hasHatena = false;
 
-  const checkAuthStatus = async () => {
-    try {
-      const response = await fetch("/api/habu/status", {
-        credentials: "include",
-      });
+  if (session?.user) {
+    const db = getDb(env.DB);
+    const tokens = await db
+      .select()
+      .from(hatenaTokens)
+      .where(eq(hatenaTokens.userId, session.user.id))
+      .get();
 
-      if (response.ok) {
-        const status = await response.json() as { authenticated: boolean; hasHatena: boolean };
-        setHasHatena(status.hasHatena);
-      }
-    } catch (error) {
-      console.error("Failed to check auth status:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleConnectHatena = () => {
-    window.location.href = "/api/habu/oauth/start";
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-muted-foreground">Loading...</div>
-      </div>
-    );
+    hasHatena = !!tokens;
   }
 
   return (
-    <div className="min-h-screen p-4 bg-gray-50">
-      <div className="max-w-2xl mx-auto space-y-4">
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>Settings</CardTitle>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => router.push("/")}
-              >
-                <Home className="w-5 h-5" />
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Authentication Status */}
-            <div>
-              <h3 className="text-sm font-medium mb-2">Usage</h3>
-              <p className="text-sm text-muted-foreground mb-3">
-                habu works without sign-in. Just connect your Hatena account to start saving bookmarks.
-              </p>
-            </div>
-
-            <Separator />
-
-            {/* Hatena Connection */}
-            <div>
-              <h3 className="text-sm font-medium mb-2">Hatena Bookmark</h3>
-              <div className="flex items-center gap-2 mb-3">
-                {hasHatena ? (
+    <>
+      <ToastHandler error={params.error} success={params.success} />
+      <div className="min-h-screen p-4 bg-gray-50">
+        <div className="max-w-2xl mx-auto space-y-4">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle>Settings</CardTitle>
+                <LinkButton variant="ghost" size="icon" href="/">
+                  <Home className="w-5 h-5" />
+                </LinkButton>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Hatena Connection */}
+              <div>
+                <h3 className="text-sm font-medium mb-2">Hatena Bookmark</h3>
+                <div className="flex items-center gap-2 mb-3">
+                  {hasHatena ? (
+                    <>
+                      <CheckCircle2 className="w-5 h-5 text-green-500" />
+                      <span className="text-sm">Connected</span>
+                    </>
+                  ) : (
+                    <>
+                      <AlertCircle className="w-5 h-5 text-yellow-500" />
+                      <span className="text-sm">Not connected</span>
+                    </>
+                  )}
+                </div>
+                {!hasHatena && (
                   <>
-                    <CheckCircle2 className="w-5 h-5 text-green-500" />
-                    <span className="text-sm">Connected</span>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Connect your Hatena account to save bookmarks.
+                    </p>
+                    <OAuthButton url="/api/habu/oauth/start" size="sm">
+                      <ExternalLink className="w-4 h-4 mr-2" />
+                      Connect Hatena
+                    </OAuthButton>
                   </>
-                ) : (
+                )}
+                {hasHatena && (
                   <>
-                    <AlertCircle className="w-5 h-5 text-yellow-500" />
-                    <span className="text-sm">Not connected</span>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Your Hatena account is connected. You can now save bookmarks!
+                    </p>
+                    <div className="flex gap-2">
+                      <OAuthButton url="/api/habu/oauth/start" variant="outline" size="sm">
+                        <ExternalLink className="w-4 h-4 mr-2" />
+                        Reconnect
+                      </OAuthButton>
+                      <ActionButton
+                        action={disconnectHatena}
+                        variant="destructive"
+                        size="sm"
+                      >
+                        Disconnect
+                      </ActionButton>
+                    </div>
                   </>
                 )}
               </div>
-              {!hasHatena && (
-                <>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    Connect your Hatena account to save bookmarks.
-                  </p>
-                  <Button onClick={handleConnectHatena} size="sm">
-                    <ExternalLink className="w-4 h-4 mr-2" />
-                    Connect Hatena
-                  </Button>
-                </>
-              )}
-              {hasHatena && (
-                <>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    Your Hatena account is connected. You can now save bookmarks!
-                  </p>
-                  <Button
-                    onClick={handleConnectHatena}
-                    variant="outline"
-                    size="sm"
-                  >
-                    <ExternalLink className="w-4 h-4 mr-2" />
-                    Reconnect
-                  </Button>
-                </>
-              )}
-            </div>
 
-            <Separator />
+              <Separator />
 
-            {/* App Info */}
-            <div>
-              <h3 className="text-sm font-medium mb-2">About</h3>
-              <p className="text-sm text-muted-foreground">
-                habu is a PWA for quickly saving bookmarks to Hatena Bookmark.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+              {/* App Info */}
+              <div>
+                <h3 className="text-sm font-medium mb-2">About</h3>
+                <p className="text-sm text-muted-foreground">
+                  habu is a PWA for quickly saving bookmarks to Hatena Bookmark.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 
+interface SettingsPageProps {
+  searchParams: Promise<{ error?: string; success?: string }>;
+}
 
-export default function SettingsPage() {
-  return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="text-muted-foreground">Loading...</div></div>}>
-      <SettingsContent />
-    </Suspense>
-  );
+export default function SettingsPage({ searchParams }: SettingsPageProps) {
+  return <SettingsContent searchParams={searchParams} />;
 }

@@ -1,63 +1,54 @@
 import { betterAuth } from "better-auth";
+import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { anonymous } from "better-auth/plugins";
-import type { HabuUser } from "@/types/habu";
+import { nextCookies } from "better-auth/next-js";
+import { getDb } from "@/db/client";
+import * as schema from "@/db/schema";
 
-export const auth = betterAuth({
-  // Stateless mode - no database required
-  // Session and user info are stored in signed tokens
-  secret: process.env.BETTER_AUTH_SECRET || "change-this-secret-in-production",
+// Create auth instance with database
+// For Cloudflare Workers, this should be called with the D1 binding from env
+export function createAuth(db: D1Database) {
+  return betterAuth({
+    database: drizzleAdapter(getDb(db), {
+      provider: "sqlite",
+      schema,
+      usePlural: true,
+    }),
 
-  // Configure session for stateless mode
-  session: {
-    cookieCache: {
-      enabled: true,
-      maxAge: 60 * 60 * 24 * 7, // 7 days
-      strategy: "jwe", // Use JWE for encrypted session cookies
-      refreshCache: true,
+    secret: process.env.BETTER_AUTH_SECRET || "change-this-secret-in-production",
+
+    // Configure session
+    session: {
+      cookieCache: {
+        enabled: true,
+        maxAge: 60 * 60 * 24 * 7, // 7 days
+        strategy: "jwe", // Use JWE for encrypted session cookies
+        refreshCache: true,
+      },
     },
-  },
 
-  // Enable anonymous plugin for guest users
-  plugins: [
-    anonymous(),
-  ],
+    // Enable anonymous plugin for guest users
+    plugins: [
+      anonymous(),
+      nextCookies(), // Must be last plugin - handles cookie setting in Next.js
+    ],
 
-  // Account settings for stateless mode
-  account: {
-    accountLinking: {
-      enabled: true,
+    // Account settings
+    account: {
+      accountLinking: {
+        enabled: true,
+      },
     },
-  },
 
-  // Trust the host header for Cloudflare Workers
-  advanced: {
-    useSecureCookies: process.env.NODE_ENV === "production",
-    crossSubDomainCookies: {
-      enabled: false,
+    // Trust the host header for Cloudflare Workers
+    advanced: {
+      useSecureCookies: process.env.NODE_ENV === "production",
+      crossSubDomainCookies: {
+        enabled: false,
+      },
     },
-  },
-});
-
-// Type-safe auth client
-export type Auth = typeof auth;
-
-// Helper to get session with Hatena tokens
-export async function getHabuSession(
-  request: Request
-): Promise<{ user: HabuUser } | null> {
-  const session = await auth.api.getSession({
-    headers: request.headers,
   });
-
-  if (!session) {
-    return null;
-  }
-
-  return {
-    user: session.user as HabuUser,
-  };
 }
 
-// Helper functions for OAuth state management
-// Note: OAuth state is managed via encrypted cookies (CryptoJS.AES) in oauth routes
-// This approach is simpler and equally secure for stateless OAuth flow
+// Type-safe auth client
+export type Auth = ReturnType<typeof createAuth>;

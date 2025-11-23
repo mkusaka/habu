@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1763920425471,
+      "tag": "0000_dry_eternals",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1763922402591,
+      "tag": "0001_sweet_clint_barton",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1763922661398,
+      "tag": "0002_chunky_black_widow",
+      "breakpoints": true
+    }
+  ]
+}

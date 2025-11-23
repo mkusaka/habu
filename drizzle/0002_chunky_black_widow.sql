@@ -1,0 +1,1 @@
+ALTER TABLE `sessions` ADD `updated_at` integer DEFAULT (unixepoch('now') * 1000) NOT NULL;

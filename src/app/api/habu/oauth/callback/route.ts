@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAccessToken } from "@/lib/hatena-oauth";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { getDb } from "@/db/client";
+import { hatenaTokens } from "@/db/schema";
+import { eq } from "drizzle-orm";
+import { createAuth } from "@/lib/auth";
 import CryptoJS from "crypto-js";
 
 const OAUTH_STATE_SECRET = process.env.BETTER_AUTH_SECRET || "change-this-secret-in-production";
 
 // Decrypt OAuth state
-function decryptOAuthState(encrypted: string): { token: string; tokenSecret: string } | null {
+function decryptOAuthState(encrypted: string): { token: string; tokenSecret: string; returnTo?: string } | null {
   try {
     const decrypted = CryptoJS.AES.decrypt(encrypted, OAUTH_STATE_SECRET).toString(CryptoJS.enc.Utf8);
     return JSON.parse(decrypted);
@@ -44,7 +49,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const { token: storedToken, tokenSecret } = oauthState;
+    const { token: storedToken, tokenSecret, returnTo = "/settings" } = oauthState;
 
     // Verify that the callback token matches the request token we initiated
     // This prevents token fixation attacks
@@ -61,29 +66,56 @@ export async function GET(request: NextRequest) {
       oauthVerifier
     );
 
-    // Store Hatena tokens as secure httpOnly cookies
-    // Token lifetime reduced to 30 days for better security
+    // Get DB connection for auth
+    const { env } = getCloudflareContext();
+    const auth = createAuth(env.DB);
+
+    // Get current user session
+    const session = await auth.api.getSession({
+      headers: request.headers,
+    });
+
+    if (!session?.user) {
+      return NextResponse.redirect(
+        new URL("/settings?error=not_authenticated", request.url)
+      );
+    }
+
+    // Store Hatena tokens in database
+    const db = getDb(env.DB);
+
+    // Check if user already has tokens (upsert)
+    const existing = await db
+      .select()
+      .from(hatenaTokens)
+      .where(eq(hatenaTokens.userId, session.user.id))
+      .get();
+
+    if (existing) {
+      // Update existing tokens
+      await db
+        .update(hatenaTokens)
+        .set({
+          accessToken,
+          accessTokenSecret,
+          scope: "read_public,write_public",
+          updatedAt: new Date(),
+        })
+        .where(eq(hatenaTokens.userId, session.user.id));
+    } else {
+      // Insert new tokens
+      await db.insert(hatenaTokens).values({
+        userId: session.user.id,
+        accessToken,
+        accessTokenSecret,
+        scope: "read_public,write_public",
+      });
+    }
+
+    // Clear OAuth state cookie and redirect to return URL
     const response = NextResponse.redirect(
-      new URL("/settings?success=hatena_connected", request.url)
+      new URL(`${returnTo}?success=hatena_connected`, request.url)
     );
-
-    response.cookies.set("hatena_access_token", accessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 60 * 60 * 24 * 30, // 30 days
-      path: "/",
-    });
-
-    response.cookies.set("hatena_access_token_secret", accessTokenSecret, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 60 * 60 * 24 * 30, // 30 days
-      path: "/",
-    });
-
-    // Clear OAuth state cookie
     response.cookies.delete("habu_oauth_state");
 
     return response;

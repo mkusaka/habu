@@ -41,28 +41,29 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Prepare Hatena API request
-    const apiUrl = new URL(HATENA_BOOKMARK_API_URL);
-    apiUrl.searchParams.set("url", url);
+    // Prepare request body parameters
+    const bodyParams: Record<string, string> = { url };
     if (comment) {
-      apiUrl.searchParams.set("comment", comment);
+      bodyParams.comment = comment;
     }
 
     // Create OAuth signed request
     const authHeaders = createSignedRequest(
-      apiUrl.toString(),
+      HATENA_BOOKMARK_API_URL,
       "POST",
       hatenaAccessToken,
-      hatenaAccessTokenSecret
+      hatenaAccessTokenSecret,
+      bodyParams
     );
 
     // Make request to Hatena Bookmark API
-    const response = await fetch(apiUrl.toString(), {
+    const response = await fetch(HATENA_BOOKMARK_API_URL, {
       method: "POST",
       headers: {
         ...authHeaders,
         "Content-Type": "application/x-www-form-urlencoded",
       },
+      body: new URLSearchParams(bodyParams).toString(),
     });
 
     if (!response.ok) {

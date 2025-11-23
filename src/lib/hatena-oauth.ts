@@ -31,18 +31,23 @@ export async function getRequestToken(
     data: { oauth_callback: callbackUrl },
   };
 
-  const authHeader = oauth.toHeader(oauth.authorize(requestData));
+  const authorized = oauth.authorize(requestData);
+  const authHeader = oauth.toHeader(authorized);
 
   console.log("[Hatena OAuth] Request Token - URL:", HATENA_REQUEST_TOKEN_URL);
   console.log("[Hatena OAuth] Request Token - Callback:", callbackUrl);
+  console.log("[Hatena OAuth] Request Token - Authorized data:", authorized);
   console.log("[Hatena OAuth] Request Token - Auth Header:", authHeader);
 
+  // The oauth_callback is included in the Authorization header by oauth-1.0a
+  // We need to also send it as a query parameter or form body
   const response = await fetch(HATENA_REQUEST_TOKEN_URL, {
     method: "POST",
     headers: {
       ...authHeader,
-      // Do NOT send oauth_callback in the body - it's already in the Authorization header
+      "Content-Type": "application/x-www-form-urlencoded",
     },
+    body: new URLSearchParams({ oauth_callback: callbackUrl }).toString(),
   });
 
   console.log("[Hatena OAuth] Response Status:", response.status, response.statusText);
@@ -91,20 +96,22 @@ export async function getAccessToken(
     },
   };
 
-  const authHeader = oauth.toHeader(
-    oauth.authorize(requestData, { key: token, secret: tokenSecret })
-  );
+  const authorized = oauth.authorize(requestData, { key: token, secret: tokenSecret });
+  const authHeader = oauth.toHeader(authorized);
 
   console.log("[Hatena OAuth] Access Token - URL:", HATENA_ACCESS_TOKEN_URL);
   console.log("[Hatena OAuth] Access Token - Verifier:", verifier);
+  console.log("[Hatena OAuth] Access Token - Authorized data:", authorized);
   console.log("[Hatena OAuth] Access Token - Auth Header:", authHeader);
 
+  // Send oauth_verifier in the request body
   const response = await fetch(HATENA_ACCESS_TOKEN_URL, {
     method: "POST",
     headers: {
       ...authHeader,
-      // Do NOT send parameters in the body - they're already in the Authorization header
+      "Content-Type": "application/x-www-form-urlencoded",
     },
+    body: new URLSearchParams({ oauth_verifier: verifier }).toString(),
   });
 
   console.log("[Hatena OAuth] Access Token Response Status:", response.status, response.statusText);

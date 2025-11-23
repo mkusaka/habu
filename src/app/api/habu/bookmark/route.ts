@@ -69,10 +69,25 @@ export async function POST(request: NextRequest) {
     if (!response.ok) {
       const errorText = await response.text();
       console.error("Hatena API error:", errorText);
+
+      // Try to parse error message from Hatena
+      let errorMessage = `Hatena API error: ${response.status}`;
+      try {
+        const errorJson = JSON.parse(errorText);
+        if (errorJson.message) {
+          errorMessage = errorJson.message;
+        }
+      } catch {
+        // If not JSON, use raw text
+        if (errorText) {
+          errorMessage = errorText;
+        }
+      }
+
       return NextResponse.json(
         {
           success: false,
-          error: `Hatena API error: ${response.status}`
+          error: errorMessage
         } as BookmarkResponse,
         { status: response.status }
       );

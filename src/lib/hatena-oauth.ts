@@ -25,28 +25,25 @@ export async function getRequestToken(
 ): Promise<{ token: string; tokenSecret: string }> {
   const oauth = createOAuthClient();
 
+  // IMPORTANT: Signature calculation must include ALL parameters that will be sent
+  // (oauth_callback + scope). This is OAuth 1.0a spec requirement.
   const requestData = {
     url: HATENA_REQUEST_TOKEN_URL,
     method: "POST",
-    data: { oauth_callback: callbackUrl },
+    data: {
+      oauth_callback: callbackUrl,
+      scope: "read_public,write_public",
+    },
   };
 
   const authorized = oauth.authorize(requestData);
   const authHeader = oauth.toHeader(authorized);
 
-  console.log("[Hatena OAuth] Request Token - URL:", HATENA_REQUEST_TOKEN_URL);
-  console.log("[Hatena OAuth] Request Token - Callback:", callbackUrl);
-  console.log("[Hatena OAuth] Request Token - Authorized data:", authorized);
-  console.log("[Hatena OAuth] Request Token - Auth Header:", authHeader);
-
-  // Send oauth_callback and scope in the request body
+  // Send scope in the request body (oauth_callback is in Authorization header)
   // Scope is critical for Hatena - without it, you can't access bookmark API
   const bodyParams = new URLSearchParams({
-    oauth_callback: callbackUrl,
-    scope: "read_public,read_private,write_public,write_private",
+    scope: "read_public,write_public",
   });
-
-  console.log("[Hatena OAuth] Request Body:", bodyParams.toString());
 
   const response = await fetch(HATENA_REQUEST_TOKEN_URL, {
     method: "POST",
@@ -57,8 +54,6 @@ export async function getRequestToken(
     body: bodyParams.toString(),
   });
 
-  console.log("[Hatena OAuth] Response Status:", response.status, response.statusText);
-
   if (!response.ok) {
     const errorText = await response.text();
     console.error("[Hatena OAuth] Error Response:", errorText);
@@ -66,8 +61,6 @@ export async function getRequestToken(
   }
 
   const text = await response.text();
-  console.log("[Hatena OAuth] Response Body:", text);
-
   const params = new URLSearchParams(text);
 
   const token = params.get("oauth_token");
@@ -77,7 +70,6 @@ export async function getRequestToken(
     throw new Error("Invalid response from Hatena OAuth: missing token or secret");
   }
 
-  console.log("[Hatena OAuth] Got tokens - token:", token.substring(0, 10) + "...");
   return { token, tokenSecret };
 }
 
@@ -94,34 +86,33 @@ export async function getAccessToken(
 ): Promise<{ accessToken: string; accessTokenSecret: string }> {
   const oauth = createOAuthClient();
 
+  // IMPORTANT: oauth_verifier must be included in signature calculation
+  // BUT sent only once in the request body (not in Authorization header)
   const requestData = {
     url: HATENA_ACCESS_TOKEN_URL,
     method: "POST",
     data: {
       oauth_verifier: verifier,
-      // Do NOT include oauth_callback here - it will cause parameter_rejected error
     },
   };
 
   const authorized = oauth.authorize(requestData, { key: token, secret: tokenSecret });
-  const authHeader = oauth.toHeader(authorized);
 
-  console.log("[Hatena OAuth] Access Token - URL:", HATENA_ACCESS_TOKEN_URL);
-  console.log("[Hatena OAuth] Access Token - Verifier:", verifier);
-  console.log("[Hatena OAuth] Access Token - Authorized data:", authorized);
-  console.log("[Hatena OAuth] Access Token - Auth Header:", authHeader);
+  // Remove oauth_verifier from Authorization header to avoid double-sending
+  const { oauth_verifier, ...headerParams } = authorized;
+  const authHeader = oauth.toHeader(headerParams);
 
-  // Send oauth_verifier in the request body
+  // Send oauth_verifier only in POST body
+  const bodyParams = new URLSearchParams({ oauth_verifier: verifier });
+
   const response = await fetch(HATENA_ACCESS_TOKEN_URL, {
     method: "POST",
     headers: {
       ...authHeader,
       "Content-Type": "application/x-www-form-urlencoded",
     },
-    body: new URLSearchParams({ oauth_verifier: verifier }).toString(),
+    body: bodyParams.toString(),
   });
-
-  console.log("[Hatena OAuth] Access Token Response Status:", response.status, response.statusText);
 
   if (!response.ok) {
     const errorText = await response.text();
@@ -130,8 +121,6 @@ export async function getAccessToken(
   }
 
   const text = await response.text();
-  console.log("[Hatena OAuth] Access Token Response Body:", text);
-
   const params = new URLSearchParams(text);
 
   const accessToken = params.get("oauth_token");
@@ -141,7 +130,6 @@ export async function getAccessToken(
     throw new Error("Invalid response from Hatena OAuth: missing access token or secret");
   }
 
-  console.log("[Hatena OAuth] Got access tokens - token:", accessToken.substring(0, 10) + "...");
   return { accessToken, accessTokenSecret };
 }
 

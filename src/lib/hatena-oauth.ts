@@ -6,6 +6,8 @@ const HATENA_AUTHORIZE_URL = "https://www.hatena.ne.jp/oauth/authorize";
 const HATENA_ACCESS_TOKEN_URL = "https://www.hatena.com/oauth/token";
 
 // OAuth 1.0a client setup
+// Note: oauth-1.0a library requires synchronous hash_function, so we use CryptoJS
+// TODO: Consider switching to a library that supports async crypto or implement custom OAuth
 function createOAuthClient() {
   return new OAuth({
     consumer: {
@@ -37,9 +39,14 @@ export async function getRequestToken(
   };
 
   const authorized = oauth.authorize(requestData);
-  const authHeader = oauth.toHeader(authorized);
 
-  // Send scope in the request body (oauth_callback is in Authorization header)
+  // Remove scope from Authorization header to avoid double-sending
+  // (same pattern as oauth_verifier in access token exchange)
+  const headerParams = { ...authorized };
+  delete (headerParams as Record<string, unknown>).scope;
+  const authHeader = oauth.toHeader(headerParams);
+
+  // Send scope in the request body only
   // Scope is critical for Hatena - without it, you can't access bookmark API
   const bodyParams = new URLSearchParams({
     scope: "read_public,write_public",

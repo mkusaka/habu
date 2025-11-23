@@ -1,4 +1,5 @@
 import { betterAuth } from "better-auth";
+import { anonymous } from "better-auth/plugins";
 import type { HabuUser } from "@/types/habu";
 
 export const auth = betterAuth({
@@ -6,19 +7,26 @@ export const auth = betterAuth({
   // Session and user info are stored in signed tokens
   secret: process.env.BETTER_AUTH_SECRET || "change-this-secret-in-production",
 
-  // Configure session
+  // Configure session for stateless mode
   session: {
-    // Use JWT for stateless sessions
     cookieCache: {
       enabled: true,
       maxAge: 60 * 60 * 24 * 7, // 7 days
+      strategy: "jwe", // Use JWE for encrypted session cookies
+      refreshCache: true,
     },
   },
 
-  // Email/password provider (can add more later)
-  emailAndPassword: {
-    enabled: true,
-    requireEmailVerification: false, // Simplified for MVP
+  // Enable anonymous plugin for guest users
+  plugins: [
+    anonymous(),
+  ],
+
+  // Account settings for stateless mode
+  account: {
+    accountLinking: {
+      enabled: true,
+    },
   },
 
   // Trust the host header for Cloudflare Workers
@@ -28,9 +36,6 @@ export const auth = betterAuth({
       enabled: false,
     },
   },
-
-  // We'll extend the user object to include Hatena tokens
-  // This is done by adding custom fields in the session payload
 });
 
 // Type-safe auth client
@@ -52,3 +57,7 @@ export async function getHabuSession(
     user: session.user as HabuUser,
   };
 }
+
+// Helper functions for OAuth state management
+// Note: OAuth state is managed via encrypted cookies (CryptoJS.AES) in oauth routes
+// This approach is simpler and equally secure for stateless OAuth flow

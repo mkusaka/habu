@@ -6,6 +6,31 @@ const HATENA_BOOKMARK_API_URL = "https://bookmark.hatenaapis.com/rest/1/my/bookm
 
 export async function POST(request: NextRequest) {
   try {
+    // CSRF protection: verify Origin/Referer
+    const origin = request.headers.get("origin");
+    const referer = request.headers.get("referer");
+    const requestUrl = new URL(request.url);
+    const expectedOrigin = requestUrl.origin;
+
+    // Check that the request comes from our own origin
+    if (origin && origin !== expectedOrigin) {
+      return NextResponse.json(
+        { success: false, error: "Invalid origin" } as BookmarkResponse,
+        { status: 403 }
+      );
+    }
+
+    // Fallback to referer check if origin is not present
+    if (!origin && referer) {
+      const refererUrl = new URL(referer);
+      if (refererUrl.origin !== expectedOrigin) {
+        return NextResponse.json(
+          { success: false, error: "Invalid referer" } as BookmarkResponse,
+          { status: 403 }
+        );
+      }
+    }
+
     // Get Hatena tokens from cookies
     const hatenaAccessToken = request.cookies.get("hatena_access_token")?.value;
     const hatenaAccessTokenSecret = request.cookies.get("hatena_access_token_secret")?.value;

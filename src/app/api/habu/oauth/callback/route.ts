@@ -1,5 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAccessToken } from "@/lib/hatena-oauth";
+import CryptoJS from "crypto-js";
+
+const OAUTH_STATE_SECRET = process.env.BETTER_AUTH_SECRET || "change-this-secret-in-production";
+
+// Decrypt OAuth state
+function decryptOAuthState(encrypted: string): { token: string; tokenSecret: string } | null {
+  try {
+    const decrypted = CryptoJS.AES.decrypt(encrypted, OAUTH_STATE_SECRET).toString(CryptoJS.enc.Utf8);
+    return JSON.parse(decrypted);
+  } catch {
+    return null;
+  }
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,11 +26,31 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get the stored token secret from cookie
-    const tokenSecret = request.cookies.get("hatena_oauth_secret")?.value;
-    if (!tokenSecret) {
+    // Get encrypted OAuth state from cookie
+    const encryptedState = request.cookies.get("habu_oauth_state")?.value;
+
+    if (!encryptedState) {
       return NextResponse.redirect(
-        new URL("/settings?error=missing_secret", request.url)
+        new URL("/settings?error=state_missing", request.url)
+      );
+    }
+
+    // Decrypt OAuth state
+    const oauthState = decryptOAuthState(encryptedState);
+
+    if (!oauthState) {
+      return NextResponse.redirect(
+        new URL("/settings?error=state_invalid", request.url)
+      );
+    }
+
+    const { token: storedToken, tokenSecret } = oauthState;
+
+    // Verify that the callback token matches the request token we initiated
+    // This prevents token fixation attacks
+    if (oauthToken !== storedToken) {
+      return NextResponse.redirect(
+        new URL("/settings?error=token_mismatch", request.url)
       );
     }
 
@@ -28,18 +61,17 @@ export async function GET(request: NextRequest) {
       oauthVerifier
     );
 
-    // Store Hatena tokens in cookies (stateless approach)
-    // In Better Auth stateless mode without DB, we store tokens separately
+    // Store Hatena tokens as secure httpOnly cookies
+    // Token lifetime reduced to 30 days for better security
     const response = NextResponse.redirect(
       new URL("/settings?success=hatena_connected", request.url)
     );
 
-    // Store Hatena tokens as secure httpOnly cookies
     response.cookies.set("hatena_access_token", accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge: 60 * 60 * 24 * 365, // 1 year
+      maxAge: 60 * 60 * 24 * 30, // 30 days
       path: "/",
     });
 
@@ -47,12 +79,12 @@ export async function GET(request: NextRequest) {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge: 60 * 60 * 24 * 365, // 1 year
+      maxAge: 60 * 60 * 24 * 30, // 30 days
       path: "/",
     });
 
-    // Clear the temporary OAuth secret cookie
-    response.cookies.delete("hatena_oauth_secret");
+    // Clear OAuth state cookie
+    response.cookies.delete("habu_oauth_state");
 
     return response;
   } catch (error) {

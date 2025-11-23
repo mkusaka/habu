@@ -1,5 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getRequestToken, getAuthorizeUrl } from "@/lib/hatena-oauth";
+import CryptoJS from "crypto-js";
+
+const OAUTH_STATE_SECRET = process.env.BETTER_AUTH_SECRET || "change-this-secret-in-production";
+
+// Encrypt OAuth state to prevent token fixation attacks
+function encryptOAuthState(data: { token: string; tokenSecret: string }): string {
+  return CryptoJS.AES.encrypt(JSON.stringify(data), OAUTH_STATE_SECRET).toString();
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -10,11 +18,12 @@ export async function GET(request: NextRequest) {
     // Get request token from Hatena
     const { token, tokenSecret } = await getRequestToken(callbackUrl);
 
-    // Store token secret in a cookie (we'll need it for the callback)
+    // Encrypt and store OAuth state in httpOnly cookie
+    const encryptedState = encryptOAuthState({ token, tokenSecret });
+
     const response = NextResponse.redirect(getAuthorizeUrl(token));
 
-    // Store the request token secret in a secure, httpOnly cookie
-    response.cookies.set("hatena_oauth_secret", tokenSecret, {
+    response.cookies.set("habu_oauth_state", encryptedState, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",

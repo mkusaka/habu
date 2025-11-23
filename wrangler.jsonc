@@ -6,7 +6,7 @@
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"name": "habu",
 	"main": ".open-next/worker.js",
-	"compatibility_date": "2025-11-24",
+	"compatibility_date": "2025-11-23",
 	"compatibility_flags": [
 		"nodejs_compat",
 		"global_fetch_strictly_public"

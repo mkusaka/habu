@@ -22,7 +22,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Redirect to the share page with query params
-    const shareUrl = new URL("/share", request.url);
+    // Use nextUrl.clone() for better compatibility with Cloudflare Workers
+    const shareUrl = request.nextUrl.clone();
+    shareUrl.pathname = "/share";
+    shareUrl.search = ""; // Clear existing query params
+
     if (url) shareUrl.searchParams.set("url", url);
     if (title) shareUrl.searchParams.set("title", title);
     if (text) shareUrl.searchParams.set("text", text);
@@ -31,6 +35,9 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("Share POST error:", error);
     // Fallback to share page without params
-    return NextResponse.redirect(new URL("/share", request.url));
+    const fallbackUrl = request.nextUrl.clone();
+    fallbackUrl.pathname = "/share";
+    fallbackUrl.search = "";
+    return NextResponse.redirect(fallbackUrl);
   }
 }

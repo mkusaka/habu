@@ -2,21 +2,31 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
   try {
-    // Web Share Target sends data as application/x-www-form-urlencoded
-    const formData = await request.formData();
+    // Web Share Target may send data via query params or form data
+    const { searchParams } = request.nextUrl;
 
-    // Log all incoming data for debugging
     console.log("Share POST received:", {
       url: request.url,
-      nextUrl: request.nextUrl.href,
-      method: request.method,
+      searchParams: Object.fromEntries(searchParams.entries()),
       contentType: request.headers.get("content-type"),
-      formDataEntries: Array.from(formData.entries()),
     });
 
-    let url = formData.get("url")?.toString() || "";
-    const title = formData.get("title")?.toString() || "";
-    let text = formData.get("text")?.toString() || "";
+    // Try to get data from query params first (Chrome Android behavior)
+    let url = searchParams.get("url") || "";
+    let title = searchParams.get("title") || "";
+    let text = searchParams.get("text") || "";
+
+    // If not in query params, try form data
+    if (!url && !title && !text) {
+      const formData = await request.formData();
+      const urlForm = formData.get("url")?.toString() || "";
+      const titleForm = formData.get("title")?.toString() || "";
+      const textForm = formData.get("text")?.toString() || "";
+
+      if (urlForm) url = urlForm;
+      if (titleForm) title = titleForm;
+      if (textForm) text = textForm;
+    }
 
     // Sometimes the URL comes in the 'text' field instead of 'url'
     if (!url && text) {

@@ -87,29 +87,10 @@ function SettingsContent() {
           <CardContent className="space-y-6">
             {/* Authentication Status */}
             <div>
-              <h3 className="text-sm font-medium mb-2">Authentication</h3>
-              <div className="flex items-center gap-2">
-                {isAuthenticated ? (
-                  <>
-                    <CheckCircle2 className="w-5 h-5 text-green-500" />
-                    <span className="text-sm">Signed in</span>
-                  </>
-                ) : (
-                  <>
-                    <AlertCircle className="w-5 h-5 text-yellow-500" />
-                    <span className="text-sm">Not signed in</span>
-                  </>
-                )}
-              </div>
-              {!isAuthenticated && (
-                <Button
-                  onClick={() => router.push("/api/auth/signin")}
-                  className="mt-2"
-                  size="sm"
-                >
-                  Sign In
-                </Button>
-              )}
+              <h3 className="text-sm font-medium mb-2">Usage</h3>
+              <p className="text-sm text-muted-foreground mb-3">
+                habu works without sign-in. Just connect your Hatena account to start saving bookmarks.
+              </p>
             </div>
 
             <Separator />
@@ -130,7 +111,7 @@ function SettingsContent() {
                   </>
                 )}
               </div>
-              {isAuthenticated && !hasHatena && (
+              {!hasHatena && (
                 <>
                   <p className="text-sm text-muted-foreground mb-3">
                     Connect your Hatena account to save bookmarks.
@@ -141,7 +122,7 @@ function SettingsContent() {
                   </Button>
                 </>
               )}
-              {isAuthenticated && hasHatena && (
+              {hasHatena && (
                 <>
                   <p className="text-sm text-muted-foreground mb-3">
                     Your Hatena account is connected. You can now save bookmarks!

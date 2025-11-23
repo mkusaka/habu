@@ -9,15 +9,6 @@ const HATENA_BOOKMARK_API_URL = "https://bookmark.hatenaapis.com/rest/1/my/bookm
 
 export async function POST(request: NextRequest) {
   try {
-    // Check authentication
-    const session = await getHabuSession(request);
-    if (!session) {
-      return NextResponse.json(
-        { success: false, error: "Unauthorized" } as BookmarkResponse,
-        { status: 401 }
-      );
-    }
-
     // Get Hatena tokens from cookies
     const hatenaAccessToken = request.cookies.get("hatena_access_token")?.value;
     const hatenaAccessTokenSecret = request.cookies.get("hatena_access_token_secret")?.value;

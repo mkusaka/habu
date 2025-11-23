@@ -31,17 +31,6 @@ export async function GET(request: NextRequest) {
       oauthVerifier
     );
 
-    // Get current session
-    const session = await auth.api.getSession({
-      headers: request.headers,
-    });
-
-    if (!session) {
-      return NextResponse.redirect(
-        new URL("/settings?error=not_authenticated", request.url)
-      );
-    }
-
     // Store Hatena tokens in cookies (stateless approach)
     // In Better Auth stateless mode without DB, we store tokens separately
     const response = NextResponse.redirect(

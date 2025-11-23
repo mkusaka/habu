@@ -5,14 +5,13 @@ export const runtime = "edge";
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getHabuSession(request);
     const hasHatena = !!(
       request.cookies.get("hatena_access_token")?.value &&
       request.cookies.get("hatena_access_token_secret")?.value
     );
 
     return NextResponse.json({
-      authenticated: !!session,
+      authenticated: true, // Always true since we don't require auth
       hasHatena,
     });
   } catch (error) {

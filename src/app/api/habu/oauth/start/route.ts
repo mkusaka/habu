@@ -6,15 +6,6 @@ export const runtime = "edge";
 
 export async function GET(request: NextRequest) {
   try {
-    // Check if user is authenticated
-    const session = await getHabuSession(request);
-    if (!session) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
-    }
-
     // Get the callback URL
     const baseUrl = new URL(request.url).origin;
     const callbackUrl = `${baseUrl}/api/habu/oauth/callback`;

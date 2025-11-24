@@ -11,6 +11,8 @@ const withSerwist = withSerwistInit({
 const nextConfig: NextConfig = {
 	// Empty turbopack config to silence the warning about webpack config
 	turbopack: {},
+	// Enable React Compiler for automatic memoization
+	reactCompiler: true,
 };
 
 export default withSerwist(nextConfig);

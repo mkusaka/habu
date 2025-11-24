@@ -20,6 +20,7 @@ import {
   RefreshCw,
   Trash2,
   Home,
+  Copy,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -91,6 +92,16 @@ export default function QueuePage() {
     } catch (error) {
       console.error("Clear failed:", error);
       toast.error("Clear failed");
+    }
+  };
+
+  const handleCopyUrl = async (url: string) => {
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success("URL copied to clipboard");
+    } catch (error) {
+      console.error("Copy failed:", error);
+      toast.error("Failed to copy URL");
     }
   };
 
@@ -230,6 +241,14 @@ export default function QueuePage() {
                       </div>
                     </div>
                     <div className="flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleCopyUrl(item.url)}
+                        title="Copy URL"
+                      >
+                        <Copy className="w-4 h-4" />
+                      </Button>
                       {item.status === "error" && item.id && (
                         <Button
                           variant="ghost"

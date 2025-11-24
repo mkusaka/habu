@@ -18,7 +18,7 @@ export async function syncQueue(): Promise<void> {
       // Update status to sending
       await updateQueueStatus(item.id, "sending");
 
-      // Send to server
+      // Send to server with 30 second timeout
       const response = await fetch("/api/habu/bookmark", {
         method: "POST",
         headers: {
@@ -29,6 +29,7 @@ export async function syncQueue(): Promise<void> {
           url: item.url,
           comment: item.comment,
         } as BookmarkRequest),
+        signal: AbortSignal.timeout(30000),
       });
 
       const result: BookmarkResponse = await response.json();

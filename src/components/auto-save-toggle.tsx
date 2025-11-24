@@ -1,17 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 
 export function AutoSaveToggle() {
-  const [autoSave, setAutoSave] = useState(false);
-
-  useEffect(() => {
-    // Load setting from localStorage
-    const saved = localStorage.getItem("habu-auto-save");
-    setAutoSave(saved === "true");
-  }, []);
+  const [autoSave, setAutoSave] = useState(() => {
+    // Initialize state from localStorage
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("habu-auto-save") === "true";
+  });
 
   const handleToggle = (checked: boolean) => {
     setAutoSave(checked);

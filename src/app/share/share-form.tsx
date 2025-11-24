@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { saveBookmarkOptimistic } from "@/lib/queue-sync";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,16 +30,7 @@ export function ShareForm({
   const [comment, setComment] = useState(initialComment);
   const [saving, setSaving] = useState(false);
 
-  // Auto-save on mount if enabled and has URL
-  useEffect(() => {
-    const autoSave = localStorage.getItem("habu-auto-save") === "true";
-    if (autoSave && initialUrl && hasHatena) {
-      // Auto-save the bookmark
-      handleSave();
-    }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
     if (!url) {
       toast.error("URL is required");
       return;
@@ -62,7 +53,17 @@ export function ShareForm({
       toast.error("Failed to save bookmark");
       setSaving(false);
     }
-  };
+  }, [url, title, comment, router]);
+
+  // Auto-save on mount if enabled and has URL
+  useEffect(() => {
+    const autoSave = localStorage.getItem("habu-auto-save") === "true";
+    if (autoSave && initialUrl && hasHatena) {
+      // Auto-save the bookmark
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      handleSave();
+    }
+  }, [handleSave, initialUrl, hasHatena]);
 
   return (
     <Card className="w-full max-w-md">

@@ -40,10 +40,17 @@ export async function getQueuedItems(): Promise<BookmarkQueue[]> {
     .equals("queued")
     .or("status")
     .equals("error")
+    .or("status")
+    .equals("sending")
     .filter((item) => {
       // Only return items that are ready for retry
       if (item.status === "error" && item.nextRetryAt) {
         return new Date() >= item.nextRetryAt;
+      }
+      // Reset stuck "sending" items (older than 2 minutes)
+      if (item.status === "sending") {
+        const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000);
+        return item.updatedAt < twoMinutesAgo;
       }
       return true;
     })

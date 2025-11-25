@@ -38,19 +38,23 @@ export function ShareForm({
 
     setSaving(true);
     try {
+      toast.info("1: before saveBookmarkOptimistic");
       await saveBookmarkOptimistic(url, title, comment);
+      toast.info("2: after saveBookmarkOptimistic");
       toast.success("Bookmark saved!");
 
-      // Try to close the window (works when opened from share target)
-      // If it fails, redirect to saved page
-      setTimeout(() => {
-        window.close();
-        // If window.close() didn't work (same tab), redirect
-        router.replace("/saved");
-      }, 500);
+      // Background Sync is already registered, safe to close immediately
+      // keepalive fetch + Background Sync API ensure delivery even after window closes
+      window.close();
+
+      // If window.close() didn't work (popup blocker or same tab), redirect
+      // Note: if window closes, this won't execute
+      router.replace("/saved");
     } catch (error) {
       console.error("Failed to save bookmark:", error);
-      toast.error("Failed to save bookmark");
+      toast.error("Failed to save bookmark: " + error);
+    } finally {
+      toast.info("3: finally block");
       setSaving(false);
     }
   };
@@ -59,11 +63,12 @@ export function ShareForm({
   useEffect(() => {
     const autoSave = localStorage.getItem("habu-auto-save") === "true";
     if (autoSave && initialUrl && hasHatena) {
-      // Auto-save the bookmark
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+      // Auto-save the bookmark immediately on mount
       handleSave();
     }
-  }, [handleSave, initialUrl, hasHatena]);
+    // Only run once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <Card className="w-full max-w-md">

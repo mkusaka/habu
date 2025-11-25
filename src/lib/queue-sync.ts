@@ -7,8 +7,25 @@ import {
 } from "@/lib/queue-db";
 import type { BookmarkRequest, BookmarkResponse } from "@/types/habu";
 
+// Track ongoing sync to prevent duplicate execution
+let syncInProgress = false;
+
 // Sync queue with server
 export async function syncQueue(): Promise<void> {
+  if (syncInProgress) {
+    console.log("Sync already in progress, skipping");
+    return;
+  }
+
+  syncInProgress = true;
+  try {
+    await performSync();
+  } finally {
+    syncInProgress = false;
+  }
+}
+
+async function performSync(): Promise<void> {
   const items = await getQueuedItems();
 
   for (const item of items) {
@@ -30,6 +47,7 @@ export async function syncQueue(): Promise<void> {
           comment: item.comment,
         } as BookmarkRequest),
         signal: AbortSignal.timeout(30000),
+        keepalive: true, // Allow request to complete even if page is closed
       });
 
       const result: BookmarkResponse = await response.json();
@@ -56,6 +74,34 @@ export async function syncQueue(): Promise<void> {
   }
 }
 
+// Register background sync with Service Worker
+export async function registerBackgroundSync(): Promise<boolean> {
+  if (!("serviceWorker" in navigator) || !("sync" in ServiceWorkerRegistration.prototype)) {
+    console.warn("Background Sync not supported");
+    return false;
+  }
+
+  try {
+    // Timeout after 1 second to avoid blocking if SW is not ready
+    const registration = await Promise.race([
+      navigator.serviceWorker.ready,
+      new Promise<null>((_, reject) =>
+        setTimeout(() => reject(new Error("Service Worker ready timeout")), 1000)
+      ),
+    ]);
+
+    if (!registration) {
+      return false;
+    }
+
+    await registration.sync.register("bookmark-sync");
+    return true;
+  } catch (error) {
+    console.error("Failed to register background sync:", error);
+    return false;
+  }
+}
+
 // Add bookmark optimistically
 export async function saveBookmarkOptimistic(
   url: string,
@@ -65,10 +111,9 @@ export async function saveBookmarkOptimistic(
   // Add to IndexedDB queue
   const id = await addToQueueDb(url, title, comment);
 
-  // Trigger sync in background (don't wait)
-  syncQueue().catch((error) => {
-    console.error("Background sync failed:", error);
-  });
+  // Register Background Sync (browser will trigger sync event)
+  // Fire-and-forget: don't block on registration
+  registerBackgroundSync().catch(console.error);
 
   return id;
 }

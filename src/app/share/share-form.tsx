@@ -38,9 +38,7 @@ export function ShareForm({
 
     setSaving(true);
     try {
-      toast.info("1: before saveBookmarkOptimistic");
       await saveBookmarkOptimistic(url, title, comment);
-      toast.info("2: after saveBookmarkOptimistic");
       toast.success("Bookmark saved!");
 
       // Background Sync is already registered, safe to close immediately
@@ -52,9 +50,8 @@ export function ShareForm({
       router.replace("/saved");
     } catch (error) {
       console.error("Failed to save bookmark:", error);
-      toast.error("Failed to save bookmark: " + error);
+      toast.error("Failed to save bookmark");
     } finally {
-      toast.info("3: finally block");
       setSaving(false);
     }
   };

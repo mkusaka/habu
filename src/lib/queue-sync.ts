@@ -108,14 +108,23 @@ export async function saveBookmarkOptimistic(
   title?: string,
   comment?: string
 ): Promise<number> {
-  // Add to IndexedDB queue
-  const id = await addToQueueDb(url, title, comment);
+  try {
+    // Add to IndexedDB queue
+    const id = await addToQueueDb(url, title, comment);
 
-  // Register Background Sync (browser will trigger sync event)
-  // Fire-and-forget: don't block on registration
-  registerBackgroundSync().catch(console.error);
+    // Register Background Sync (browser will trigger sync event)
+    // Fire-and-forget: don't block on registration
+    registerBackgroundSync().catch((error) => {
+      console.error("Background Sync registration failed:", error);
+      // Not critical - periodic sync will handle it
+    });
 
-  return id;
+    return id;
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : "Unknown error saving to queue";
+    console.error("Failed to save bookmark to queue:", errorMessage, error);
+    throw new Error(errorMessage);
+  }
 }
 
 // Setup background sync

@@ -231,13 +231,19 @@ export default function QueuePage() {
                         </div>
                       )}
                       {item.lastError && (
-                        <div className="text-xs text-red-500 mt-1">
-                          Error: {item.lastError}
+                        <div className="text-xs text-red-600 mt-1 p-2 bg-red-50 rounded border border-red-200">
+                          <span className="font-semibold">Error:</span> {item.lastError}
                         </div>
                       )}
                       <div className="text-xs text-muted-foreground mt-1">
                         {getStatusText(item.status)} •{" "}
                         {new Date(item.createdAt).toLocaleString()}
+                        {item.retryCount > 0 && ` • Retry ${item.retryCount}`}
+                        {item.nextRetryAt && item.status === "error" && (
+                          <span>
+                            {" "}• Next retry: {new Date(item.nextRetryAt).toLocaleTimeString()}
+                          </span>
+                        )}
                       </div>
                     </div>
                     <div className="flex gap-1">

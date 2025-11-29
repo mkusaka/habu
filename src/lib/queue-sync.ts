@@ -103,17 +103,19 @@ export async function registerBackgroundSync(): Promise<boolean> {
 }
 
 // Notify Service Worker to sync immediately
-async function notifyServiceWorkerToSync(): Promise<void> {
+function notifyServiceWorkerToSync(): void {
   if (!("serviceWorker" in navigator)) {
     console.warn("Service Worker not supported");
     return;
   }
 
-  try {
-    const registration = await navigator.serviceWorker.ready;
-    registration.active?.postMessage({ type: "sync-now" });
-  } catch (error) {
-    console.error("Failed to notify Service Worker:", error);
+  // Use controller for immediate postMessage without waiting for ready
+  const controller = navigator.serviceWorker.controller;
+  if (controller) {
+    console.log("Sending sync-now message to SW");
+    controller.postMessage({ type: "sync-now" });
+  } else {
+    console.warn("No active Service Worker controller");
   }
 }
 
@@ -129,9 +131,7 @@ export async function saveBookmarkOptimistic(
 
     // Notify SW to sync immediately via postMessage
     // This wakes up the SW and triggers sync right away
-    notifyServiceWorkerToSync().catch((error) => {
-      console.error("Failed to notify SW for sync:", error);
-    });
+    notifyServiceWorkerToSync();
 
     // Also register Background Sync as fallback for offline scenarios
     registerBackgroundSync().catch((error) => {

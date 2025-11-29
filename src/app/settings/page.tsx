@@ -49,7 +49,7 @@ async function SettingsContent({ searchParams }: SettingsContentProps) {
     <>
       <ToastHandler error={params.error} success={params.success} />
       <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
-        <div className="w-full max-w-2xl space-y-4">
+        <div className="w-full max-w-lg space-y-4">
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">

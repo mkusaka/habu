@@ -20,7 +20,7 @@ export default function SavedPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
-      <Card className="w-full max-w-md text-center">
+      <Card className="w-full max-w-lg text-center">
         <CardHeader>
           <div className="flex justify-center mb-4">
             <CheckCircle2 className="w-16 h-16 text-green-500" />

@@ -9,7 +9,7 @@ import {
   deleteQueueItem,
   clearCompletedItems,
 } from "@/lib/queue-db";
-import { syncQueue } from "@/lib/queue-sync";
+import { triggerSync } from "@/lib/queue-sync";
 import type { BookmarkQueue } from "@/types/habu";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -40,8 +40,8 @@ export default function QueuePage() {
   const handleSync = async () => {
     setSyncing(true);
     try {
-      await syncQueue();
-      toast.success("Queue synced!");
+      await triggerSync();
+      toast.success("Sync triggered");
     } catch (error) {
       console.error("Sync failed:", error);
       toast.error("Sync failed");

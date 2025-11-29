@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { saveBookmarkOptimistic } from "@/lib/queue-sync";
+import { saveBookmark } from "@/lib/queue-sync";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -69,16 +69,23 @@ export function ShareForm({
 
     setSaving(true);
     try {
-      await saveBookmarkOptimistic(url, title, comment);
-      toast.success("Bookmark saved!");
+      const result = await saveBookmark(url, title, comment);
 
-      // Background Sync is already registered, safe to close immediately
-      // keepalive fetch + Background Sync API ensure delivery even after window closes
-      window.close();
+      if (result.success) {
+        if (result.queued) {
+          toast.success("Bookmark queued (will sync when online)");
+        } else {
+          toast.success("Bookmark saved!");
+        }
 
-      // If window.close() didn't work (popup blocker or same tab), redirect
-      // Note: if window closes, this won't execute
-      router.replace("/saved");
+        // Safe to close - SW handles retry if needed
+        window.close();
+
+        // If window.close() didn't work (popup blocker or same tab), redirect
+        router.replace("/saved");
+      } else {
+        toast.error(result.error || "Failed to save bookmark");
+      }
     } catch (error) {
       console.error("Failed to save bookmark:", error);
       toast.error("Failed to save bookmark");

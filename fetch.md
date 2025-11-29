@@ -39,6 +39,14 @@ Creates a bookmark on Hatena Bookmark service.
 }
 ```
 
+**Queued (202 Accepted) - Synthetic response from Service Worker when offline:**
+```json
+{
+  "success": true,
+  "queued": true
+}
+```
+
 **Error Responses:**
 
 | Status | Body | Description |
@@ -72,47 +80,96 @@ curl 'https://habu.polyfill.workers.dev/api/habu/bookmark' \
 
 ---
 
-## Client-Side Fetch Implementation
+## Architecture Overview
 
-### From Service Worker (`sw.ts`)
+The bookmark saving flow uses **Service Worker fetch interception** for offline-first reliability:
 
-```typescript
-const response = await fetch("/api/habu/bookmark", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-  },
-  credentials: "include",  // Include session cookies
-  body: JSON.stringify({
-    url: item.url,
-    comment: item.comment,
-  }),
-  signal: AbortSignal.timeout(30000),  // 30 second timeout
-  keepalive: true,  // Allow request to complete even if page closes
-});
-
-const result = await response.json();
-// result: { success: boolean; error?: string }
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                         Client (Browser)                         │
+│  ┌──────────────┐     ┌─────────────────────────────────────┐   │
+│  │  Share Form  │────>│  fetch("/api/habu/bookmark", {...}) │   │
+│  └──────────────┘     │  keepalive: true                     │   │
+│                        └───────────────┬─────────────────────┘   │
+└────────────────────────────────────────┼─────────────────────────┘
+                                         │
+┌────────────────────────────────────────┼─────────────────────────┐
+│                    Service Worker (sw.ts)                         │
+│                                        ▼                          │
+│  ┌─────────────────────────────────────────────────────────────┐ │
+│  │              Fetch Event Handler                              │ │
+│  │  1. Parse request body                                        │ │
+│  │  2. Save to IndexedDB (status: "sending")                     │ │
+│  │  3. If online → forward to server                             │ │
+│  │     - On success → update to "done"                           │ │
+│  │     - On error → update to "queued", register Background Sync │ │
+│  │  4. If offline → update to "queued", register Background Sync │ │
+│  │     Return synthetic: { success: true, queued: true }         │ │
+│  └─────────────────────────────────────────────────────────────┘ │
+│                                                                   │
+│  ┌─────────────────────────────────────────────────────────────┐ │
+│  │           Background Sync Event Handler                       │ │
+│  │  Triggered when browser comes online:                         │ │
+│  │  1. Get queued/error items from IndexedDB                     │ │
+│  │  2. Send each to server                                       │ │
+│  │  3. Update status (done/error with retry scheduling)          │ │
+│  └─────────────────────────────────────────────────────────────┘ │
+└───────────────────────────────────────────────────────────────────┘
+                                         │
+                                         ▼
+┌───────────────────────────────────────────────────────────────────┐
+│                    Server (Cloudflare Workers)                     │
+│  POST /api/habu/bookmark                                           │
+│  1. Validate session cookie                                        │
+│  2. Get Hatena tokens from D1                                      │
+│  3. Sign request with OAuth 1.0a                                   │
+│  4. Call Hatena Bookmark API                                       │
+│  5. Return { success: true/false }                                 │
+└───────────────────────────────────────────────────────────────────┘
 ```
 
-### From Client (`queue-sync.ts`)
+---
+
+## Client-Side Implementation
+
+### Save Bookmark (`queue-sync.ts`)
 
 ```typescript
-const response = await fetch("/api/habu/bookmark", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-  },
-  credentials: "include",
-  body: JSON.stringify({
-    url: item.url,
-    comment: item.comment,
-  } as BookmarkRequest),
-  signal: AbortSignal.timeout(30000),
-  keepalive: true,
-});
+export async function saveBookmark(
+  url: string,
+  title?: string,
+  comment?: string
+): Promise<BookmarkResponse & { queued?: boolean }> {
+  const response = await fetch("/api/habu/bookmark", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+    body: JSON.stringify({ url, title, comment }),
+    keepalive: true, // Allow request to complete even if page closes
+  });
 
-const result: BookmarkResponse = await response.json();
+  return response.json();
+}
+```
+
+### Usage in Components
+
+```typescript
+const result = await saveBookmark(url, title, comment);
+
+if (result.success) {
+  if (result.queued) {
+    // Saved offline, will sync when online
+    toast.success("Bookmark queued (will sync when online)");
+  } else {
+    // Saved immediately
+    toast.success("Bookmark saved!");
+  }
+} else {
+  toast.error(result.error || "Failed to save bookmark");
+}
 ```
 
 ---
@@ -124,6 +181,7 @@ const result: BookmarkResponse = await response.json();
 
 export interface BookmarkRequest {
   url: string;
+  title?: string;
   comment?: string;
 }
 
@@ -149,7 +207,7 @@ export interface BookmarkResponse {
 
 ## Rate Limiting & Retry
 
-The client implements exponential backoff for failed requests:
+The Service Worker implements exponential backoff for failed requests:
 
 | Retry Count | Delay |
 |-------------|-------|
@@ -159,7 +217,5 @@ The client implements exponential backoff for failed requests:
 | 4+ | 60 minutes |
 
 Retry is triggered by:
-- 30-second polling (`startBackgroundSync`)
-- Browser online event
-- Page visibility change
-- Manual "Sync Now" button
+- **Background Sync API** (automatic when browser comes online)
+- Manual "Sync Now" button on Queue page

@@ -8,12 +8,7 @@ interface ActionButtonProps extends Omit<ComponentProps<typeof Button>, "onClick
   children?: ReactNode;
 }
 
-export function ActionButton({
-  action,
-  children,
-  disabled,
-  ...props
-}: ActionButtonProps) {
+export function ActionButton({ action, children, disabled, ...props }: ActionButtonProps) {
   const [isPending, startTransition] = useTransition();
 
   const handleClick = () => {

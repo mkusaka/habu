@@ -25,9 +25,7 @@ export async function disconnectHatena() {
 
   // Delete Hatena tokens from database
   const db = getDb(env.DB);
-  await db
-    .delete(hatenaTokens)
-    .where(eq(hatenaTokens.userId, session.user.id));
+  await db.delete(hatenaTokens).where(eq(hatenaTokens.userId, session.user.id));
 
   redirect("/settings?success=hatena_disconnected");
 }

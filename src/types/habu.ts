@@ -14,7 +14,7 @@ export interface HabuUser {
 }
 
 // IndexedDB Queue types
-export type QueueStatus = 'queued' | 'sending' | 'done' | 'error';
+export type QueueStatus = "queued" | "sending" | "done" | "error";
 
 export interface BookmarkQueue {
   id?: number;

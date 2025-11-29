@@ -6,50 +6,48 @@ import { ServiceWorkerRegister } from "@/components/sw-register";
 import { BackgroundSyncFallback } from "@/components/background-sync";
 
 const geistSans = Geist({
-	variable: "--font-geist-sans",
-	subsets: ["latin"],
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
 });
 
 const geistMono = Geist_Mono({
-	variable: "--font-geist-mono",
-	subsets: ["latin"],
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
-	title: "habu - Hatena Bookmark Utility",
-	description: "Quick bookmark saving to Hatena Bookmark",
-	manifest: "/manifest.json",
-	appleWebApp: {
-		capable: true,
-		statusBarStyle: "default",
-		title: "habu",
-	},
+  title: "habu - Hatena Bookmark Utility",
+  description: "Quick bookmark saving to Hatena Bookmark",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "habu",
+  },
 };
 
 export const viewport = {
-	themeColor: "#000000",
+  themeColor: "#000000",
 };
 
 export default function RootLayout({
-	children,
+  children,
 }: Readonly<{
-	children: React.ReactNode;
+  children: React.ReactNode;
 }>) {
-	return (
-		<html lang="ja">
-			<head>
-				<link rel="icon" href="/favicon.svg" type="image/svg+xml"></link>
-			</head>
-			<body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-				<ServiceWorkerRegister />
-				<BackgroundSyncFallback />
-				<main className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
-					<div className="w-full max-w-lg">
-						{children}
-					</div>
-				</main>
-				<Toaster />
-			</body>
-		</html>
-	);
+  return (
+    <html lang="ja">
+      <head>
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml"></link>
+      </head>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <ServiceWorkerRegister />
+        <BackgroundSyncFallback />
+        <main className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
+          <div className="w-full max-w-lg">{children}</div>
+        </main>
+        <Toaster />
+      </body>
+    </html>
+  );
 }

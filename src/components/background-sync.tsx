@@ -13,8 +13,8 @@ import { triggerSync } from "@/lib/queue-sync";
 export function BackgroundSyncFallback() {
   useEffect(() => {
     // Check if Background Sync is supported
-    const hasBackgroundSync = "serviceWorker" in navigator &&
-      "sync" in (ServiceWorkerRegistration.prototype);
+    const hasBackgroundSync =
+      "serviceWorker" in navigator && "sync" in ServiceWorkerRegistration.prototype;
 
     // If Background Sync is supported, we don't need this fallback
     if (hasBackgroundSync) {

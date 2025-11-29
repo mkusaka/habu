@@ -24,11 +24,7 @@ export function AutoSaveToggle() {
           Automatically save shared URLs without showing the form
         </p>
       </div>
-      <Switch
-        id="auto-save"
-        checked={autoSave}
-        onCheckedChange={handleToggle}
-      />
+      <Switch id="auto-save" checked={autoSave} onCheckedChange={handleToggle} />
     </div>
   );
 }

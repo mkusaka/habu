@@ -35,60 +35,48 @@ export default async function Home() {
   }
 
   return (
-        <Card className="w-full">
-          <CardHeader className="text-center">
-            <div className="flex justify-center mb-4">
-              <Bookmark className="w-16 h-16 text-primary" />
-            </div>
-            <CardTitle className="text-2xl">habu</CardTitle>
-            <p className="text-sm text-muted-foreground">
-              Quick bookmark saving to Hatena Bookmark
-            </p>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {!hasHatena && (
-              <OAuthButton url="/api/habu/oauth/start" className="w-full" size="lg">
-                <ExternalLink className="w-5 h-5 mr-2" />
-                Connect Hatena
-              </OAuthButton>
-            )}
-            <LinkButton
-              href="/share"
-              className="w-full"
-              size="lg"
-              disabled={!hasHatena}
-            >
-              <Plus className="w-5 h-5 mr-2" />
-              Add Bookmark
-            </LinkButton>
-            <LinkButton
-              href="/queue"
-              variant="outline"
-              className="w-full"
-              size="lg"
-              disabled={!hasHatena}
-            >
-              <List className="w-5 h-5 mr-2" />
-              View Queue
-            </LinkButton>
-            <LinkButton
-              href="/settings"
-              variant="outline"
-              className="w-full"
-              size="lg"
-            >
-              <Settings className="w-5 h-5 mr-2" />
-              Settings
-            </LinkButton>
+    <Card className="w-full">
+      <CardHeader className="text-center">
+        <div className="flex justify-center mb-4">
+          <Bookmark className="w-16 h-16 text-primary" />
+        </div>
+        <CardTitle className="text-2xl">habu</CardTitle>
+        <p className="text-sm text-muted-foreground">Quick bookmark saving to Hatena Bookmark</p>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {!hasHatena && (
+          <OAuthButton url="/api/habu/oauth/start" className="w-full" size="lg">
+            <ExternalLink className="w-5 h-5 mr-2" />
+            Connect Hatena
+          </OAuthButton>
+        )}
+        <LinkButton href="/share" className="w-full" size="lg" disabled={!hasHatena}>
+          <Plus className="w-5 h-5 mr-2" />
+          Add Bookmark
+        </LinkButton>
+        <LinkButton
+          href="/queue"
+          variant="outline"
+          className="w-full"
+          size="lg"
+          disabled={!hasHatena}
+        >
+          <List className="w-5 h-5 mr-2" />
+          View Queue
+        </LinkButton>
+        <LinkButton href="/settings" variant="outline" className="w-full" size="lg">
+          <Settings className="w-5 h-5 mr-2" />
+          Settings
+        </LinkButton>
 
-            <div className="pt-4 text-center">
-              <p className="text-xs text-muted-foreground">
-                {hasHatena
-                  ? "Share any page to habu for quick bookmarking!"
-                  : "Connect your Hatena account to start bookmarking"}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="pt-4 text-center">
+          <p className="text-xs text-muted-foreground">
+            {hasHatena
+              ? "Share any page to habu for quick bookmarking!"
+              : "Connect your Hatena account to start bookmarking"}
+          </p>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

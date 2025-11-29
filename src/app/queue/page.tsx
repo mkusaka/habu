@@ -3,11 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
-import {
-  db,
-  deleteQueueItem,
-  clearCompletedItems,
-} from "@/lib/queue-db";
+import { db, deleteQueueItem, clearCompletedItems } from "@/lib/queue-db";
 import { triggerSync } from "@/lib/queue-sync";
 import type { BookmarkQueue } from "@/types/habu";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,10 +25,7 @@ export default function QueuePage() {
   const [syncing, setSyncing] = useState(false);
 
   // Use live query to automatically update when IndexedDB changes
-  const items = useLiveQuery(
-    () => db.bookmarks.orderBy("createdAt").reverse().toArray(),
-    []
-  );
+  const items = useLiveQuery(() => db.bookmarks.orderBy("createdAt").reverse().toArray(), []);
 
   const loading = items === undefined;
 
@@ -149,141 +142,116 @@ export default function QueuePage() {
   const queuedCount = items.filter((item) => item.status === "queued").length;
 
   return (
-      <div className="w-full space-y-4">
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>Bookmark Queue</CardTitle>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => router.push("/")}
-              >
-                <Home className="w-5 h-5" />
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex gap-2">
-              <Button
-                onClick={handleSync}
-                disabled={syncing}
-                className="flex-1"
-              >
-                {syncing ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Syncing...
-                  </>
-                ) : (
-                  <>
-                    <RefreshCw className="w-4 h-4 mr-2" />
-                    Sync Now
-                  </>
-                )}
-              </Button>
-              {completedCount > 0 && (
-                <Button
-                  variant="outline"
-                  onClick={handleClearCompleted}
-                >
-                  Clear Completed
-                </Button>
+    <div className="w-full space-y-4">
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>Bookmark Queue</CardTitle>
+            <Button variant="ghost" size="icon" onClick={() => router.push("/")}>
+              <Home className="w-5 h-5" />
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex gap-2">
+            <Button onClick={handleSync} disabled={syncing} className="flex-1">
+              {syncing ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Syncing...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Sync Now
+                </>
               )}
-            </div>
+            </Button>
+            {completedCount > 0 && (
+              <Button variant="outline" onClick={handleClearCompleted}>
+                Clear Completed
+              </Button>
+            )}
+          </div>
 
-            <div className="grid grid-cols-3 gap-2 text-center text-sm">
-              <div>
-                <div className="font-semibold">{queuedCount}</div>
-                <div className="text-muted-foreground">Queued</div>
-              </div>
-              <div>
-                <div className="font-semibold">{completedCount}</div>
-                <div className="text-muted-foreground">Saved</div>
-              </div>
-              <div>
-                <div className="font-semibold">{errorCount}</div>
-                <div className="text-muted-foreground">Errors</div>
-              </div>
+          <div className="grid grid-cols-3 gap-2 text-center text-sm">
+            <div>
+              <div className="font-semibold">{queuedCount}</div>
+              <div className="text-muted-foreground">Queued</div>
             </div>
+            <div>
+              <div className="font-semibold">{completedCount}</div>
+              <div className="text-muted-foreground">Saved</div>
+            </div>
+            <div>
+              <div className="font-semibold">{errorCount}</div>
+              <div className="text-muted-foreground">Errors</div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {items.length === 0 ? (
+        <Card>
+          <CardContent className="py-8 text-center text-muted-foreground">
+            No bookmarks in queue
           </CardContent>
         </Card>
-
-        {items.length === 0 ? (
-          <Card>
-            <CardContent className="py-8 text-center text-muted-foreground">
-              No bookmarks in queue
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="space-y-2">
-            {items.map((item, index) => (
-              <Card key={item.id || index}>
-                <CardContent className="py-4">
-                  <div className="flex items-start gap-3">
-                    <div className="mt-1">{getStatusIcon(item.status)}</div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium truncate">
-                        {item.title || item.url}
+      ) : (
+        <div className="space-y-2">
+          {items.map((item, index) => (
+            <Card key={item.id || index}>
+              <CardContent className="py-4">
+                <div className="flex items-start gap-3">
+                  <div className="mt-1">{getStatusIcon(item.status)}</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium truncate">{item.title || item.url}</div>
+                    <div className="text-xs text-muted-foreground truncate">{item.url}</div>
+                    {item.comment && (
+                      <div className="text-xs text-muted-foreground mt-1">{item.comment}</div>
+                    )}
+                    {item.lastError && (
+                      <div className="text-xs text-red-600 mt-1 p-2 bg-red-50 rounded border border-red-200">
+                        <span className="font-semibold">Error:</span> {item.lastError}
                       </div>
-                      <div className="text-xs text-muted-foreground truncate">
-                        {item.url}
-                      </div>
-                      {item.comment && (
-                        <div className="text-xs text-muted-foreground mt-1">
-                          {item.comment}
-                        </div>
-                      )}
-                      {item.lastError && (
-                        <div className="text-xs text-red-600 mt-1 p-2 bg-red-50 rounded border border-red-200">
-                          <span className="font-semibold">Error:</span> {item.lastError}
-                        </div>
-                      )}
-                      <div className="text-xs text-muted-foreground mt-1">
-                        {getStatusText(item.status)} •{" "}
-                        {new Date(item.createdAt).toLocaleString()}
-                        {item.retryCount > 0 && ` • Retry ${item.retryCount}`}
-                        {item.nextRetryAt && item.status === "error" && (
-                          <span>
-                            {" "}• Next retry: {new Date(item.nextRetryAt).toLocaleTimeString()}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleCopyUrl(item.url)}
-                        title="Copy URL"
-                      >
-                        <Copy className="w-4 h-4" />
-                      </Button>
-                      {item.status === "error" && item.id && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleRetry(item.id!)}
-                        >
-                          <RefreshCw className="w-4 h-4" />
-                        </Button>
-                      )}
-                      {item.id && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDelete(item.id!)}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                    )}
+                    <div className="text-xs text-muted-foreground mt-1">
+                      {getStatusText(item.status)} • {new Date(item.createdAt).toLocaleString()}
+                      {item.retryCount > 0 && ` • Retry ${item.retryCount}`}
+                      {item.nextRetryAt && item.status === "error" && (
+                        <span>
+                          {" "}
+                          • Next retry: {new Date(item.nextRetryAt).toLocaleTimeString()}
+                        </span>
                       )}
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-      </div>
+                  <div className="flex gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleCopyUrl(item.url)}
+                      title="Copy URL"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </Button>
+                    {item.status === "error" && item.id && (
+                      <Button variant="ghost" size="icon" onClick={() => handleRetry(item.id!)}>
+                        <RefreshCw className="w-4 h-4" />
+                      </Button>
+                    )}
+                    {item.id && (
+                      <Button variant="ghost" size="icon" onClick={() => handleDelete(item.id!)}>
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }

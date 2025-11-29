@@ -38,9 +38,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error("Status check error:", error);
-    return NextResponse.json(
-      { authenticated: false, hasHatena: false },
-      { status: 500 }
-    );
+    return NextResponse.json({ authenticated: false, hasHatena: false }, { status: 500 });
   }
 }

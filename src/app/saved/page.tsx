@@ -19,26 +19,24 @@ export default function SavedPage() {
   }, [router]);
 
   return (
-      <Card className="w-full text-center">
-        <CardHeader>
-          <div className="flex justify-center mb-4">
-            <CheckCircle2 className="w-16 h-16 text-green-500" />
-          </div>
-          <CardTitle>Bookmark Saved!</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            Your bookmark has been added to the queue and will be synced to Hatena Bookmark.
-          </p>
-          <div className="flex flex-col gap-2">
-            <Button onClick={() => router.push("/queue")}>
-              View Queue
-            </Button>
-            <Button variant="outline" onClick={() => router.push("/")}>
-              Go Home
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+    <Card className="w-full text-center">
+      <CardHeader>
+        <div className="flex justify-center mb-4">
+          <CheckCircle2 className="w-16 h-16 text-green-500" />
+        </div>
+        <CardTitle>Bookmark Saved!</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <p className="text-sm text-muted-foreground">
+          Your bookmark has been added to the queue and will be synced to Hatena Bookmark.
+        </p>
+        <div className="flex flex-col gap-2">
+          <Button onClick={() => router.push("/queue")}>View Queue</Button>
+          <Button variant="outline" onClick={() => router.push("/")}>
+            Go Home
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

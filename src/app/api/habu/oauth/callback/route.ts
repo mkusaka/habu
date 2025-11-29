@@ -10,9 +10,13 @@ import CryptoJS from "crypto-js";
 const OAUTH_STATE_SECRET = process.env.BETTER_AUTH_SECRET || "change-this-secret-in-production";
 
 // Decrypt OAuth state
-function decryptOAuthState(encrypted: string): { token: string; tokenSecret: string; returnTo?: string } | null {
+function decryptOAuthState(
+  encrypted: string,
+): { token: string; tokenSecret: string; returnTo?: string } | null {
   try {
-    const decrypted = CryptoJS.AES.decrypt(encrypted, OAUTH_STATE_SECRET).toString(CryptoJS.enc.Utf8);
+    const decrypted = CryptoJS.AES.decrypt(encrypted, OAUTH_STATE_SECRET).toString(
+      CryptoJS.enc.Utf8,
+    );
     return JSON.parse(decrypted);
   } catch {
     return null;
@@ -26,27 +30,21 @@ export async function GET(request: NextRequest) {
     const oauthVerifier = searchParams.get("oauth_verifier");
 
     if (!oauthToken || !oauthVerifier) {
-      return NextResponse.redirect(
-        new URL("/settings?error=missing_params", request.url)
-      );
+      return NextResponse.redirect(new URL("/settings?error=missing_params", request.url));
     }
 
     // Get encrypted OAuth state from cookie
     const encryptedState = request.cookies.get("habu_oauth_state")?.value;
 
     if (!encryptedState) {
-      return NextResponse.redirect(
-        new URL("/settings?error=state_missing", request.url)
-      );
+      return NextResponse.redirect(new URL("/settings?error=state_missing", request.url));
     }
 
     // Decrypt OAuth state
     const oauthState = decryptOAuthState(encryptedState);
 
     if (!oauthState) {
-      return NextResponse.redirect(
-        new URL("/settings?error=state_invalid", request.url)
-      );
+      return NextResponse.redirect(new URL("/settings?error=state_invalid", request.url));
     }
 
     const { token: storedToken, tokenSecret, returnTo = "/settings" } = oauthState;
@@ -54,16 +52,14 @@ export async function GET(request: NextRequest) {
     // Verify that the callback token matches the request token we initiated
     // This prevents token fixation attacks
     if (oauthToken !== storedToken) {
-      return NextResponse.redirect(
-        new URL("/settings?error=token_mismatch", request.url)
-      );
+      return NextResponse.redirect(new URL("/settings?error=token_mismatch", request.url));
     }
 
     // Exchange for access token
     const { accessToken, accessTokenSecret } = await getAccessToken(
       oauthToken,
       tokenSecret,
-      oauthVerifier
+      oauthVerifier,
     );
 
     // Get DB connection for auth
@@ -76,9 +72,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (!session?.user) {
-      return NextResponse.redirect(
-        new URL("/settings?error=not_authenticated", request.url)
-      );
+      return NextResponse.redirect(new URL("/settings?error=not_authenticated", request.url));
     }
 
     // Store Hatena tokens in database
@@ -114,15 +108,13 @@ export async function GET(request: NextRequest) {
 
     // Clear OAuth state cookie and redirect to return URL
     const response = NextResponse.redirect(
-      new URL(`${returnTo}?success=hatena_connected`, request.url)
+      new URL(`${returnTo}?success=hatena_connected`, request.url),
     );
     response.cookies.delete("habu_oauth_state");
 
     return response;
   } catch (error) {
     console.error("OAuth callback error:", error);
-    return NextResponse.redirect(
-      new URL("/settings?error=oauth_failed", request.url)
-    );
+    return NextResponse.redirect(new URL("/settings?error=oauth_failed", request.url));
   }
 }

@@ -19,20 +19,18 @@ export async function POST(request: NextRequest) {
 
     // Check that the request comes from our own origin
     if (origin && origin !== expectedOrigin) {
-      return NextResponse.json(
-        { success: false, error: "Invalid origin" } as BookmarkResponse,
-        { status: 403 }
-      );
+      return NextResponse.json({ success: false, error: "Invalid origin" } as BookmarkResponse, {
+        status: 403,
+      });
     }
 
     // Fallback to referer check if origin is not present
     if (!origin && referer) {
       const refererUrl = new URL(referer);
       if (refererUrl.origin !== expectedOrigin) {
-        return NextResponse.json(
-          { success: false, error: "Invalid referer" } as BookmarkResponse,
-          { status: 403 }
-        );
+        return NextResponse.json({ success: false, error: "Invalid referer" } as BookmarkResponse, {
+          status: 403,
+        });
       }
     }
 
@@ -46,10 +44,9 @@ export async function POST(request: NextRequest) {
     });
 
     if (!session?.user) {
-      return NextResponse.json(
-        { success: false, error: "Not authenticated" } as BookmarkResponse,
-        { status: 401 }
-      );
+      return NextResponse.json({ success: false, error: "Not authenticated" } as BookmarkResponse, {
+        status: 401,
+      });
     }
 
     // Get Hatena tokens from database
@@ -64,7 +61,7 @@ export async function POST(request: NextRequest) {
     if (!tokens) {
       return NextResponse.json(
         { success: false, error: "Hatena not connected" } as BookmarkResponse,
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -75,10 +72,9 @@ export async function POST(request: NextRequest) {
     const { url, comment } = body;
 
     if (!url) {
-      return NextResponse.json(
-        { success: false, error: "URL is required" } as BookmarkResponse,
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, error: "URL is required" } as BookmarkResponse, {
+        status: 400,
+      });
     }
 
     // Validate URL format
@@ -87,7 +83,7 @@ export async function POST(request: NextRequest) {
     } catch {
       return NextResponse.json(
         { success: false, error: "Invalid URL format" } as BookmarkResponse,
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -103,7 +99,7 @@ export async function POST(request: NextRequest) {
       "POST",
       hatenaAccessToken,
       hatenaAccessTokenSecret,
-      bodyParams
+      bodyParams,
     );
 
     // Make request to Hatena Bookmark API
@@ -137,25 +133,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: errorMessage
+          error: errorMessage,
         } as BookmarkResponse,
-        { status: response.status }
+        { status: response.status },
       );
     }
 
     // Success
-    return NextResponse.json(
-      { success: true } as BookmarkResponse,
-      { status: 200 }
-    );
+    return NextResponse.json({ success: true } as BookmarkResponse, { status: 200 });
   } catch (error) {
     console.error("Bookmark API error:", error);
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : "Internal server error"
+        error: error instanceof Error ? error.message : "Internal server error",
       } as BookmarkResponse,
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

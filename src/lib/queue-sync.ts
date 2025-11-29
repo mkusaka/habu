@@ -19,7 +19,7 @@ import type { BookmarkRequest, BookmarkResponse } from "@/types/habu";
 export async function saveBookmark(
   url: string,
   title?: string,
-  comment?: string
+  comment?: string,
 ): Promise<BookmarkResponse & { queued?: boolean }> {
   const response = await fetch("/api/habu/bookmark", {
     method: "POST",

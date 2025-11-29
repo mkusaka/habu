@@ -7,7 +7,11 @@ import CryptoJS from "crypto-js";
 const OAUTH_STATE_SECRET = process.env.BETTER_AUTH_SECRET || "change-this-secret-in-production";
 
 // Encrypt OAuth state to prevent token fixation attacks
-function encryptOAuthState(data: { token: string; tokenSecret: string; returnTo?: string }): string {
+function encryptOAuthState(data: {
+  token: string;
+  tokenSecret: string;
+  returnTo?: string;
+}): string {
   return CryptoJS.AES.encrypt(JSON.stringify(data), OAUTH_STATE_SECRET).toString();
 }
 
@@ -64,9 +68,6 @@ export async function GET(request: NextRequest) {
     return response;
   } catch (error) {
     console.error("OAuth start error:", error);
-    return NextResponse.json(
-      { error: "Failed to start OAuth flow" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to start OAuth flow" }, { status: 500 });
   }
 }

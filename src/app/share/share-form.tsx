@@ -29,12 +29,7 @@ function isValidUrl(urlString: string): boolean {
   }
 }
 
-export function ShareForm({
-  initialUrl,
-  initialTitle,
-  initialComment,
-  hasHatena,
-}: ShareFormProps) {
+export function ShareForm({ initialUrl, initialTitle, initialComment, hasHatena }: ShareFormProps) {
   const router = useRouter();
   const [url, setUrl] = useState(initialUrl);
   const [title, setTitle] = useState(initialTitle);
@@ -133,9 +128,7 @@ export function ShareForm({
             disabled={saving}
             className={urlError ? "border-red-500 focus-visible:ring-red-500" : ""}
           />
-          {urlError && (
-            <p className="text-sm text-red-500">{urlError}</p>
-          )}
+          {urlError && <p className="text-sm text-red-500">{urlError}</p>}
         </div>
         <div className="space-y-2">
           <Label htmlFor="title">Title (optional)</Label>
@@ -165,11 +158,7 @@ export function ShareForm({
           >
             {saving ? "Saving..." : "Save"}
           </Button>
-          <Button
-            variant="outline"
-            onClick={() => router.push("/")}
-            disabled={saving}
-          >
+          <Button variant="outline" onClick={() => router.push("/")} disabled={saving}>
             Cancel
           </Button>
         </div>

@@ -97,7 +97,7 @@ async function handleBookmarkRequest(event: FetchEvent): Promise<Response> {
 
   try {
     // Parse request body to get bookmark data
-    const body = await request.json() as { url: string; title?: string; comment?: string };
+    const body = (await request.json()) as { url: string; title?: string; comment?: string };
 
     // Save to IndexedDB first (for UI tracking)
     const queueId = await db.bookmarks.add({
@@ -120,7 +120,7 @@ async function handleBookmarkRequest(event: FetchEvent): Promise<Response> {
           body: await originalRequest.text(),
           credentials: "include",
         });
-        const result = await response.clone().json() as { success: boolean; error?: string };
+        const result = (await response.clone().json()) as { success: boolean; error?: string };
 
         if (result.success) {
           // Success - update status to done
@@ -161,13 +161,10 @@ async function handleBookmarkRequest(event: FetchEvent): Promise<Response> {
         event.waitUntil(registerBackgroundSync());
 
         // Return synthetic success response (queued)
-        return new Response(
-          JSON.stringify({ success: true, queued: true }),
-          {
-            status: 202,
-            headers: { "Content-Type": "application/json" },
-          }
-        );
+        return new Response(JSON.stringify({ success: true, queued: true }), {
+          status: 202,
+          headers: { "Content-Type": "application/json" },
+        });
       }
     } else {
       // Offline - queue for later
@@ -181,23 +178,17 @@ async function handleBookmarkRequest(event: FetchEvent): Promise<Response> {
       event.waitUntil(registerBackgroundSync());
 
       // Return synthetic success response (queued)
-      return new Response(
-        JSON.stringify({ success: true, queued: true }),
-        {
-          status: 202,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
+      return new Response(JSON.stringify({ success: true, queued: true }), {
+        status: 202,
+        headers: { "Content-Type": "application/json" },
+      });
     }
   } catch (error) {
     console.error("SW: Error handling bookmark request:", error);
-    return new Response(
-      JSON.stringify({ success: false, error: "Failed to process request" }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      }
-    );
+    return new Response(JSON.stringify({ success: false, error: "Failed to process request" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 }
 
@@ -223,18 +214,20 @@ let syncInProgress = false;
 self.addEventListener("sync", (event: SyncEvent) => {
   if (event.tag === "bookmark-sync") {
     console.log("SW: Background Sync triggered");
-    event.waitUntil((async () => {
-      if (syncInProgress) {
-        console.log("SW: Sync already in progress, skipping");
-        return;
-      }
-      syncInProgress = true;
-      try {
-        await processQueue();
-      } finally {
-        syncInProgress = false;
-      }
-    })());
+    event.waitUntil(
+      (async () => {
+        if (syncInProgress) {
+          console.log("SW: Sync already in progress, skipping");
+          return;
+        }
+        syncInProgress = true;
+        try {
+          await processQueue();
+        } finally {
+          syncInProgress = false;
+        }
+      })(),
+    );
   }
 });
 
@@ -243,18 +236,20 @@ self.addEventListener("message", (event: SWMessageEvent) => {
   const data = event.data as { type?: string } | null;
   if (data?.type === "sync-now") {
     console.log("SW: Manual sync requested via message");
-    event.waitUntil((async () => {
-      if (syncInProgress) {
-        console.log("SW: Sync already in progress, skipping");
-        return;
-      }
-      syncInProgress = true;
-      try {
-        await processQueue();
-      } finally {
-        syncInProgress = false;
-      }
-    })());
+    event.waitUntil(
+      (async () => {
+        if (syncInProgress) {
+          console.log("SW: Sync already in progress, skipping");
+          return;
+        }
+        syncInProgress = true;
+        try {
+          await processQueue();
+        } finally {
+          syncInProgress = false;
+        }
+      })(),
+    );
   }
 });
 
@@ -273,9 +268,10 @@ async function processQueue(): Promise<void> {
     .where("status")
     .equals("sending")
     .filter((item) => {
-      const updatedAtTime = item.updatedAt instanceof Date
-        ? item.updatedAt.getTime()
-        : new Date(item.updatedAt).getTime();
+      const updatedAtTime =
+        item.updatedAt instanceof Date
+          ? item.updatedAt.getTime()
+          : new Date(item.updatedAt).getTime();
       return now - updatedAtTime > SENDING_TIMEOUT_MS;
     })
     .toArray();
@@ -330,7 +326,7 @@ async function processQueue(): Promise<void> {
         }),
       });
 
-      const result = await response.json() as { success: boolean; error?: string };
+      const result = (await response.json()) as { success: boolean; error?: string };
 
       if (result.success && !("queued" in result)) {
         await db.bookmarks.update(item.id, {
@@ -369,10 +365,7 @@ async function processQueue(): Promise<void> {
   }
 
   // Check if there are remaining items that need retry, and re-register Background Sync
-  const remainingItems = await db.bookmarks
-    .where("status")
-    .anyOf("queued", "error")
-    .count();
+  const remainingItems = await db.bookmarks.where("status").anyOf("queued", "error").count();
 
   if (remainingItems > 0) {
     console.log(`SW: ${remainingItems} items remaining, scheduling next sync`);

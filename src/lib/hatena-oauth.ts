@@ -23,7 +23,7 @@ function createOAuthClient() {
 
 // Get request token from Hatena
 export async function getRequestToken(
-  callbackUrl: string
+  callbackUrl: string,
 ): Promise<{ token: string; tokenSecret: string }> {
   const oauth = createOAuthClient();
 
@@ -64,7 +64,9 @@ export async function getRequestToken(
   if (!response.ok) {
     const errorText = await response.text();
     console.error("[Hatena OAuth] Error Response:", errorText);
-    throw new Error(`Failed to get request token: ${response.status} ${response.statusText} - ${errorText}`);
+    throw new Error(
+      `Failed to get request token: ${response.status} ${response.statusText} - ${errorText}`,
+    );
   }
 
   const text = await response.text();
@@ -89,7 +91,7 @@ export function getAuthorizeUrl(token: string): string {
 export async function getAccessToken(
   token: string,
   tokenSecret: string,
-  verifier: string
+  verifier: string,
 ): Promise<{ accessToken: string; accessTokenSecret: string }> {
   const oauth = createOAuthClient();
 
@@ -126,7 +128,9 @@ export async function getAccessToken(
   if (!response.ok) {
     const errorText = await response.text();
     console.error("[Hatena OAuth] Access Token Error Response:", errorText);
-    throw new Error(`Failed to get access token: ${response.status} ${response.statusText} - ${errorText}`);
+    throw new Error(
+      `Failed to get access token: ${response.status} ${response.statusText} - ${errorText}`,
+    );
   }
 
   const text = await response.text();
@@ -148,7 +152,7 @@ export function createSignedRequest(
   method: string,
   accessToken: string,
   accessTokenSecret: string,
-  data?: Record<string, string>
+  data?: Record<string, string>,
 ) {
   const oauth = createOAuthClient();
 
@@ -162,7 +166,7 @@ export function createSignedRequest(
     oauth.authorize(requestData, {
       key: accessToken,
       secret: accessTokenSecret,
-    })
+    }),
   );
 
   return headers;

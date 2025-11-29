@@ -48,84 +48,80 @@ async function SettingsContent({ searchParams }: SettingsContentProps) {
   return (
     <>
       <ToastHandler error={params.error} success={params.success} />
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Settings</CardTitle>
-                <LinkButton variant="ghost" size="icon" href="/">
-                  <Home className="w-5 h-5" />
-                </LinkButton>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Hatena Connection */}
-              <div>
-                <h3 className="text-sm font-medium mb-2">Hatena Bookmark</h3>
-                <div className="flex items-center gap-2 mb-3">
-                  {hasHatena ? (
-                    <>
-                      <CheckCircle2 className="w-5 h-5 text-green-500" />
-                      <span className="text-sm">Connected</span>
-                    </>
-                  ) : (
-                    <>
-                      <AlertCircle className="w-5 h-5 text-yellow-500" />
-                      <span className="text-sm">Not connected</span>
-                    </>
-                  )}
-                </div>
-                {!hasHatena && (
-                  <>
-                    <p className="text-sm text-muted-foreground mb-3">
-                      Connect your Hatena account to save bookmarks.
-                    </p>
-                    <OAuthButton url="/api/habu/oauth/start" size="sm">
-                      <ExternalLink className="w-4 h-4 mr-2" />
-                      Connect Hatena
-                    </OAuthButton>
-                  </>
-                )}
-                {hasHatena && (
-                  <>
-                    <p className="text-sm text-muted-foreground mb-3">
-                      Your Hatena account is connected. You can now save bookmarks!
-                    </p>
-                    <div className="flex gap-2">
-                      <OAuthButton url="/api/habu/oauth/start" variant="outline" size="sm">
-                        <ExternalLink className="w-4 h-4 mr-2" />
-                        Reconnect
-                      </OAuthButton>
-                      <ActionButton
-                        action={disconnectHatena}
-                        variant="destructive"
-                        size="sm"
-                      >
-                        Disconnect
-                      </ActionButton>
-                    </div>
-                  </>
-                )}
-              </div>
-
-              <Separator />
-
-              {/* Auto-save Setting */}
-              <div>
-                <h3 className="text-sm font-medium mb-3">Preferences</h3>
-                <AutoSaveToggle />
-              </div>
-
-              <Separator />
-
-              {/* App Info */}
-              <div>
-                <h3 className="text-sm font-medium mb-2">About</h3>
-                <p className="text-sm text-muted-foreground">
-                  habu is a PWA for quickly saving bookmarks to Hatena Bookmark.
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>Settings</CardTitle>
+            <LinkButton variant="ghost" size="icon" href="/">
+              <Home className="w-5 h-5" />
+            </LinkButton>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Hatena Connection */}
+          <div>
+            <h3 className="text-sm font-medium mb-2">Hatena Bookmark</h3>
+            <div className="flex items-center gap-2 mb-3">
+              {hasHatena ? (
+                <>
+                  <CheckCircle2 className="w-5 h-5 text-green-500" />
+                  <span className="text-sm">Connected</span>
+                </>
+              ) : (
+                <>
+                  <AlertCircle className="w-5 h-5 text-yellow-500" />
+                  <span className="text-sm">Not connected</span>
+                </>
+              )}
+            </div>
+            {!hasHatena && (
+              <>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Connect your Hatena account to save bookmarks.
                 </p>
-              </div>
-            </CardContent>
-          </Card>
+                <OAuthButton url="/api/habu/oauth/start" size="sm">
+                  <ExternalLink className="w-4 h-4 mr-2" />
+                  Connect Hatena
+                </OAuthButton>
+              </>
+            )}
+            {hasHatena && (
+              <>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Your Hatena account is connected. You can now save bookmarks!
+                </p>
+                <div className="flex gap-2">
+                  <OAuthButton url="/api/habu/oauth/start" variant="outline" size="sm">
+                    <ExternalLink className="w-4 h-4 mr-2" />
+                    Reconnect
+                  </OAuthButton>
+                  <ActionButton action={disconnectHatena} variant="destructive" size="sm">
+                    Disconnect
+                  </ActionButton>
+                </div>
+              </>
+            )}
+          </div>
+
+          <Separator />
+
+          {/* Auto-save Setting */}
+          <div>
+            <h3 className="text-sm font-medium mb-3">Preferences</h3>
+            <AutoSaveToggle />
+          </div>
+
+          <Separator />
+
+          {/* App Info */}
+          <div>
+            <h3 className="text-sm font-medium mb-2">About</h3>
+            <p className="text-sm text-muted-foreground">
+              habu is a PWA for quickly saving bookmarks to Hatena Bookmark.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
     </>
   );
 }

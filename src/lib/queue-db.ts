@@ -16,11 +16,7 @@ class HabuDatabase extends Dexie {
 export const db = new HabuDatabase();
 
 // Queue operations
-export async function addToQueue(
-  url: string,
-  title?: string,
-  comment?: string
-): Promise<number> {
+export async function addToQueue(url: string, title?: string, comment?: string): Promise<number> {
   const now = new Date();
   const id = await db.bookmarks.add({
     url,
@@ -64,7 +60,7 @@ export async function getAllItems(): Promise<BookmarkQueue[]> {
 export async function updateQueueStatus(
   id: number,
   status: BookmarkQueue["status"],
-  error?: string
+  error?: string,
 ): Promise<void> {
   const updates: Partial<BookmarkQueue> = {
     status,

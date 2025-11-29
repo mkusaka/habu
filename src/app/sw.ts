@@ -24,9 +24,15 @@ interface SyncManager {
   getTags(): Promise<string[]>;
 }
 
+// Message event type for SW
+interface ExtendableMessageEvent extends ExtendableEvent {
+  readonly data: { type?: string } | null;
+}
+
 declare global {
   interface ServiceWorkerGlobalScope {
     addEventListener(type: "sync", listener: (event: SyncEvent) => void): void;
+    addEventListener(type: "message", listener: (event: ExtendableMessageEvent) => void): void;
   }
   interface ServiceWorkerRegistration {
     readonly sync: SyncManager;

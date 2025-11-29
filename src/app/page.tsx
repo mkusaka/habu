@@ -8,7 +8,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Bookmark, List, Settings, Plus, ExternalLink } from "lucide-react";
 import { LinkButton } from "@/components/ui/link-button";
 import { OAuthButton } from "@/components/ui/oauth-button";
-import { BackgroundSync } from "@/components/background-sync";
 
 export default async function Home() {
   // Check Hatena connection status on server
@@ -36,9 +35,7 @@ export default async function Home() {
   }
 
   return (
-    <>
-      <BackgroundSync />
-      <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <div className="flex justify-center mb-4">
@@ -94,7 +91,6 @@ export default async function Home() {
             </div>
           </CardContent>
         </Card>
-      </div>
-    </>
+    </div>
   );
 }

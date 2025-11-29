@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { ServiceWorkerRegister } from "@/components/sw-register";
+import { BackgroundSync } from "@/components/background-sync";
 
 const geistSans = Geist({
 	variable: "--font-geist-sans",
@@ -41,6 +42,7 @@ export default function RootLayout({
 			</head>
 			<body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
 				<ServiceWorkerRegister />
+				<BackgroundSync />
 				{children}
 				<Toaster />
 			</body>

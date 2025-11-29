@@ -46,7 +46,27 @@ serwist.addEventListeners();
 // Track ongoing sync to prevent duplicate execution
 let syncInProgress = false;
 
-// Background Sync event handler
+// Message event handler - for immediate sync via postMessage
+self.addEventListener("message", (event) => {
+  if (event.data?.type === "sync-now") {
+    event.waitUntil((async () => {
+      if (syncInProgress) {
+        console.log("Sync already in progress, skipping");
+        return;
+      }
+      syncInProgress = true;
+      try {
+        console.log("SW: Received sync-now message, starting sync");
+        await syncBookmarkQueue();
+        console.log("SW: Sync completed");
+      } finally {
+        syncInProgress = false;
+      }
+    })());
+  }
+});
+
+// Background Sync event handler (fallback for offline scenarios)
 self.addEventListener("sync", (event: SyncEvent) => {
   if (event.tag === "bookmark-sync") {
     event.waitUntil((async () => {

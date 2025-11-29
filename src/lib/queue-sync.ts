@@ -102,6 +102,21 @@ export async function registerBackgroundSync(): Promise<boolean> {
   }
 }
 
+// Notify Service Worker to sync immediately
+async function notifyServiceWorkerToSync(): Promise<void> {
+  if (!("serviceWorker" in navigator)) {
+    console.warn("Service Worker not supported");
+    return;
+  }
+
+  try {
+    const registration = await navigator.serviceWorker.ready;
+    registration.active?.postMessage({ type: "sync-now" });
+  } catch (error) {
+    console.error("Failed to notify Service Worker:", error);
+  }
+}
+
 // Add bookmark optimistically
 export async function saveBookmarkOptimistic(
   url: string,
@@ -112,11 +127,15 @@ export async function saveBookmarkOptimistic(
     // Add to IndexedDB queue
     const id = await addToQueueDb(url, title, comment);
 
-    // Register Background Sync (browser will trigger sync event)
-    // Fire-and-forget: don't block on registration
+    // Notify SW to sync immediately via postMessage
+    // This wakes up the SW and triggers sync right away
+    notifyServiceWorkerToSync().catch((error) => {
+      console.error("Failed to notify SW for sync:", error);
+    });
+
+    // Also register Background Sync as fallback for offline scenarios
     registerBackgroundSync().catch((error) => {
       console.error("Background Sync registration failed:", error);
-      // Not critical - periodic sync will handle it
     });
 
     return id;

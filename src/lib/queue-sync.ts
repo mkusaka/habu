@@ -102,6 +102,29 @@ export async function registerBackgroundSync(): Promise<boolean> {
   }
 }
 
+// Wait for SW controller with timeout
+function waitForController(timeoutMs: number): Promise<ServiceWorker | null> {
+  return new Promise((resolve) => {
+    if (navigator.serviceWorker.controller) {
+      resolve(navigator.serviceWorker.controller);
+      return;
+    }
+
+    const timeout = setTimeout(() => {
+      navigator.serviceWorker.removeEventListener("controllerchange", onControllerChange);
+      resolve(null);
+    }, timeoutMs);
+
+    const onControllerChange = () => {
+      clearTimeout(timeout);
+      navigator.serviceWorker.removeEventListener("controllerchange", onControllerChange);
+      resolve(navigator.serviceWorker.controller);
+    };
+
+    navigator.serviceWorker.addEventListener("controllerchange", onControllerChange);
+  });
+}
+
 // Notify Service Worker to sync immediately, with fallback to client-side sync
 async function triggerSync(): Promise<void> {
   if (!("serviceWorker" in navigator)) {
@@ -110,14 +133,15 @@ async function triggerSync(): Promise<void> {
     return;
   }
 
-  // Use controller for immediate postMessage without waiting for ready
-  const controller = navigator.serviceWorker.controller;
+  // Wait up to 2 seconds for SW to become controller
+  const controller = await waitForController(2000);
+
   if (controller) {
     console.log("Sending sync-now message to SW");
     controller.postMessage({ type: "sync-now" });
   } else {
     // SW not yet controlling the page, fall back to client-side sync
-    console.log("No SW controller, using client-side sync");
+    console.log("No SW controller after timeout, using client-side sync");
     await syncQueue();
   }
 }

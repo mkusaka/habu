@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { saveBookmark } from "@/lib/queue-sync";
+import { saveBookmark, queueBookmark } from "@/lib/queue-sync";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -93,8 +93,14 @@ export function ShareForm({ initialUrl, initialTitle, initialComment, hasHatena 
   useEffect(() => {
     const autoSave = localStorage.getItem("habu-auto-save") === "true";
     if (autoSave && initialUrl && hasHatena) {
-      // Auto-save the bookmark immediately on mount
-      handleSave();
+      // Fire-and-forget: queue the bookmark and close immediately
+      queueBookmark(initialUrl, initialTitle, initialComment);
+
+      // Close the window immediately - SW handles the rest
+      window.close();
+
+      // If window.close() didn't work, redirect to saved page
+      router.replace("/saved");
     }
     // Only run once on mount
     // eslint-disable-next-line react-hooks/exhaustive-deps

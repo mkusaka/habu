@@ -39,6 +39,33 @@ export async function saveBookmark(
 }
 
 /**
+ * Fire-and-forget bookmark saving.
+ *
+ * Uses keepalive to ensure the request completes even if the page is closed.
+ * Does not wait for response - ideal for auto-save scenarios where user
+ * wants to quickly save and close the window.
+ *
+ * @param url - The URL to bookmark
+ * @param title - Optional title
+ * @param comment - Optional comment
+ */
+export function queueBookmark(url: string, title?: string, comment?: string): void {
+  fetch("/api/habu/bookmark", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+    body: JSON.stringify({
+      url,
+      title,
+      comment,
+    } as BookmarkRequest),
+    keepalive: true,
+  });
+}
+
+/**
  * Trigger manual sync of queued bookmarks.
  *
  * Always uses postMessage for immediate sync, plus registers Background Sync

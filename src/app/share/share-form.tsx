@@ -106,7 +106,7 @@ export function ShareForm({
   }, []);
 
   return (
-    <Card className="w-full max-w-lg">
+    <Card className="w-full">
       <CardHeader>
         <CardTitle>Save Bookmark</CardTitle>
       </CardHeader>

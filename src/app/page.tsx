@@ -35,8 +35,7 @@ export default async function Home() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
-        <Card className="w-full max-w-lg">
+        <Card className="w-full">
           <CardHeader className="text-center">
             <div className="flex justify-center mb-4">
               <Bookmark className="w-16 h-16 text-primary" />
@@ -91,6 +90,5 @@ export default async function Home() {
             </div>
           </CardContent>
         </Card>
-    </div>
   );
 }

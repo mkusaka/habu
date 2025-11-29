@@ -38,13 +38,11 @@ export default async function SharePage({ searchParams }: SharePageProps) {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
-      <ShareForm
-        initialUrl={params.url || ""}
-        initialTitle={params.title || ""}
-        initialComment={params.text || ""}
-        hasHatena={hasHatena}
-      />
-    </div>
+    <ShareForm
+      initialUrl={params.url || ""}
+      initialTitle={params.title || ""}
+      initialComment={params.text || ""}
+      hasHatena={hasHatena}
+    />
   );
 }

@@ -149,8 +149,7 @@ export default function QueuePage() {
   const queuedCount = items.filter((item) => item.status === "queued").length;
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
-      <div className="w-full max-w-lg space-y-4">
+      <div className="w-full space-y-4">
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -286,6 +285,5 @@ export default function QueuePage() {
           </div>
         )}
       </div>
-    </div>
   );
 }

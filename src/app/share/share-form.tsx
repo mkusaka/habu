@@ -18,6 +18,17 @@ interface ShareFormProps {
   hasHatena: boolean;
 }
 
+// Validate URL format
+function isValidUrl(urlString: string): boolean {
+  if (!urlString) return false;
+  try {
+    const url = new URL(urlString);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 export function ShareForm({
   initialUrl,
   initialTitle,
@@ -29,10 +40,30 @@ export function ShareForm({
   const [title, setTitle] = useState(initialTitle);
   const [comment, setComment] = useState(initialComment);
   const [saving, setSaving] = useState(false);
+  const [urlError, setUrlError] = useState<string | null>(null);
+
+  // Validate URL on change
+  const handleUrlChange = (value: string) => {
+    setUrl(value);
+    if (!value) {
+      setUrlError(null);
+    } else if (!isValidUrl(value)) {
+      setUrlError("Please enter a valid URL (e.g., https://example.com)");
+    } else {
+      setUrlError(null);
+    }
+  };
+
+  const isUrlValid = url && isValidUrl(url);
 
   const handleSave = async () => {
     if (!url) {
       toast.error("URL is required");
+      return;
+    }
+
+    if (!isValidUrl(url)) {
+      toast.error("Please enter a valid URL");
       return;
     }
 
@@ -90,10 +121,14 @@ export function ShareForm({
             id="url"
             type="url"
             value={url}
-            onChange={(e) => setUrl(e.target.value)}
+            onChange={(e) => handleUrlChange(e.target.value)}
             placeholder="https://example.com"
             disabled={saving}
+            className={urlError ? "border-red-500 focus-visible:ring-red-500" : ""}
           />
+          {urlError && (
+            <p className="text-sm text-red-500">{urlError}</p>
+          )}
         </div>
         <div className="space-y-2">
           <Label htmlFor="title">Title (optional)</Label>
@@ -118,7 +153,7 @@ export function ShareForm({
         <div className="flex gap-2">
           <Button
             onClick={handleSave}
-            disabled={!url || saving || !hasHatena}
+            disabled={!isUrlValid || saving || !hasHatena}
             className="flex-1"
           >
             {saving ? "Saving..." : "Save"}

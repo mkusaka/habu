@@ -7,17 +7,18 @@ Quick bookmark saving PWA for Hatena Bookmark with offline support.
 - 🚀 **One-tap bookmark saving** via Web Share Target
 - 📱 **PWA** - Install as a mobile app
 - 🔄 **Offline-first** - Queue bookmarks locally with IndexedDB
-- 🔐 **Stateless authentication** - Better Auth with no database required
+- 🔐 **Secure authentication** - Better Auth with Cloudflare D1
 - ☁️ **Cloudflare Workers** - Fast, global edge deployment
 - 🎯 **Automatic sync** - Background synchronization with Hatena
 
 ## Architecture
 
-- **Framework**: Next.js 15 (App Router)
-- **Authentication**: Better Auth (stateless mode)
+- **Framework**: Next.js 16 (App Router)
+- **Authentication**: Better Auth with anonymous plugin
 - **Deployment**: OpenNext → Cloudflare Workers
-- **Database**: None (completely stateless)
-- **Client Storage**: IndexedDB (Dexie.js)
+- **Database**: Cloudflare D1 (for Better Auth sessions and Hatena tokens)
+- **Client Storage**: IndexedDB (Dexie.js) for bookmark queue
+- **Service Worker**: Serwist for PWA + fetch interception
 - **Hatena Integration**: OAuth 1.0a + server-side signing
 - **UI**: shadcn/ui + Tailwind CSS v4
 
@@ -107,7 +108,7 @@ wrangler secret put HATENA_CONSUMER_SECRET
 - View all bookmarks in `/queue`
 - See status: queued, sending, done, or error
 - Retry failed bookmarks
-- Automatic sync every 30 seconds
+- Automatic sync via Background Sync API (when online)
 - Manual sync with "Sync Now" button
 
 ## Project Structure
@@ -124,12 +125,16 @@ src/
 │   ├── saved/                   # Success feedback page
 │   ├── queue/                   # Queue management UI
 │   ├── settings/                # Settings & Hatena connection
+│   ├── sw.ts                    # Service Worker (fetch interception)
 │   └── page.tsx                 # Home page
 ├── lib/
 │   ├── auth.ts                  # Better Auth config
 │   ├── hatena-oauth.ts          # OAuth 1.0a helpers
 │   ├── queue-db.ts              # IndexedDB operations
-│   └── queue-sync.ts            # Sync logic
+│   └── queue-sync.ts            # Client sync trigger
+├── components/
+│   ├── background-sync.tsx      # Fallback sync for Safari
+│   └── sw-register.tsx          # Service Worker registration
 └── types/
     └── habu.ts                  # TypeScript types
 ```
@@ -146,12 +151,15 @@ src/
 
 ### Bookmark Save Flow
 
-1. Share/Add bookmark → IndexedDB queue
-2. Status: `queued`
-3. Background sync calls `/api/habu/bookmark`
-4. Server signs OAuth request to Hatena API
-5. Success → Status: `done`
-6. Failure → Status: `error` (with retry)
+1. Client calls `fetch("/api/habu/bookmark")` with `keepalive: true`
+2. Service Worker intercepts the request
+3. SW saves to IndexedDB (status: `sending`) for UI tracking
+4. If online: forwards to server → Hatena API
+   - Success → Status: `done`
+   - Error → Status: `error` (with retry scheduling)
+5. If offline: Status: `queued`, registers Background Sync
+6. When back online: Background Sync triggers queue processing
+7. Exponential backoff retry: 1min → 5min → 15min → 60min
 
 ## License
 

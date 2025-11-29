@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
 import {
   db,
-  retryQueueItem,
   deleteQueueItem,
   clearCompletedItems,
 } from "@/lib/queue-db";
@@ -52,10 +51,29 @@ export default function QueuePage() {
 
   const handleRetry = async (id: number) => {
     try {
-      await retryQueueItem(id);
-      toast.success("Item queued for retry");
-      // Trigger sync
-      handleSync();
+      // Get the item data before deleting
+      const item = await db.bookmarks.get(id);
+      if (!item) {
+        toast.error("Item not found");
+        return;
+      }
+
+      // Delete the old item
+      await deleteQueueItem(id);
+
+      // Re-save via fetch (SW will intercept and process)
+      const { saveBookmark } = await import("@/lib/queue-sync");
+      const result = await saveBookmark(item.url, item.title, item.comment);
+
+      if (result.success) {
+        if (result.queued) {
+          toast.success("Queued for retry");
+        } else {
+          toast.success("Bookmark saved!");
+        }
+      } else {
+        toast.error(result.error || "Retry failed");
+      }
     } catch (error) {
       console.error("Retry failed:", error);
       toast.error("Retry failed");

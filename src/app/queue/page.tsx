@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useLiveQuery } from "dexie-react-hooks";
 import {
-  getAllItems,
+  db,
   retryQueueItem,
   deleteQueueItem,
   clearCompletedItems,
@@ -26,31 +27,20 @@ import { toast } from "sonner";
 
 export default function QueuePage() {
   const router = useRouter();
-  const [items, setItems] = useState<BookmarkQueue[]>([]);
-  const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
 
-  const loadItems = async () => {
-    try {
-      const allItems = await getAllItems();
-      setItems(allItems);
-    } catch (error) {
-      console.error("Failed to load queue:", error);
-      toast.error("Failed to load queue");
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Use live query to automatically update when IndexedDB changes
+  const items = useLiveQuery(
+    () => db.bookmarks.orderBy("createdAt").reverse().toArray(),
+    []
+  );
 
-  useEffect(() => {
-    loadItems();
-  }, []);
+  const loading = items === undefined;
 
   const handleSync = async () => {
     setSyncing(true);
     try {
       await syncQueue();
-      await loadItems();
       toast.success("Queue synced!");
     } catch (error) {
       console.error("Sync failed:", error);
@@ -63,7 +53,6 @@ export default function QueuePage() {
   const handleRetry = async (id: number) => {
     try {
       await retryQueueItem(id);
-      await loadItems();
       toast.success("Item queued for retry");
       // Trigger sync
       handleSync();
@@ -76,7 +65,6 @@ export default function QueuePage() {
   const handleDelete = async (id: number) => {
     try {
       await deleteQueueItem(id);
-      await loadItems();
       toast.success("Item deleted");
     } catch (error) {
       console.error("Delete failed:", error);
@@ -87,7 +75,6 @@ export default function QueuePage() {
   const handleClearCompleted = async () => {
     try {
       await clearCompletedItems();
-      await loadItems();
       toast.success("Completed items cleared");
     } catch (error) {
       console.error("Clear failed:", error);

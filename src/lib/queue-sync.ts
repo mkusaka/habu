@@ -102,10 +102,11 @@ export async function registerBackgroundSync(): Promise<boolean> {
   }
 }
 
-// Notify Service Worker to sync immediately
-function notifyServiceWorkerToSync(): void {
+// Notify Service Worker to sync immediately, with fallback to client-side sync
+async function triggerSync(): Promise<void> {
   if (!("serviceWorker" in navigator)) {
-    console.warn("Service Worker not supported");
+    console.log("Service Worker not supported, using client-side sync");
+    await syncQueue();
     return;
   }
 
@@ -115,7 +116,9 @@ function notifyServiceWorkerToSync(): void {
     console.log("Sending sync-now message to SW");
     controller.postMessage({ type: "sync-now" });
   } else {
-    console.warn("No active Service Worker controller");
+    // SW not yet controlling the page, fall back to client-side sync
+    console.log("No SW controller, using client-side sync");
+    await syncQueue();
   }
 }
 
@@ -129,9 +132,10 @@ export async function saveBookmarkOptimistic(
     // Add to IndexedDB queue
     const id = await addToQueueDb(url, title, comment);
 
-    // Notify SW to sync immediately via postMessage
-    // This wakes up the SW and triggers sync right away
-    notifyServiceWorkerToSync();
+    // Trigger sync immediately (via SW if available, otherwise client-side)
+    triggerSync().catch((error) => {
+      console.error("Sync trigger failed:", error);
+    });
 
     // Also register Background Sync as fallback for offline scenarios
     registerBackgroundSync().catch((error) => {

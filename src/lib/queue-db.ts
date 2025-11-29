@@ -99,6 +99,7 @@ export async function retryQueueItem(id: number): Promise<void> {
     updatedAt: new Date(),
     lastError: undefined,
     nextRetryAt: undefined,
+    retryCount: 0,
   });
 }
 

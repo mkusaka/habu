@@ -41,7 +41,8 @@ export async function saveBookmark(
 /**
  * Trigger manual sync of queued bookmarks.
  *
- * Uses Background Sync API if available, falls back to postMessage.
+ * Always uses postMessage for immediate sync, plus registers Background Sync
+ * as a backup for offline scenarios.
  */
 export async function triggerSync(): Promise<void> {
   if (!("serviceWorker" in navigator)) {
@@ -51,22 +52,21 @@ export async function triggerSync(): Promise<void> {
 
   const registration = await navigator.serviceWorker.ready;
 
-  // Try Background Sync first
+  // Register Background Sync for offline backup
   if ("sync" in registration) {
     try {
       await registration.sync.register("bookmark-sync");
-      console.log("Background Sync triggered");
-      return;
+      console.log("Background Sync registered");
     } catch (error) {
-      console.warn("Background Sync failed, falling back to postMessage:", error);
+      console.warn("Background Sync registration failed:", error);
     }
   }
 
-  // Fallback: use postMessage to SW
+  // Always use postMessage for immediate sync (Background Sync may not fire if already online)
   const controller = navigator.serviceWorker.controller;
   if (controller) {
     controller.postMessage({ type: "sync-now" });
-    console.log("Manual sync triggered via postMessage");
+    console.log("Immediate sync triggered via postMessage");
   } else {
     console.warn("No SW controller available for sync");
   }

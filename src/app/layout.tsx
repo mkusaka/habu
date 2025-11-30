@@ -43,8 +43,8 @@ export default function RootLayout({
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased h-full overflow-hidden`}>
         <ServiceWorkerRegister />
         <BackgroundSyncFallback />
-        <main className="h-full flex items-center justify-center p-4 bg-gray-50">
-          <div className="w-full max-w-lg">{children}</div>
+        <main className="h-full flex items-center justify-center p-4 bg-gray-50 overflow-auto">
+          <div className="w-full max-w-lg max-h-full">{children}</div>
         </main>
         <Toaster />
       </body>

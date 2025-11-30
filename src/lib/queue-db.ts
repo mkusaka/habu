@@ -102,3 +102,20 @@ export async function retryQueueItem(id: number): Promise<void> {
 export async function clearCompletedItems(): Promise<void> {
   await db.bookmarks.where("status").equals("done").delete();
 }
+
+/**
+ * Update item with AI-generated content after successful bookmark creation
+ */
+export async function updateWithGeneratedContent(
+  id: number,
+  generatedComment?: string,
+  generatedSummary?: string,
+  generatedTags?: string[],
+): Promise<void> {
+  await db.bookmarks.update(id, {
+    generatedComment,
+    generatedSummary,
+    generatedTags,
+    updatedAt: new Date(),
+  });
+}

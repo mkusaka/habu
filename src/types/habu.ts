@@ -27,6 +27,10 @@ export interface BookmarkQueue {
   lastError?: string;
   nextRetryAt?: Date;
   retryCount: number;
+  // AI-generated content (stored after successful bookmark creation)
+  generatedComment?: string;
+  generatedSummary?: string;
+  generatedTags?: string[];
 }
 
 // API types
@@ -38,6 +42,10 @@ export interface BookmarkRequest {
 export interface BookmarkResponse {
   success: boolean;
   error?: string;
+  // Generated content (returned when AI generates summary/tags)
+  generatedComment?: string;
+  generatedSummary?: string;
+  generatedTags?: string[];
 }
 
 // Hatena API types
@@ -46,4 +54,13 @@ export interface HatenaBookmarkApiResponse {
   comment?: string;
   tags?: string[];
   created?: string;
+}
+
+export interface HatenaTag {
+  count: number;
+  tag: string;
+}
+
+export interface HatenaTagsResponse {
+  tags: HatenaTag[];
 }

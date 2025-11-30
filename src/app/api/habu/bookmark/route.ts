@@ -5,9 +5,176 @@ import { getDb } from "@/db/client";
 import { hatenaTokens } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { createAuth } from "@/lib/auth";
-import type { BookmarkRequest, BookmarkResponse } from "@/types/habu";
+import type { BookmarkRequest, BookmarkResponse, HatenaTagsResponse } from "@/types/habu";
+import { generateObject } from "ai";
+import { openai } from "@ai-sdk/openai";
+import { z } from "zod";
 
 const HATENA_BOOKMARK_API_URL = "https://bookmark.hatenaapis.com/rest/1/my/bookmark";
+const HATENA_TAGS_API_URL = "https://bookmark.hatenaapis.com/rest/1/my/tags";
+
+// GPT-5.1 context window: 400K tokens total (input+output)
+// Use ~60% for input (~240K tokens ≈ 960K chars), reserve rest for output + web search results
+const MAX_MARKDOWN_CHARS = 800000; // ~200K tokens
+
+// Zod schema for AI-generated bookmark suggestions
+const BookmarkSuggestionSchema = z.object({
+  summary: z
+    .string()
+    .max(100)
+    .describe(
+      "A concise summary in Japanese, maximum 100 characters. Capture the main point of the content.",
+    ),
+  tags: z
+    .array(z.string().max(10))
+    .max(10)
+    .describe(
+      "Relevant tags (max 10). Use the page's language (Japanese or English). Each tag should be 10 characters or less. Do not use: ? / % [ ] :",
+    ),
+});
+
+/**
+ * Fetch markdown content from URL using Cloudflare Browser Rendering API
+ */
+async function fetchMarkdownFromUrl(
+  url: string,
+  accountId: string,
+  apiToken: string,
+): Promise<string> {
+  const response = await fetch(
+    `https://api.cloudflare.com/client/v4/accounts/${accountId}/browser-rendering/markdown`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiToken}`,
+      },
+      body: JSON.stringify({ url }),
+    },
+  );
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Browser Rendering API error: ${response.status} - ${errorText}`);
+  }
+
+  const data = (await response.json()) as { success: boolean; result?: string; errors?: unknown[] };
+  if (!data.success || !data.result) {
+    throw new Error("Failed to extract markdown from URL");
+  }
+
+  return data.result;
+}
+
+/**
+ * Fetch user's existing tags from Hatena Bookmark API
+ */
+async function fetchHatenaTags(accessToken: string, accessTokenSecret: string): Promise<string[]> {
+  const authHeaders = createSignedRequest(
+    HATENA_TAGS_API_URL,
+    "GET",
+    accessToken,
+    accessTokenSecret,
+  );
+
+  const response = await fetch(HATENA_TAGS_API_URL, {
+    method: "GET",
+    headers: authHeaders,
+  });
+
+  if (!response.ok) {
+    // If 401, likely missing read_private scope - return empty array
+    if (response.status === 401) {
+      console.warn("Cannot fetch tags - may need read_private scope");
+      return [];
+    }
+    const errorText = await response.text();
+    throw new Error(`Hatena Tags API error: ${response.status} - ${errorText}`);
+  }
+
+  const data = (await response.json()) as HatenaTagsResponse;
+  return data.tags.map((t) => t.tag);
+}
+
+/**
+ * Generate summary and tags using AI SDK with structured output and web search
+ */
+async function generateSuggestions(
+  markdown: string,
+  existingTags: string[],
+  url: string,
+): Promise<{ summary: string; tags: string[] }> {
+  const existingTagsText = existingTags.length > 0 ? existingTags.join(", ") : "(none)";
+
+  // Truncate markdown to stay within context limits
+  const truncatedMarkdown = markdown.slice(0, MAX_MARKDOWN_CHARS);
+
+  const result = await generateObject({
+    model: openai("gpt-5.1"),
+    schema: BookmarkSuggestionSchema,
+    tools: {
+      // Enable web search for additional context about the page
+      web_search: openai.tools.webSearch({
+        searchContextSize: "high",
+      }),
+    },
+    // GPT-5.1 optimized: structured sections, clear persona, action-biased
+    system: `<role>
+You are a bookmark curator for Hatena Bookmark. You value clarity and usefulness over pleasantries.
+Be extremely biased for action—generate the best summary and tags immediately without asking questions.
+</role>
+
+<summary_rules>
+- Write in Japanese only
+- Maximum 100 characters (full-width counts as 1)
+- Capture the core value/insight of the content
+- Be specific, not generic (avoid "について解説" patterns)
+- Focus on what makes this content worth bookmarking
+</summary_rules>
+
+<tag_rules>
+- Maximum 10 tags, each ≤10 characters
+- Forbidden characters: ? / % [ ] :
+- Match content language: Japanese content → Japanese tags, English → English
+- STRONGLY prefer reusing existing tags when relevant (consistency matters)
+- Create new tags only when existing ones don't fit
+- Include both topic tags (what) and type tags (tutorial, news, tool, etc.)
+</tag_rules>
+
+<existing_tags>
+${existingTagsText}
+</existing_tags>`,
+    prompt: `Analyze this page and generate bookmark metadata.
+
+URL: ${url}
+
+<content>
+${truncatedMarkdown}
+</content>`,
+  });
+
+  // Sanitize tags (additional safety even though schema enforces limits)
+  const sanitizedTags = result.object.tags
+    .slice(0, 10)
+    .map((t) => t.replace(/[?/%[\]:]/g, "").slice(0, 10))
+    .filter((t) => t.length > 0);
+
+  return {
+    summary: result.object.summary.slice(0, 100),
+    tags: sanitizedTags,
+  };
+}
+
+/**
+ * Format comment with tags for Hatena Bookmark
+ * Format: [tag1][tag2] summary
+ * Note: Tags don't count toward the 100 character comment limit
+ */
+function formatCommentWithTags(summary: string, tags: string[]): string {
+  const tagPart = tags.map((t) => `[${t}]`).join("");
+  // Tags don't count toward comment limit, so summary can be full 100 chars
+  return `${tagPart}${summary}`;
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -87,10 +254,47 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Track generated content for response
+    let generatedSummary: string | undefined;
+    let generatedTags: string[] | undefined;
+    let generatedComment: string | undefined;
+
+    // Determine comment to use
+    let finalComment = comment;
+
+    // If no comment provided, generate AI suggestions
+    if (!comment) {
+      try {
+        // Fetch markdown content from URL
+        const markdown = await fetchMarkdownFromUrl(
+          url,
+          process.env.CLOUDFLARE_ACCOUNT_ID!,
+          process.env.CLOUDFLARE_API_TOKEN!,
+        );
+
+        // Fetch user's existing Hatena tags
+        const existingTags = await fetchHatenaTags(hatenaAccessToken, hatenaAccessTokenSecret);
+
+        // Generate suggestions using AI
+        const { summary, tags } = await generateSuggestions(markdown, existingTags, url);
+
+        // Store generated content
+        generatedSummary = summary;
+        generatedTags = tags;
+
+        // Format comment with tags
+        finalComment = formatCommentWithTags(summary, tags);
+        generatedComment = finalComment;
+      } catch (aiError) {
+        console.error("AI suggestion failed, proceeding without comment:", aiError);
+        // Continue without AI-generated comment
+      }
+    }
+
     // Prepare request body parameters
     const bodyParams: Record<string, string> = { url };
-    if (comment) {
-      bodyParams.comment = comment;
+    if (finalComment) {
+      bodyParams.comment = finalComment;
     }
 
     // Create OAuth signed request
@@ -139,8 +343,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Success
-    return NextResponse.json({ success: true } as BookmarkResponse, { status: 200 });
+    // Success - include generated content in response
+    const successResponse: BookmarkResponse = {
+      success: true,
+      generatedComment,
+      generatedSummary,
+      generatedTags,
+    };
+
+    return NextResponse.json(successResponse, { status: 200 });
   } catch (error) {
     console.error("Bookmark API error:", error);
     return NextResponse.json(

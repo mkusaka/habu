@@ -3,7 +3,7 @@
 	"version": "0.1.0",
 	"private": true,
 	"scripts": {
-		"dev": "SERWIST_SUPPRESS_TURBOPACK_WARNING=1 next dev --turbopack",
+		"dev": "next dev --webpack",
 		"build": "next build --webpack",
 		"start": "next start",
 		"lint": "eslint .",
@@ -18,6 +18,7 @@
 		"db:migrate:remote": "wrangler d1 migrations apply habu_db --remote"
 	},
 	"dependencies": {
+		"@ai-sdk/openai": "^2.0.74",
 		"@cloudflare/workers-types": "^4.20251121.0",
 		"@opennextjs/cloudflare": "^1.11.0",
 		"@radix-ui/react-label": "^2.1.8",
@@ -27,6 +28,7 @@
 		"@radix-ui/react-tooltip": "^1.2.8",
 		"@serwist/next": "^9.2.3",
 		"@types/crypto-js": "^4.2.2",
+		"ai": "^5.0.104",
 		"better-auth": "^1.4.1",
 		"class-variance-authority": "^0.7.1",
 		"clsx": "^2.1.1",
@@ -42,7 +44,8 @@
 		"react-dom": "19.2.0",
 		"serwist": "^9.2.3",
 		"sonner": "^2.0.7",
-		"tailwind-merge": "^3.4.0"
+		"tailwind-merge": "^3.4.0",
+		"zod": "^4.1.13"
 	},
 	"devDependencies": {
 		"@eslint/eslintrc": "3.3.1",

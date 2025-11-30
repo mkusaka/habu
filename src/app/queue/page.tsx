@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db, deleteQueueItem, clearCompletedItems } from "@/lib/queue-db";
@@ -8,6 +8,7 @@ import { triggerSync } from "@/lib/queue-sync";
 import type { BookmarkQueue } from "@/types/habu";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   CheckCircle2,
   Clock,
@@ -23,6 +24,20 @@ import { toast } from "sonner";
 export default function QueuePage() {
   const router = useRouter();
   const [syncing, setSyncing] = useState(false);
+  const [swAvailable, setSwAvailable] = useState<boolean | null>(null);
+
+  // Check if Service Worker is available
+  useEffect(() => {
+    async function checkSW() {
+      if (!("serviceWorker" in navigator)) {
+        setSwAvailable(false);
+        return;
+      }
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      setSwAvailable(registrations.length > 0);
+    }
+    checkSW();
+  }, []);
 
   // Use live query to automatically update when IndexedDB changes
   const items = useLiveQuery(() => db.bookmarks.orderBy("createdAt").reverse().toArray(), []);
@@ -30,14 +45,22 @@ export default function QueuePage() {
   const loading = items === undefined;
 
   const handleSync = async () => {
+    console.log("handleSync: setting syncing to true");
     setSyncing(true);
     try {
-      await triggerSync();
+      // Add timeout to prevent infinite loading
+      const timeoutPromise = new Promise<void>((_, reject) =>
+        setTimeout(() => reject(new Error("Sync timeout")), 5000),
+      );
+      console.log("handleSync: calling triggerSync");
+      await Promise.race([triggerSync(), timeoutPromise]);
+      console.log("handleSync: triggerSync completed");
       toast.success("Sync triggered");
     } catch (error) {
-      console.error("Sync failed:", error);
+      console.error("handleSync: error:", error);
       toast.error("Sync failed");
     } finally {
+      console.log("handleSync: setting syncing to false");
       setSyncing(false);
     }
   };
@@ -154,19 +177,32 @@ export default function QueuePage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex gap-2">
-            <Button onClick={handleSync} disabled={syncing} className="flex-1">
-              {syncing ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Syncing...
-                </>
-              ) : (
-                <>
-                  <RefreshCw className="w-4 h-4 mr-2" />
-                  Sync Now
-                </>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="flex-1">
+                  <Button
+                    onClick={handleSync}
+                    disabled={syncing || swAvailable === false}
+                    className="w-full"
+                  >
+                    {syncing ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Syncing...
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="w-4 h-4 mr-2" />
+                        Sync Now
+                      </>
+                    )}
+                  </Button>
+                </span>
+              </TooltipTrigger>
+              {swAvailable === false && (
+                <TooltipContent>Background sync is not available</TooltipContent>
               )}
-            </Button>
+            </Tooltip>
             {completedCount > 0 && (
               <Button variant="outline" onClick={handleClearCompleted}>
                 Clear Completed
@@ -207,7 +243,26 @@ export default function QueuePage() {
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium truncate">{item.title || item.url}</div>
                     <div className="text-xs text-muted-foreground truncate">{item.url}</div>
-                    {item.comment && (
+                    {/* Show AI-generated content for completed items */}
+                    {item.status === "done" && item.generatedSummary && (
+                      <div className="text-xs mt-1 p-2 bg-green-50 rounded border border-green-200">
+                        <div className="text-green-700">{item.generatedSummary}</div>
+                        {item.generatedTags && item.generatedTags.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {item.generatedTags.map((tag, i) => (
+                              <span
+                                key={i}
+                                className="px-1.5 py-0.5 bg-green-100 text-green-700 rounded text-xs"
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {/* Show original comment if no generated content */}
+                    {item.comment && !item.generatedSummary && (
                       <div className="text-xs text-muted-foreground mt-1">{item.comment}</div>
                     )}
                     {item.lastError && (

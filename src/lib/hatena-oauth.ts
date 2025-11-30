@@ -29,12 +29,17 @@ export async function getRequestToken(
 
   // IMPORTANT: Signature calculation must include ALL parameters that will be sent
   // (oauth_callback + scope). This is OAuth 1.0a spec requirement.
+  // Scopes:
+  // - read_public: Read public bookmarks
+  // - read_private: Read private bookmarks and tags list
+  // - write_public: Create/edit public bookmarks
+  const scope = "read_public,read_private,write_public";
   const requestData = {
     url: HATENA_REQUEST_TOKEN_URL,
     method: "POST",
     data: {
       oauth_callback: callbackUrl,
-      scope: "read_public,write_public",
+      scope,
     },
   };
 
@@ -48,9 +53,7 @@ export async function getRequestToken(
 
   // Send scope in the request body only
   // Scope is critical for Hatena - without it, you can't access bookmark API
-  const bodyParams = new URLSearchParams({
-    scope: "read_public,write_public",
-  });
+  const bodyParams = new URLSearchParams({ scope });
 
   const response = await fetch(HATENA_REQUEST_TOKEN_URL, {
     method: "POST",

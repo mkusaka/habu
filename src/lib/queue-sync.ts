@@ -72,20 +72,31 @@ export function queueBookmark(url: string, title?: string, comment?: string): vo
  * as a backup for offline scenarios.
  */
 export async function triggerSync(): Promise<void> {
+  console.log("triggerSync: start");
   if (!("serviceWorker" in navigator)) {
-    console.warn("Service Worker not supported");
+    console.warn("triggerSync: Service Worker not supported");
     return;
   }
 
-  const registration = await navigator.serviceWorker.ready;
+  // Check if there's an active SW registration first
+  const registrations = await navigator.serviceWorker.getRegistrations();
+  console.log("triggerSync: found", registrations.length, "registrations");
+
+  if (registrations.length === 0) {
+    console.warn("triggerSync: No Service Worker registered");
+    return;
+  }
+
+  // Use the first registration (should be our SW)
+  const registration = registrations[0];
 
   // Register Background Sync for offline backup
   if ("sync" in registration) {
     try {
       await registration.sync.register("bookmark-sync");
-      console.log("Background Sync registered");
+      console.log("triggerSync: Background Sync registered");
     } catch (error) {
-      console.warn("Background Sync registration failed:", error);
+      console.warn("triggerSync: Background Sync registration failed:", error);
     }
   }
 
@@ -93,8 +104,9 @@ export async function triggerSync(): Promise<void> {
   const controller = navigator.serviceWorker.controller;
   if (controller) {
     controller.postMessage({ type: "sync-now" });
-    console.log("Immediate sync triggered via postMessage");
+    console.log("triggerSync: postMessage sent");
   } else {
-    console.warn("No SW controller available for sync");
+    console.warn("triggerSync: No SW controller available for sync");
   }
+  console.log("triggerSync: end");
 }

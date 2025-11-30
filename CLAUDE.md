@@ -26,10 +26,11 @@ The app is completely **stateless on the server** - user sessions and OAuth toke
 
 ### OAuth Flow (Hatena)
 Hatena uses OAuth 1.0a with specific requirements:
-- **Request token**: Must include `scope=read_public,write_public` in signature calculation AND body (but NOT in Authorization header)
+- **Request token**: Must include `scope=read_public,read_private,write_public` in signature calculation AND body (but NOT in Authorization header)
 - **Access token**: `oauth_verifier` must be in signature but sent ONLY in body
 - **API requests**: Use `createSignedRequest()` from `src/lib/hatena-oauth.ts`
 - Tokens are stored in D1 `hatena_tokens` table, linked to Better Auth users
+- **Scopes**: `read_public` (public bookmarks), `read_private` (private bookmarks + tags list), `write_public` (create/edit)
 
 ### Client Storage (IndexedDB)
 - Database: `HabuDatabase` in `src/lib/queue-db.ts`
@@ -67,11 +68,19 @@ Required in `.dev.vars` (local) and Cloudflare secrets (production):
 - `HATENA_CONSUMER_KEY`: From https://www.hatena.ne.jp/oauth/develop
 - `HATENA_CONSUMER_SECRET`: From Hatena OAuth app
 
+For AI-powered suggestions (`/api/habu/suggest`):
+- `CLOUDFLARE_ACCOUNT_ID`: Your Cloudflare account ID
+- `CLOUDFLARE_API_TOKEN`: API token with Browser Rendering permissions
+- `OPENAI_API_KEY`: OpenAI API key for GPT
+
 Set production secrets with:
 ```bash
 wrangler secret put BETTER_AUTH_SECRET
 wrangler secret put HATENA_CONSUMER_KEY
 wrangler secret put HATENA_CONSUMER_SECRET
+wrangler secret put CLOUDFLARE_ACCOUNT_ID
+wrangler secret put CLOUDFLARE_API_TOKEN
+wrangler secret put OPENAI_API_KEY
 ```
 
 ## Important Implementation Details
@@ -97,9 +106,18 @@ wrangler secret put HATENA_CONSUMER_SECRET
 - `/api/auth/[...all]`: Better Auth endpoints (sign-in, session, etc.)
 - `/api/habu/oauth/start`: Initiates Hatena OAuth flow
 - `/api/habu/oauth/callback`: Handles OAuth callback, stores tokens
-- `/api/habu/bookmark`: Creates bookmark on Hatena (requires auth + Hatena tokens)
+- `/api/habu/bookmark`: Creates bookmark on Hatena (with optional AI-generated summary+tags when no comment provided)
 - `/api/habu/status`: Checks if user has connected Hatena
 - `/api/share`: Web Share Target endpoint (POST)
+
+### AI-Powered Suggestions
+When `/api/habu/bookmark` is called without a comment:
+1. Cloudflare Browser Rendering fetches page content as Markdown
+2. Hatena API fetches user's existing tags
+3. OpenAI GPT generates summary (Japanese, max 100 chars) and tags (page language, max 10)
+4. Formatted as `[tag1][tag2]summary` and sent to Hatena
+
+Requires environment variables: `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN`, `OPENAI_API_KEY`
 
 ## Testing Hatena OAuth Locally
 

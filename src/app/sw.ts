@@ -64,6 +64,20 @@ interface BookmarkQueueItem {
   lastError?: string;
   nextRetryAt?: number;
   retryCount: number;
+  // AI-generated content
+  generatedComment?: string;
+  generatedSummary?: string;
+  generatedTags?: string[];
+}
+
+// API response type
+interface BookmarkApiResponse {
+  success: boolean;
+  error?: string;
+  queued?: boolean;
+  generatedComment?: string;
+  generatedSummary?: string;
+  generatedTags?: string[];
 }
 
 class HabuDatabase extends Dexie {
@@ -120,13 +134,16 @@ async function handleBookmarkRequest(event: FetchEvent): Promise<Response> {
           body: await originalRequest.text(),
           credentials: "include",
         });
-        const result = (await response.clone().json()) as { success: boolean; error?: string };
+        const result = (await response.clone().json()) as BookmarkApiResponse;
 
         if (result.success) {
-          // Success - update status to done
+          // Success - update status to done and store generated content
           await db.bookmarks.update(queueId, {
             status: "done",
             updatedAt: new Date(),
+            generatedComment: result.generatedComment,
+            generatedSummary: result.generatedSummary,
+            generatedTags: result.generatedTags,
           });
           return response;
         } else {
@@ -326,12 +343,16 @@ async function processQueue(): Promise<void> {
         }),
       });
 
-      const result = (await response.json()) as { success: boolean; error?: string };
+      const result = (await response.json()) as BookmarkApiResponse;
 
-      if (result.success && !("queued" in result)) {
+      if (result.success && !result.queued) {
+        // Success - update status to done and store generated content
         await db.bookmarks.update(item.id, {
           status: "done",
           updatedAt: new Date(),
+          generatedComment: result.generatedComment,
+          generatedSummary: result.generatedSummary,
+          generatedTags: result.generatedTags,
         });
         console.log(`SW: Successfully sent bookmark ${item.id}`);
       } else {

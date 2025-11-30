@@ -156,7 +156,7 @@ export function createSignedRequest(
   accessToken: string,
   accessTokenSecret: string,
   data?: Record<string, string>,
-) {
+): Record<string, string> {
   const oauth = createOAuthClient();
 
   const requestData = {
@@ -172,5 +172,5 @@ export function createSignedRequest(
     }),
   );
 
-  return headers;
+  return headers as unknown as Record<string, string>;
 }

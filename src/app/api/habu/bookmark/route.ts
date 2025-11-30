@@ -97,7 +97,7 @@ async function fetchHatenaTags(accessToken: string, accessTokenSecret: string): 
 }
 
 /**
- * Generate summary and tags using AI SDK with structured output and web search
+ * Generate summary and tags using AI SDK with structured output
  */
 async function generateSuggestions(
   markdown: string,
@@ -110,15 +110,9 @@ async function generateSuggestions(
   const truncatedMarkdown = markdown.slice(0, MAX_MARKDOWN_CHARS);
 
   const result = await generateObject({
-    model: openai("gpt-5.1"),
+    model: openai("gpt-4.1"),
     schema: BookmarkSuggestionSchema,
-    tools: {
-      // Enable web search for additional context about the page
-      web_search: openai.tools.webSearch({
-        searchContextSize: "high",
-      }),
-    },
-    // GPT-5.1 optimized: structured sections, clear persona, action-biased
+    // Structured sections, clear persona, action-biased
     system: `<role>
 You are a bookmark curator for Hatena Bookmark. You value clarity and usefulness over pleasantries.
 Be extremely biased for action—generate the best summary and tags immediately without asking questions.

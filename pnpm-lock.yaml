@@ -121,7 +121,7 @@ importers:
         specifier: 16.0.4
         version: 16.0.4(@typescript-eslint/parser@8.47.0(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3))(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3)
       oxfmt:
-        specifier: ^0.15.0
+        specifier: 0.15.0
         version: 0.15.0
       sharp:
         specifier: 0.34.5

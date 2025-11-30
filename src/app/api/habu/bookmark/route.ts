@@ -286,8 +286,14 @@ export async function POST(request: NextRequest) {
         finalComment = formatCommentWithTags(summary, tags);
         generatedComment = finalComment;
       } catch (aiError) {
-        console.error("AI suggestion failed, proceeding without comment:", aiError);
-        // Continue without AI-generated comment
+        console.error("AI suggestion failed:", aiError);
+        return NextResponse.json(
+          {
+            success: false,
+            error: aiError instanceof Error ? aiError.message : "AI suggestion failed",
+          } as BookmarkResponse,
+          { status: 500 },
+        );
       }
     }
 

@@ -110,7 +110,7 @@ async function generateSuggestions(
   const truncatedMarkdown = markdown.slice(0, MAX_MARKDOWN_CHARS);
 
   const result = await generateObject({
-    model: openai("gpt-4.1"),
+    model: openai("gpt-5.1"),
     schema: BookmarkSuggestionSchema,
     // Structured sections, clear persona, action-biased
     system: `<role>

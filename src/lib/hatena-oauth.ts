@@ -43,14 +43,13 @@ export async function getRequestToken(
     },
   };
 
-  const authorized = oauth.authorize(requestData);
+  // authorize() merges request.data into the result, but the type definition
+  // only includes OAuth.Authorization fields. Cast to include our custom data.
+  const authorized = oauth.authorize(requestData) as OAuth.Authorization & { scope?: string };
 
   // Remove scope from Authorization header to avoid double-sending
   // (same pattern as oauth_verifier in access token exchange)
-  const headerParams = { ...authorized };
-  if ("scope" in headerParams) {
-    delete (headerParams as { scope?: string }).scope;
-  }
+  const { scope: _scope, ...headerParams } = authorized;
   const authHeader = oauth.toHeader(headerParams);
 
   // Send scope in the request body only
@@ -110,14 +109,13 @@ export async function getAccessToken(
     },
   };
 
-  const authorized = oauth.authorize(requestData, { key: token, secret: tokenSecret });
+  // authorize() merges request.data into the result, but the type definition
+  // only includes OAuth.Authorization fields. Cast to include our custom data.
+  const authorized = oauth.authorize(requestData, { key: token, secret: tokenSecret }) as OAuth.Authorization & { oauth_verifier?: string };
 
   // Remove oauth_verifier from Authorization header to avoid double-sending
   // We need to remove it manually since toHeader() includes all data params
-  const headerParams = { ...authorized };
-  if ("oauth_verifier" in headerParams) {
-    delete (headerParams as { oauth_verifier?: string }).oauth_verifier;
-  }
+  const { oauth_verifier: _verifier, ...headerParams } = authorized;
   const authHeader = oauth.toHeader(headerParams);
 
   // Send oauth_verifier only in POST body

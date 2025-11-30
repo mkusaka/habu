@@ -304,8 +304,8 @@ export default function QueuePage() {
                     >
                       <Copy className="w-4 h-4" />
                     </Button>
-                    {item.status === "error" && item.id && (
-                      <Button variant="ghost" size="icon" onClick={() => handleRetry(item.id!)}>
+                    {(item.status === "error" || item.status === "done") && item.id && (
+                      <Button variant="ghost" size="icon" onClick={() => handleRetry(item.id!)} title="Re-save">
                         <RefreshCw className="w-4 h-4" />
                       </Button>
                     )}

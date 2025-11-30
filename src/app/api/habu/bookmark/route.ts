@@ -23,13 +23,13 @@ const BookmarkSuggestionSchema = z.object({
     .string()
     .max(100)
     .describe(
-      "A concise summary in Japanese, maximum 100 characters. Capture the main point of the content.",
+      "A concise summary in Japanese, ideally 70-100 characters. Capture the main point of the content.",
     ),
   tags: z
     .array(z.string().max(10))
     .max(10)
     .describe(
-      "Relevant tags (max 10). Use the page's language (Japanese or English). Each tag should be 10 characters or less. Do not use: ? / % [ ] :",
+      "Relevant tags (3-5 typical, max 10). Use the page's language (Japanese or English). Each tag should be 10 characters or less. Do not use: ? / % [ ] :",
     ),
 });
 

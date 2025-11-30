@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { saveBookmark, queueBookmark } from "@/lib/queue-sync";
+import { queueBookmark } from "@/lib/queue-sync";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,7 +34,6 @@ export function ShareForm({ initialUrl, initialTitle, initialComment, hasHatena 
   const [url, setUrl] = useState(initialUrl);
   const [title, setTitle] = useState(initialTitle);
   const [comment, setComment] = useState(initialComment);
-  const [saving, setSaving] = useState(false);
   const [urlError, setUrlError] = useState<string | null>(null);
 
   // Validate URL on change
@@ -51,7 +50,7 @@ export function ShareForm({ initialUrl, initialTitle, initialComment, hasHatena 
 
   const isUrlValid = url && isValidUrl(url);
 
-  const handleSave = async () => {
+  const handleSave = () => {
     if (!url) {
       toast.error("URL is required");
       return;
@@ -62,31 +61,13 @@ export function ShareForm({ initialUrl, initialTitle, initialComment, hasHatena 
       return;
     }
 
-    setSaving(true);
-    try {
-      const result = await saveBookmark(url, title, comment);
+    // Fire-and-forget: queue the bookmark and close immediately
+    queueBookmark(url, title, comment);
 
-      if (result.success) {
-        if (result.queued) {
-          toast.success("Bookmark queued (will sync when online)");
-        } else {
-          toast.success("Bookmark saved!");
-        }
+    window.close();
 
-        // Safe to close - SW handles retry if needed
-        window.close();
-
-        // If window.close() didn't work (popup blocker or same tab), redirect
-        router.replace("/saved");
-      } else {
-        toast.error(result.error || "Failed to save bookmark");
-      }
-    } catch (error) {
-      console.error("Failed to save bookmark:", error);
-      toast.error("Failed to save bookmark");
-    } finally {
-      setSaving(false);
-    }
+    // If window.close() didn't work, redirect to saved page
+    router.replace("/saved");
   };
 
   // Auto-save on mount if enabled and has URL
@@ -131,7 +112,6 @@ export function ShareForm({ initialUrl, initialTitle, initialComment, hasHatena 
             value={url}
             onChange={(e) => handleUrlChange(e.target.value)}
             placeholder="https://example.com"
-            disabled={saving}
             className={urlError ? "border-red-500 focus-visible:ring-red-500" : ""}
           />
           {urlError && <p className="text-sm text-red-500">{urlError}</p>}
@@ -143,7 +123,6 @@ export function ShareForm({ initialUrl, initialTitle, initialComment, hasHatena 
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Page title"
-            disabled={saving}
           />
         </div>
         <div className="space-y-2">
@@ -153,18 +132,13 @@ export function ShareForm({ initialUrl, initialTitle, initialComment, hasHatena 
             value={comment}
             onChange={(e) => setComment(e.target.value)}
             placeholder="Your comment"
-            disabled={saving}
           />
         </div>
         <div className="flex gap-2">
-          <Button
-            onClick={handleSave}
-            disabled={!isUrlValid || saving || !hasHatena}
-            className="flex-1"
-          >
-            {saving ? "Saving..." : "Save"}
+          <Button onClick={handleSave} disabled={!isUrlValid || !hasHatena} className="flex-1">
+            Save
           </Button>
-          <Button variant="outline" onClick={() => router.push("/")} disabled={saving}>
+          <Button variant="outline" onClick={() => router.push("/")}>
             Cancel
           </Button>
         </div>

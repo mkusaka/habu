@@ -6,7 +6,7 @@ import { hatenaTokens } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { createAuth } from "@/lib/auth";
 import type { BookmarkRequest, BookmarkResponse, HatenaTagsResponse } from "@/types/habu";
-import { generateObject } from "ai";
+import { generateText, Output } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { z } from "zod";
 
@@ -109,9 +109,16 @@ async function generateSuggestions(
   // Truncate markdown to stay within context limits
   const truncatedMarkdown = markdown.slice(0, MAX_MARKDOWN_CHARS);
 
-  const result = await generateObject({
+  const { experimental_output } = await generateText({
     model: openai("gpt-5.1"),
-    schema: BookmarkSuggestionSchema,
+    tools: {
+      web_search: openai.tools.webSearch({
+        searchContextSize: "high",
+      }),
+    },
+    experimental_output: Output.object({
+      schema: BookmarkSuggestionSchema,
+    }),
     // Structured sections, clear persona, action-biased
     system: `<role>
 You are a bookmark curator for Hatena Bookmark. You value clarity and usefulness over pleasantries.
@@ -147,14 +154,18 @@ ${truncatedMarkdown}
 </content>`,
   });
 
+  if (!experimental_output) {
+    throw new Error("Failed to generate structured output");
+  }
+
   // Sanitize tags (additional safety even though schema enforces limits)
-  const sanitizedTags = result.object.tags
+  const sanitizedTags = experimental_output.tags
     .slice(0, 10)
-    .map((t) => t.replace(/[?/%[\]:]/g, "").slice(0, 10))
-    .filter((t) => t.length > 0);
+    .map((t: string) => t.replace(/[?/%[\]:]/g, "").slice(0, 10))
+    .filter((t: string) => t.length > 0);
 
   return {
-    summary: result.object.summary.slice(0, 100),
+    summary: experimental_output.summary.slice(0, 100),
     tags: sanitizedTags,
   };
 }

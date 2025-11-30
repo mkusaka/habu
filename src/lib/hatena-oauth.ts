@@ -172,5 +172,5 @@ export function createSignedRequest(
     }),
   );
 
-  return headers as unknown as Record<string, string>;
+  return { ...headers };
 }

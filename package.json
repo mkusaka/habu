@@ -18,7 +18,7 @@
 		"db:migrate:remote": "wrangler d1 migrations apply habu_db --remote"
 	},
 	"dependencies": {
-		"@ai-sdk/openai": "^2.0.74",
+		"@ai-sdk/openai": "^2.0.75",
 		"@cloudflare/workers-types": "^4.20251121.0",
 		"@opennextjs/cloudflare": "^1.11.0",
 		"@radix-ui/react-label": "^2.1.8",

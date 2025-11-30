@@ -48,7 +48,9 @@ export async function getRequestToken(
   // Remove scope from Authorization header to avoid double-sending
   // (same pattern as oauth_verifier in access token exchange)
   const headerParams = { ...authorized };
-  delete (headerParams as Record<string, unknown>).scope;
+  if ("scope" in headerParams) {
+    delete (headerParams as { scope?: string }).scope;
+  }
   const authHeader = oauth.toHeader(headerParams);
 
   // Send scope in the request body only
@@ -113,7 +115,9 @@ export async function getAccessToken(
   // Remove oauth_verifier from Authorization header to avoid double-sending
   // We need to remove it manually since toHeader() includes all data params
   const headerParams = { ...authorized };
-  delete (headerParams as Record<string, unknown>).oauth_verifier;
+  if ("oauth_verifier" in headerParams) {
+    delete (headerParams as { oauth_verifier?: string }).oauth_verifier;
+  }
   const authHeader = oauth.toHeader(headerParams);
 
   // Send oauth_verifier only in POST body

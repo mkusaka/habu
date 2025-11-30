@@ -36,14 +36,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ja">
+    <html lang="ja" className="h-dvh overflow-hidden">
       <head>
         <link rel="icon" href="/favicon.svg" type="image/svg+xml"></link>
       </head>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased h-full overflow-hidden`}>
         <ServiceWorkerRegister />
         <BackgroundSyncFallback />
-        <main className="min-h-dvh flex items-center justify-center p-4 bg-gray-50">
+        <main className="h-full flex items-center justify-center p-4 bg-gray-50">
           <div className="w-full max-w-lg">{children}</div>
         </main>
         <Toaster />

@@ -10,6 +10,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   CheckCircle2,
   Clock,
   AlertCircle,
@@ -25,6 +35,7 @@ export default function QueuePage() {
   const router = useRouter();
   const [syncing, setSyncing] = useState(false);
   const [swAvailable, setSwAvailable] = useState<boolean | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: number; title: string } | null>(null);
 
   // Check if Service Worker is available
   useEffect(() => {
@@ -96,13 +107,16 @@ export default function QueuePage() {
     }
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
     try {
-      await deleteQueueItem(id);
+      await deleteQueueItem(deleteTarget.id);
       toast.success("Item deleted");
     } catch (error) {
       console.error("Delete failed:", error);
       toast.error("Delete failed");
+    } finally {
+      setDeleteTarget(null);
     }
   };
 
@@ -296,7 +310,11 @@ export default function QueuePage() {
                       </Button>
                     )}
                     {item.id && (
-                      <Button variant="ghost" size="icon" onClick={() => handleDelete(item.id!)}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setDeleteTarget({ id: item.id!, title: item.title || item.url })}
+                      >
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     )}
@@ -307,6 +325,21 @@ export default function QueuePage() {
           ))}
         </div>
       )}
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete bookmark?</AlertDialogTitle>
+            <AlertDialogDescription className="break-all">
+              {deleteTarget?.title}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

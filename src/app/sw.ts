@@ -364,11 +364,21 @@ async function processQueue(): Promise<void> {
     }
   }
 
-  // Check if there are remaining items that need retry, and re-register Background Sync
-  const remainingItems = await db.bookmarks.where("status").anyOf("queued", "error").count();
+  // Check if there are processable items remaining (queued, or error with nextRetryAt in the past)
+  const processableItems = await db.bookmarks
+    .where("status")
+    .anyOf("queued", "error")
+    .filter((item) => {
+      if (item.status === "queued") return true;
+      if (item.status === "error" && item.nextRetryAt) {
+        return Date.now() >= item.nextRetryAt;
+      }
+      return false;
+    })
+    .count();
 
-  if (remainingItems > 0) {
-    console.log(`SW: ${remainingItems} items remaining, scheduling next sync`);
+  if (processableItems > 0) {
+    console.log(`SW: ${processableItems} processable items remaining, scheduling next sync`);
     await registerBackgroundSync();
   }
 }

@@ -69,7 +69,7 @@ Required in `.dev.vars` (local) and Cloudflare secrets (production):
 - `HATENA_CONSUMER_SECRET`: From Hatena OAuth app
 
 For AI-powered suggestions (`/api/habu/suggest`):
-- `CLOUDFLARE_ACCOUNT_ID`: Your Cloudflare account ID
+- `CF_ACCOUNT_ID`: Your Cloudflare account ID (note: `CLOUDFLARE_ACCOUNT_ID` is reserved by Workers Builds)
 - `CLOUDFLARE_API_TOKEN`: API token with Browser Rendering permissions
 - `OPENAI_API_KEY`: OpenAI API key for GPT
 
@@ -78,7 +78,7 @@ Set production secrets with:
 wrangler secret put BETTER_AUTH_SECRET
 wrangler secret put HATENA_CONSUMER_KEY
 wrangler secret put HATENA_CONSUMER_SECRET
-wrangler secret put CLOUDFLARE_ACCOUNT_ID
+wrangler secret put CF_ACCOUNT_ID
 wrangler secret put CLOUDFLARE_API_TOKEN
 wrangler secret put OPENAI_API_KEY
 ```
@@ -117,7 +117,7 @@ When `/api/habu/bookmark` is called without a comment:
 3. OpenAI GPT generates summary (Japanese, max 100 chars) and tags (page language, max 10)
 4. Formatted as `[tag1][tag2]summary` and sent to Hatena
 
-Requires environment variables: `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN`, `OPENAI_API_KEY`
+Requires environment variables: `CF_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN`, `OPENAI_API_KEY`
 
 ## Testing Hatena OAuth Locally
 

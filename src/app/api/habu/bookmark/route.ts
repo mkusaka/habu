@@ -319,7 +319,7 @@ export async function POST(request: NextRequest) {
         // Fetch markdown content from URL
         const markdown = await fetchMarkdownFromUrl(
           url,
-          process.env.CLOUDFLARE_ACCOUNT_ID!,
+          process.env.CF_ACCOUNT_ID!,
           process.env.CLOUDFLARE_API_TOKEN!,
         );
 

@@ -18,8 +18,14 @@ const HATENA_TAGS_API_URL = "https://bookmark.hatenaapis.com/rest/1/my/tags";
 // Use ~60% for input (~240K tokens ≈ 960K chars), reserve rest for output + web search results
 const MAX_MARKDOWN_CHARS = 800000; // ~200K tokens
 
-// OpenAI client for moderation API
-const openaiClient = new OpenAI();
+// Lazy-initialized OpenAI client for moderation API
+let openaiClient: OpenAI | null = null;
+function getOpenAIClient(): OpenAI {
+  if (!openaiClient) {
+    openaiClient = new OpenAI();
+  }
+  return openaiClient;
+}
 
 // System prompt with current date and time
 function getSystemPrompt(): string {
@@ -158,7 +164,7 @@ async function generateSuggestions(
 
   // 1. Run moderation on content before sending to AI
   const moderationInput = truncatedMarkdown.slice(0, 5000); // Moderation API limit
-  const moderation = await openaiClient.moderations.create({
+  const moderation = await getOpenAIClient().moderations.create({
     model: "omni-moderation-latest",
     input: moderationInput,
   });

@@ -21,12 +21,14 @@ const MAX_MARKDOWN_CHARS = 800000; // ~200K tokens
 // OpenAI client for moderation API
 const openaiClient = new OpenAI();
 
-// System prompt with current date
+// System prompt with current date and time
 function getSystemPrompt(): string {
-  const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+  const now = new Date();
+  const date = now.toISOString().split("T")[0]; // YYYY-MM-DD
+  const time = now.toTimeString().split(" ")[0]; // HH:MM:SS
 
   return `<context>
-Today's date: ${today}
+Current date and time: ${date} ${time} (JST)
 </context>
 
 <role>

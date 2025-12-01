@@ -137,10 +137,12 @@ async function handleBookmarkRequest(event: FetchEvent): Promise<Response> {
         const result = (await response.clone().json()) as BookmarkApiResponse;
 
         if (result.success) {
-          // Success - update status to done and store generated content
+          // Success - update status to done and store generated content, clear error
           await db.bookmarks.update(queueId, {
             status: "done",
             updatedAt: new Date(),
+            lastError: undefined,
+            nextRetryAt: undefined,
             generatedComment: result.generatedComment,
             generatedSummary: result.generatedSummary,
             generatedTags: result.generatedTags,
@@ -346,10 +348,12 @@ async function processQueue(): Promise<void> {
       const result = (await response.json()) as BookmarkApiResponse;
 
       if (result.success && !result.queued) {
-        // Success - update status to done and store generated content
+        // Success - update status to done and store generated content, clear error
         await db.bookmarks.update(item.id, {
           status: "done",
           updatedAt: new Date(),
+          lastError: undefined,
+          nextRetryAt: undefined,
           generatedComment: result.generatedComment,
           generatedSummary: result.generatedSummary,
           generatedTags: result.generatedTags,

@@ -90,40 +90,44 @@ const fetchMarkdownAndModerateStep = createStep({
   execute: async ({ inputData }) => {
     const { url, cfAccountId, cfApiToken } = inputData;
 
-    // Fetch markdown from Cloudflare Browser Rendering
-    const response = await fetch(
-      `https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/browser-rendering/markdown`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${cfApiToken}`,
-        },
-        body: JSON.stringify({ url }),
+    let markdown = "";
+
+    // Try to fetch markdown from Cloudflare Browser Rendering
+    // PDFs and some other content types may fail - that's ok, we'll use metadata only
+    try {
+      const response = await fetch(
+        `https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/browser-rendering/markdown`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${cfApiToken}`,
+          },
+          body: JSON.stringify({ url }),
+        }
+      );
+
+      if (response.ok) {
+        const data = (await response.json()) as { success: boolean; result?: string; errors?: unknown[] };
+        if (data.success && data.result) {
+          markdown = data.result.slice(0, MAX_MARKDOWN_CHARS);
+        }
       }
-    );
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Browser Rendering API error: ${response.status} - ${errorText}`);
+    } catch (error) {
+      console.warn("Failed to fetch markdown, will use metadata only:", error);
     }
 
-    const data = (await response.json()) as { success: boolean; result?: string; errors?: unknown[] };
-    if (!data.success || !data.result) {
-      throw new Error("Failed to extract markdown from URL");
-    }
+    // Run moderation on the markdown content if we have any
+    if (markdown) {
+      const moderationInput = markdown.slice(0, 5000);
+      const moderation = await getOpenAIClient().moderations.create({
+        model: "omni-moderation-latest",
+        input: moderationInput,
+      });
 
-    const markdown = data.result.slice(0, MAX_MARKDOWN_CHARS);
-
-    // Run moderation on the markdown content first
-    const moderationInput = markdown.slice(0, 5000);
-    const moderation = await getOpenAIClient().moderations.create({
-      model: "omni-moderation-latest",
-      input: moderationInput,
-    });
-
-    if (moderation.results[0].flagged) {
-      throw new Error("Content flagged by moderation");
+      if (moderation.results[0].flagged) {
+        throw new Error("Content flagged by moderation");
+      }
     }
 
     return { url, existingTags: inputData.existingTags, markdown };

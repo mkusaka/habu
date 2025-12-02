@@ -319,74 +319,94 @@ async function processQueue(): Promise<void> {
     })
     .toArray();
 
-  console.log(`SW: Processing ${items.length} queued items`);
+  console.log(`SW: Processing ${items.length} queued items in parallel`);
 
-  for (const item of items) {
-    if (!item.id) continue;
-
-    try {
-      // Update status to sending
-      await db.bookmarks.update(item.id, {
-        status: "sending",
-        updatedAt: new Date(),
-      });
-
-      // Send to server (bypass SW fetch handler by using full URL)
-      const response = await fetch(new URL("/api/habu/bookmark", self.location.origin).href, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({
-          url: item.url,
-          title: item.title,
-          comment: item.comment,
-        }),
-      });
-
-      const result = (await response.json()) as BookmarkApiResponse;
-
-      if (result.success && !result.queued) {
-        // Success - update status to done and store generated content, clear error
-        await db.bookmarks.update(item.id, {
-          status: "done",
+  // Mark all items as sending first
+  await Promise.all(
+    items
+      .filter((item) => item.id)
+      .map((item) =>
+        db.bookmarks.update(item.id!, {
+          status: "sending",
           updatedAt: new Date(),
-          lastError: undefined,
-          nextRetryAt: undefined,
-          generatedComment: result.generatedComment,
-          generatedSummary: result.generatedSummary,
-          generatedTags: result.generatedTags,
-        });
-        console.log(`SW: Successfully sent bookmark ${item.id}`);
-      } else {
-        const retryCount = (item.retryCount || 0) + 1;
-        const retryDelays = [60000, 300000, 900000, 3600000]; // 1min, 5min, 15min, 60min
-        const delay = retryDelays[Math.min(retryCount - 1, retryDelays.length - 1)];
+        })
+      )
+  );
 
-        await db.bookmarks.update(item.id, {
-          status: "error",
-          lastError: result.error || "Unknown error",
-          retryCount,
-          nextRetryAt: Date.now() + delay,
-          updatedAt: new Date(),
-        });
-        console.log(`SW: Bookmark ${item.id} failed, will retry in ${delay / 1000}s`);
-      }
-    } catch (error) {
-      const retryCount = (item.retryCount || 0) + 1;
-      const retryDelays = [60000, 300000, 900000, 3600000];
-      const delay = retryDelays[Math.min(retryCount - 1, retryDelays.length - 1)];
+  // Process all items in parallel (using allSettled to handle individual failures gracefully)
+  const results = await Promise.allSettled(
+    items
+      .filter((item) => item.id)
+      .map(async (item) => {
+        try {
+          // Send to server (bypass SW fetch handler by using full URL)
+          const response = await fetch(new URL("/api/habu/bookmark", self.location.origin).href, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            credentials: "include",
+            body: JSON.stringify({
+              url: item.url,
+              title: item.title,
+              comment: item.comment,
+            }),
+          });
 
-      await db.bookmarks.update(item.id, {
-        status: "error",
-        lastError: error instanceof Error ? error.message : "Network error",
-        retryCount,
-        nextRetryAt: Date.now() + delay,
-        updatedAt: new Date(),
-      });
-      console.error(`SW: Error processing bookmark ${item.id}:`, error);
-    }
+          const result = (await response.json()) as BookmarkApiResponse;
+
+          if (result.success && !result.queued) {
+            // Success - update status to done and store generated content, clear error
+            await db.bookmarks.update(item.id!, {
+              status: "done",
+              updatedAt: new Date(),
+              lastError: undefined,
+              nextRetryAt: undefined,
+              generatedComment: result.generatedComment,
+              generatedSummary: result.generatedSummary,
+              generatedTags: result.generatedTags,
+            });
+            console.log(`SW: Successfully sent bookmark ${item.id}`);
+          } else {
+            const retryCount = (item.retryCount || 0) + 1;
+            const retryDelays = [60000, 300000, 900000, 3600000]; // 1min, 5min, 15min, 60min
+            const delay = retryDelays[Math.min(retryCount - 1, retryDelays.length - 1)];
+
+            await db.bookmarks.update(item.id!, {
+              status: "error",
+              lastError: result.error || "Unknown error",
+              retryCount,
+              nextRetryAt: Date.now() + delay,
+              updatedAt: new Date(),
+            });
+            console.log(`SW: Bookmark ${item.id} failed, will retry in ${delay / 1000}s`);
+          }
+        } catch (error) {
+          const retryCount = (item.retryCount || 0) + 1;
+          const retryDelays = [60000, 300000, 900000, 3600000];
+          const delay = retryDelays[Math.min(retryCount - 1, retryDelays.length - 1)];
+
+          try {
+            await db.bookmarks.update(item.id!, {
+              status: "error",
+              lastError: error instanceof Error ? error.message : "Network error",
+              retryCount,
+              nextRetryAt: Date.now() + delay,
+              updatedAt: new Date(),
+            });
+          } catch (dbError) {
+            console.error(`SW: Failed to update error status for bookmark ${item.id}:`, dbError);
+          }
+          console.error(`SW: Error processing bookmark ${item.id}:`, error);
+        }
+      })
+  );
+
+  // Log summary
+  const succeeded = results.filter((r) => r.status === "fulfilled").length;
+  const failed = results.filter((r) => r.status === "rejected").length;
+  if (failed > 0) {
+    console.log(`SW: Processed ${succeeded} succeeded, ${failed} failed`);
   }
 
   // Check if there are processable items remaining (queued, or error with nextRetryAt in the past)

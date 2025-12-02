@@ -227,6 +227,28 @@ async function registerBackgroundSync(): Promise<void> {
   }
 }
 
+// Show push notification for errors
+async function showErrorNotification(title: string, errorMessage: string, url?: string): Promise<void> {
+  try {
+    const permission = Notification.permission;
+    if (permission !== "granted") {
+      console.log("SW: Notification permission not granted");
+      return;
+    }
+
+    await self.registration.showNotification(title, {
+      body: errorMessage,
+      icon: "/icon-192x192.png",
+      badge: "/icon-192x192.png",
+      tag: "bookmark-error",
+      data: { url },
+      requireInteraction: false,
+    });
+  } catch (error) {
+    console.error("SW: Failed to show notification:", error);
+  }
+}
+
 // Track ongoing sync to prevent duplicate execution
 let syncInProgress = false;
 
@@ -380,16 +402,24 @@ async function processQueue(): Promise<void> {
               updatedAt: new Date(),
             });
             console.log(`SW: Bookmark ${item.id} failed, will retry in ${delay / 1000}s`);
+
+            // Show error notification
+            await showErrorNotification(
+              "Bookmark failed",
+              result.error || "Unknown error",
+              item.url
+            );
           }
         } catch (error) {
           const retryCount = (item.retryCount || 0) + 1;
           const retryDelays = [60000, 300000, 900000, 3600000];
           const delay = retryDelays[Math.min(retryCount - 1, retryDelays.length - 1)];
+          const errorMessage = error instanceof Error ? error.message : "Network error";
 
           try {
             await db.bookmarks.update(item.id!, {
               status: "error",
-              lastError: error instanceof Error ? error.message : "Network error",
+              lastError: errorMessage,
               retryCount,
               nextRetryAt: Date.now() + delay,
               updatedAt: new Date(),
@@ -398,6 +428,9 @@ async function processQueue(): Promise<void> {
             console.error(`SW: Failed to update error status for bookmark ${item.id}:`, dbError);
           }
           console.error(`SW: Error processing bookmark ${item.id}:`, error);
+
+          // Show error notification
+          await showErrorNotification("Bookmark failed", errorMessage, item.url);
         }
       })
   );

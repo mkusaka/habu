@@ -7,16 +7,13 @@ import { eq } from "drizzle-orm";
 import { createAuth } from "@/lib/auth";
 import CryptoJS from "crypto-js";
 
-const OAUTH_STATE_SECRET = process.env.BETTER_AUTH_SECRET || "change-this-secret-in-production";
-
 // Decrypt OAuth state
 function decryptOAuthState(
   encrypted: string,
+  secret: string,
 ): { token: string; tokenSecret: string; returnTo?: string } | null {
   try {
-    const decrypted = CryptoJS.AES.decrypt(encrypted, OAUTH_STATE_SECRET).toString(
-      CryptoJS.enc.Utf8,
-    );
+    const decrypted = CryptoJS.AES.decrypt(encrypted, secret).toString(CryptoJS.enc.Utf8);
     return JSON.parse(decrypted);
   } catch {
     return null;
@@ -40,8 +37,26 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(new URL("/settings?error=state_missing", request.url));
     }
 
+    // Get env for secrets
+    const { env } = getCloudflareContext();
+
+    // Get credentials from env
+    const consumerKey = env.HATENA_CONSUMER_KEY;
+    const consumerSecret = env.HATENA_CONSUMER_SECRET;
+    const authSecret = env.BETTER_AUTH_SECRET;
+
+    if (!consumerKey || !consumerSecret) {
+      console.error("Missing HATENA_CONSUMER_KEY or HATENA_CONSUMER_SECRET in env");
+      return NextResponse.redirect(new URL("/settings?error=config_error", request.url));
+    }
+
+    if (!authSecret) {
+      console.error("Missing BETTER_AUTH_SECRET in env");
+      return NextResponse.redirect(new URL("/settings?error=config_error", request.url));
+    }
+
     // Decrypt OAuth state
-    const oauthState = decryptOAuthState(encryptedState);
+    const oauthState = decryptOAuthState(encryptedState, authSecret);
 
     if (!oauthState) {
       return NextResponse.redirect(new URL("/settings?error=state_invalid", request.url));
@@ -60,10 +75,9 @@ export async function GET(request: NextRequest) {
       oauthToken,
       tokenSecret,
       oauthVerifier,
+      consumerKey,
+      consumerSecret,
     );
-
-    // Get DB connection for auth
-    const { env } = getCloudflareContext();
     const auth = createAuth(env.DB);
 
     // Get current user session

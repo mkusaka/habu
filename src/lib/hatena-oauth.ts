@@ -7,12 +7,11 @@ const HATENA_ACCESS_TOKEN_URL = "https://www.hatena.com/oauth/token";
 
 // OAuth 1.0a client setup
 // Note: oauth-1.0a library requires synchronous hash_function, so we use CryptoJS
-// TODO: Consider switching to a library that supports async crypto or implement custom OAuth
-function createOAuthClient() {
+function createOAuthClient(consumerKey: string, consumerSecret: string) {
   return new OAuth({
     consumer: {
-      key: process.env.HATENA_CONSUMER_KEY!,
-      secret: process.env.HATENA_CONSUMER_SECRET!,
+      key: consumerKey,
+      secret: consumerSecret,
     },
     signature_method: "HMAC-SHA1",
     hash_function(base_string, key) {
@@ -24,8 +23,10 @@ function createOAuthClient() {
 // Get request token from Hatena
 export async function getRequestToken(
   callbackUrl: string,
+  consumerKey: string,
+  consumerSecret: string,
 ): Promise<{ token: string; tokenSecret: string }> {
-  const oauth = createOAuthClient();
+  const oauth = createOAuthClient(consumerKey, consumerSecret);
 
   // IMPORTANT: Signature calculation must include ALL parameters that will be sent
   // (oauth_callback + scope). This is OAuth 1.0a spec requirement.
@@ -96,8 +97,10 @@ export async function getAccessToken(
   token: string,
   tokenSecret: string,
   verifier: string,
+  consumerKey: string,
+  consumerSecret: string,
 ): Promise<{ accessToken: string; accessTokenSecret: string }> {
-  const oauth = createOAuthClient();
+  const oauth = createOAuthClient(consumerKey, consumerSecret);
 
   // IMPORTANT: oauth_verifier must be included in signature calculation
   // BUT sent only once in the request body (not in Authorization header)
@@ -157,9 +160,11 @@ export function createSignedRequest(
   method: string,
   accessToken: string,
   accessTokenSecret: string,
+  consumerKey: string,
+  consumerSecret: string,
   data?: Record<string, string>,
 ): Record<string, string> {
-  const oauth = createOAuthClient();
+  const oauth = createOAuthClient(consumerKey, consumerSecret);
 
   const requestData = {
     url,

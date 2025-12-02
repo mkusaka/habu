@@ -14,12 +14,19 @@ const HATENA_TAGS_API_URL = "https://bookmark.hatenaapis.com/rest/1/my/tags";
 /**
  * Fetch user's existing tags from Hatena Bookmark API
  */
-async function fetchHatenaTags(accessToken: string, accessTokenSecret: string): Promise<string[]> {
+async function fetchHatenaTags(
+  accessToken: string,
+  accessTokenSecret: string,
+  consumerKey: string,
+  consumerSecret: string,
+): Promise<string[]> {
   const authHeaders = createSignedRequest(
     HATENA_TAGS_API_URL,
     "GET",
     accessToken,
     accessTokenSecret,
+    consumerKey,
+    consumerSecret,
   );
 
   const response = await fetch(HATENA_TAGS_API_URL, {
@@ -110,6 +117,18 @@ export async function POST(request: NextRequest) {
 
     const { accessToken: hatenaAccessToken, accessTokenSecret: hatenaAccessTokenSecret } = tokens;
 
+    // Get consumer credentials from env
+    const consumerKey = env.HATENA_CONSUMER_KEY;
+    const consumerSecret = env.HATENA_CONSUMER_SECRET;
+
+    if (!consumerKey || !consumerSecret) {
+      console.error("Missing HATENA_CONSUMER_KEY or HATENA_CONSUMER_SECRET in env");
+      return NextResponse.json(
+        { success: false, error: "Server configuration error" } as BookmarkResponse,
+        { status: 500 },
+      );
+    }
+
     // Parse request body
     const body: BookmarkRequest = await request.json();
     const { url, comment } = body;
@@ -142,7 +161,12 @@ export async function POST(request: NextRequest) {
     if (!comment) {
       try {
         // Fetch user's existing Hatena tags
-        const existingTags = await fetchHatenaTags(hatenaAccessToken, hatenaAccessTokenSecret);
+        const existingTags = await fetchHatenaTags(
+          hatenaAccessToken,
+          hatenaAccessTokenSecret,
+          consumerKey,
+          consumerSecret,
+        );
 
         // Run the bookmark suggestion workflow
         const workflow = mastra.getWorkflow("bookmark-suggestion");
@@ -193,6 +217,8 @@ export async function POST(request: NextRequest) {
       "POST",
       hatenaAccessToken,
       hatenaAccessTokenSecret,
+      consumerKey,
+      consumerSecret,
       bodyParams,
     );
 

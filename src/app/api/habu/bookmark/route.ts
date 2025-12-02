@@ -130,6 +130,12 @@ export async function POST(request: NextRequest) {
 
     const { accessToken: hatenaAccessToken, accessTokenSecret: hatenaAccessTokenSecret } = tokens;
 
+    console.log("[bookmark] DB tokens - userId:", session.user.id);
+    console.log("[bookmark] DB tokens - accessTokenPrefix:", hatenaAccessToken?.substring(0, 10));
+    console.log("[bookmark] DB tokens - accessTokenSecretPrefix:", hatenaAccessTokenSecret?.substring(0, 10));
+    console.log("[bookmark] DB tokens - scope:", tokens.scope);
+    console.log("[bookmark] DB tokens - updatedAt:", tokens.updatedAt);
+
     // Get consumer credentials from env
     const consumerKey = env.HATENA_CONSUMER_KEY;
     const consumerSecret = env.HATENA_CONSUMER_SECRET;

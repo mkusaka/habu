@@ -146,7 +146,7 @@ export async function POST(request: NextRequest) {
 
         // Run the bookmark suggestion workflow
         const workflow = mastra.getWorkflow("bookmark-suggestion");
-        const run = workflow.createRun();
+        const run = await workflow.createRunAsync();
         const result = await run.start({
           inputData: {
             url,

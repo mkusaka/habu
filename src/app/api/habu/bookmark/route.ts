@@ -20,6 +20,16 @@ async function fetchHatenaTags(
   consumerKey: string,
   consumerSecret: string,
 ): Promise<string[]> {
+  console.log("[fetchHatenaTags] Starting request", {
+    url: HATENA_TAGS_API_URL,
+    hasAccessToken: !!accessToken,
+    hasAccessTokenSecret: !!accessTokenSecret,
+    hasConsumerKey: !!consumerKey,
+    hasConsumerSecret: !!consumerSecret,
+    accessTokenPrefix: accessToken?.substring(0, 8) + "...",
+    consumerKeyPrefix: consumerKey?.substring(0, 8) + "...",
+  });
+
   const authHeaders = createSignedRequest(
     HATENA_TAGS_API_URL,
     "GET",
@@ -29,22 +39,27 @@ async function fetchHatenaTags(
     consumerSecret,
   );
 
+  console.log("[fetchHatenaTags] Auth header:", authHeaders.Authorization?.substring(0, 100) + "...");
+
   const response = await fetch(HATENA_TAGS_API_URL, {
     method: "GET",
     headers: authHeaders,
   });
 
+  console.log("[fetchHatenaTags] Response status:", response.status);
+
   if (!response.ok) {
-    // If 401, likely missing read_private scope - return empty array
-    if (response.status === 401) {
-      console.warn("Cannot fetch tags - may need read_private scope");
-      return [];
-    }
     const errorText = await response.text();
+    console.error("[fetchHatenaTags] Error response:", {
+      status: response.status,
+      statusText: response.statusText,
+      body: errorText,
+    });
     throw new Error(`Hatena Tags API error: ${response.status} - ${errorText}`);
   }
 
   const data = (await response.json()) as HatenaTagsResponse;
+  console.log("[fetchHatenaTags] Success, got", data.tags.length, "tags");
   return data.tags.map((t) => t.tag);
 }
 
@@ -212,6 +227,16 @@ export async function POST(request: NextRequest) {
     }
 
     // Create OAuth signed request
+    console.log("[createBookmark] Creating signed request", {
+      url: HATENA_BOOKMARK_API_URL,
+      hasAccessToken: !!hatenaAccessToken,
+      hasAccessTokenSecret: !!hatenaAccessTokenSecret,
+      hasConsumerKey: !!consumerKey,
+      hasConsumerSecret: !!consumerSecret,
+      accessTokenPrefix: hatenaAccessToken?.substring(0, 8) + "...",
+      consumerKeyPrefix: consumerKey?.substring(0, 8) + "...",
+    });
+
     const authHeaders = createSignedRequest(
       HATENA_BOOKMARK_API_URL,
       "POST",
@@ -221,6 +246,8 @@ export async function POST(request: NextRequest) {
       consumerSecret,
       bodyParams,
     );
+
+    console.log("[createBookmark] Auth header:", authHeaders.Authorization?.substring(0, 100) + "...");
 
     // Make request to Hatena Bookmark API
     const response = await fetch(HATENA_BOOKMARK_API_URL, {
@@ -232,9 +259,15 @@ export async function POST(request: NextRequest) {
       body: new URLSearchParams(bodyParams).toString(),
     });
 
+    console.log("[createBookmark] Response status:", response.status);
+
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Hatena API error:", errorText);
+      console.error("[createBookmark] Hatena API error:", {
+        status: response.status,
+        statusText: response.statusText,
+        body: errorText,
+      });
 
       // Try to parse error message from Hatena
       let errorMessage = `Hatena API error: ${response.status}`;

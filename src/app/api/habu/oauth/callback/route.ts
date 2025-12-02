@@ -106,7 +106,7 @@ export async function GET(request: NextRequest) {
         .set({
           accessToken,
           accessTokenSecret,
-          scope: "read_public,write_public",
+          scope: "read_public,read_private,write_public",
           updatedAt: new Date(),
         })
         .where(eq(hatenaTokens.userId, session.user.id));

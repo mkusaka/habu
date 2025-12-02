@@ -1,5 +1,10 @@
+import { Mastra } from "@mastra/core";
+import { bookmarkSuggestionWorkflow } from "./workflows/bookmark-suggestion";
 
-import { Mastra } from '@mastra/core';
+export const mastra = new Mastra({
+  workflows: {
+    "bookmark-suggestion": bookmarkSuggestionWorkflow,
+  },
+});
 
-export const mastra = new Mastra()
-        
+export { bookmarkSuggestionWorkflow };

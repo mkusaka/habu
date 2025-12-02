@@ -151,8 +151,8 @@ export async function POST(request: NextRequest) {
           inputData: {
             url,
             existingTags,
-            cfAccountId: process.env.CF_ACCOUNT_ID!,
-            cfApiToken: process.env.CLOUDFLARE_API_TOKEN!,
+            cfAccountId: env.CF_ACCOUNT_ID!,
+            cfApiToken: env.CLOUDFLARE_API_TOKEN!,
           },
         });
 

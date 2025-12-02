@@ -99,12 +99,8 @@ export async function GET(request: NextRequest) {
       .where(eq(hatenaTokens.userId, session.user.id))
       .get();
 
-    console.log("[oauth/callback] userId:", session.user.id);
-    console.log("[oauth/callback] existing tokens:", existing ? "yes" : "no");
-
     if (existing) {
       // Update existing tokens
-      console.log("[oauth/callback] Updating existing tokens with read_private scope");
       await db
         .update(hatenaTokens)
         .set({
@@ -116,7 +112,6 @@ export async function GET(request: NextRequest) {
         .where(eq(hatenaTokens.userId, session.user.id));
     } else {
       // Insert new tokens
-      console.log("[oauth/callback] Inserting new tokens with read_private scope");
       await db.insert(hatenaTokens).values({
         userId: session.user.id,
         accessToken,

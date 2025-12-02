@@ -20,14 +20,6 @@ async function fetchHatenaTags(
   consumerKey: string,
   consumerSecret: string,
 ): Promise<string[]> {
-  console.log("[fetchHatenaTags] Starting request to:", HATENA_TAGS_API_URL);
-  console.log("[fetchHatenaTags] hasAccessToken:", !!accessToken);
-  console.log("[fetchHatenaTags] hasAccessTokenSecret:", !!accessTokenSecret);
-  console.log("[fetchHatenaTags] hasConsumerKey:", !!consumerKey);
-  console.log("[fetchHatenaTags] hasConsumerSecret:", !!consumerSecret);
-  console.log("[fetchHatenaTags] accessTokenPrefix:", accessToken?.substring(0, 10));
-  console.log("[fetchHatenaTags] consumerKeyPrefix:", consumerKey?.substring(0, 10));
-
   const authHeaders = createSignedRequest(
     HATENA_TAGS_API_URL,
     "GET",
@@ -37,27 +29,17 @@ async function fetchHatenaTags(
     consumerSecret,
   );
 
-  console.log("[fetchHatenaTags] Auth header:", authHeaders.Authorization?.substring(0, 100) + "...");
-
   const response = await fetch(HATENA_TAGS_API_URL, {
     method: "GET",
     headers: authHeaders,
   });
 
-  console.log("[fetchHatenaTags] Response status:", response.status);
-
   if (!response.ok) {
     const errorText = await response.text();
-    console.error("[fetchHatenaTags] Error response:", {
-      status: response.status,
-      statusText: response.statusText,
-      body: errorText,
-    });
     throw new Error(`Hatena Tags API error: ${response.status} - ${errorText}`);
   }
 
   const data = (await response.json()) as HatenaTagsResponse;
-  console.log("[fetchHatenaTags] Success, got", data.tags.length, "tags");
   return data.tags.map((t) => t.tag);
 }
 
@@ -129,12 +111,6 @@ export async function POST(request: NextRequest) {
     }
 
     const { accessToken: hatenaAccessToken, accessTokenSecret: hatenaAccessTokenSecret } = tokens;
-
-    console.log("[bookmark] DB tokens - userId:", session.user.id);
-    console.log("[bookmark] DB tokens - accessTokenPrefix:", hatenaAccessToken?.substring(0, 10));
-    console.log("[bookmark] DB tokens - accessTokenSecretPrefix:", hatenaAccessTokenSecret?.substring(0, 10));
-    console.log("[bookmark] DB tokens - scope:", tokens.scope);
-    console.log("[bookmark] DB tokens - updatedAt:", tokens.updatedAt);
 
     // Get consumer credentials from env
     const consumerKey = env.HATENA_CONSUMER_KEY;
@@ -231,16 +207,6 @@ export async function POST(request: NextRequest) {
     }
 
     // Create OAuth signed request
-    console.log("[createBookmark] Creating signed request", {
-      url: HATENA_BOOKMARK_API_URL,
-      hasAccessToken: !!hatenaAccessToken,
-      hasAccessTokenSecret: !!hatenaAccessTokenSecret,
-      hasConsumerKey: !!consumerKey,
-      hasConsumerSecret: !!consumerSecret,
-      accessTokenPrefix: hatenaAccessToken?.substring(0, 8) + "...",
-      consumerKeyPrefix: consumerKey?.substring(0, 8) + "...",
-    });
-
     const authHeaders = createSignedRequest(
       HATENA_BOOKMARK_API_URL,
       "POST",
@@ -250,8 +216,6 @@ export async function POST(request: NextRequest) {
       consumerSecret,
       bodyParams,
     );
-
-    console.log("[createBookmark] Auth header:", authHeaders.Authorization?.substring(0, 100) + "...");
 
     // Make request to Hatena Bookmark API
     const response = await fetch(HATENA_BOOKMARK_API_URL, {
@@ -263,15 +227,8 @@ export async function POST(request: NextRequest) {
       body: new URLSearchParams(bodyParams).toString(),
     });
 
-    console.log("[createBookmark] Response status:", response.status);
-
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("[createBookmark] Hatena API error:", {
-        status: response.status,
-        statusText: response.statusText,
-        body: errorText,
-      });
 
       // Try to parse error message from Hatena
       let errorMessage = `Hatena API error: ${response.status}`;

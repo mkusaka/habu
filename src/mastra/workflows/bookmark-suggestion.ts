@@ -217,7 +217,11 @@ const generateSummaryStep = createStep({
       .filter(Boolean)
       .join("\n");
 
-    const systemPrompt = `<role>
+    const systemPrompt = `<context>
+Current date: ${date} (JST)
+</context>
+
+<role>
 You are a bookmark curator for Hatena Bookmark.
 </role>
 

@@ -49,3 +49,4 @@ test-oauth.js
 test-oauth-access.js
 public/sw.js
 public/workbox-*.js
+.mastra/

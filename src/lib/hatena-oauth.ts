@@ -89,7 +89,7 @@ export async function getRequestToken(
 
 // Get authorize URL
 export function getAuthorizeUrl(token: string): string {
-  return `${HATENA_AUTHORIZE_URL}?oauth_token=${token}`;
+  return `${HATENA_AUTHORIZE_URL}?oauth_token=${encodeURIComponent(token)}`;
 }
 
 // Exchange request token for access token

@@ -20,15 +20,13 @@ async function fetchHatenaTags(
   consumerKey: string,
   consumerSecret: string,
 ): Promise<string[]> {
-  console.log("[fetchHatenaTags] Starting request", {
-    url: HATENA_TAGS_API_URL,
-    hasAccessToken: !!accessToken,
-    hasAccessTokenSecret: !!accessTokenSecret,
-    hasConsumerKey: !!consumerKey,
-    hasConsumerSecret: !!consumerSecret,
-    accessTokenPrefix: accessToken?.substring(0, 8) + "...",
-    consumerKeyPrefix: consumerKey?.substring(0, 8) + "...",
-  });
+  console.log("[fetchHatenaTags] Starting request to:", HATENA_TAGS_API_URL);
+  console.log("[fetchHatenaTags] hasAccessToken:", !!accessToken);
+  console.log("[fetchHatenaTags] hasAccessTokenSecret:", !!accessTokenSecret);
+  console.log("[fetchHatenaTags] hasConsumerKey:", !!consumerKey);
+  console.log("[fetchHatenaTags] hasConsumerSecret:", !!consumerSecret);
+  console.log("[fetchHatenaTags] accessTokenPrefix:", accessToken?.substring(0, 10));
+  console.log("[fetchHatenaTags] consumerKeyPrefix:", consumerKey?.substring(0, 10));
 
   const authHeaders = createSignedRequest(
     HATENA_TAGS_API_URL,

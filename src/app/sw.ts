@@ -241,13 +241,36 @@ async function showErrorNotification(title: string, errorMessage: string, url?: 
       icon: "/icon-192x192.png",
       badge: "/icon-192x192.png",
       tag: "bookmark-error",
-      data: { url },
+      data: { url, action: "open-queue" },
       requireInteraction: false,
     });
   } catch (error) {
     console.error("SW: Failed to show notification:", error);
   }
 }
+
+// Handle notification click - open queue page
+self.addEventListener("notificationclick", (event: NotificationEvent) => {
+  event.notification.close();
+
+  event.waitUntil(
+    (async () => {
+      const clients = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+
+      // Try to focus an existing window
+      for (const client of clients) {
+        if (client.url.includes("/queue") && "focus" in client) {
+          return client.focus();
+        }
+      }
+
+      // Open new window to queue page
+      if (self.clients.openWindow) {
+        return self.clients.openWindow("/queue");
+      }
+    })()
+  );
+});
 
 // Track ongoing sync to prevent duplicate execution
 let syncInProgress = false;

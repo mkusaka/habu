@@ -26,13 +26,31 @@ interface SWMessageEvent extends ExtendableEvent {
   readonly data: unknown;
 }
 
+interface SWNotificationEvent extends ExtendableEvent {
+  readonly notification: Notification;
+  readonly action: string;
+}
+
+interface WindowClient {
+  readonly url: string;
+  focus(): Promise<WindowClient>;
+  navigate(url: string): Promise<WindowClient | null>;
+}
+
+interface Clients {
+  matchAll(options?: { type?: string; includeUncontrolled?: boolean }): Promise<WindowClient[]>;
+  openWindow(url: string): Promise<WindowClient | null>;
+}
+
 declare global {
   interface ServiceWorkerGlobalScope {
     addEventListener(type: "sync", listener: (event: SyncEvent) => void): void;
     addEventListener(type: "fetch", listener: (event: FetchEvent) => void): void;
     addEventListener(type: "message", listener: (event: SWMessageEvent) => void): void;
+    addEventListener(type: "notificationclick", listener: (event: SWNotificationEvent) => void): void;
     readonly registration: ServiceWorkerRegistration;
     readonly location: { origin: string };
+    readonly clients: Clients;
   }
   interface ServiceWorkerRegistration {
     readonly sync: SyncManager;
@@ -250,29 +268,25 @@ async function showErrorNotification(title: string, errorMessage: string, url?: 
 }
 
 // Handle notification click - open queue page
-self.addEventListener("notificationclick", (event: NotificationEvent) => {
+self.addEventListener("notificationclick", (event: SWNotificationEvent) => {
   event.notification.close();
 
   event.waitUntil(
     (async () => {
-      const clients = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+      const windowClients = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
 
       // Try to find existing PWA window and navigate to queue
-      for (const client of clients) {
-        if ("focus" in client && "navigate" in client) {
-          await client.focus();
-          // Navigate to queue page if not already there
-          if (!client.url.includes("/queue")) {
-            await (client as WindowClient).navigate("/queue");
-          }
-          return;
+      for (const client of windowClients) {
+        await client.focus();
+        // Navigate to queue page if not already there
+        if (!client.url.includes("/queue")) {
+          await client.navigate("/queue");
         }
+        return;
       }
 
       // No existing window - open queue page (will open in PWA if installed)
-      if (self.clients.openWindow) {
-        return self.clients.openWindow("/queue");
-      }
+      await self.clients.openWindow("/queue");
     })()
   );
 });

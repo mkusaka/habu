@@ -218,7 +218,7 @@ const generateSummaryStep = createStep({
       .join("\n");
 
     const systemPrompt = `<context>
-Current date: ${date} (JST)
+Current date and time: ${date} ${time} (JST)
 </context>
 
 <role>

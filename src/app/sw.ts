@@ -257,14 +257,19 @@ self.addEventListener("notificationclick", (event: NotificationEvent) => {
     (async () => {
       const clients = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
 
-      // Try to focus an existing window
+      // Try to find existing PWA window and navigate to queue
       for (const client of clients) {
-        if (client.url.includes("/queue") && "focus" in client) {
-          return client.focus();
+        if ("focus" in client && "navigate" in client) {
+          await client.focus();
+          // Navigate to queue page if not already there
+          if (!client.url.includes("/queue")) {
+            await (client as WindowClient).navigate("/queue");
+          }
+          return;
         }
       }
 
-      // Open new window to queue page
+      // No existing window - open queue page (will open in PWA if installed)
       if (self.clients.openWindow) {
         return self.clients.openWindow("/queue");
       }

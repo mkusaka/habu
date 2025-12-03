@@ -170,8 +170,8 @@ export async function POST(request: NextRequest) {
           inputData: {
             url,
             existingTags,
-            cfAccountId: env.CF_ACCOUNT_ID!,
-            cfApiToken: env.CLOUDFLARE_API_TOKEN!,
+            cfAccountId: env.BROWSER_RENDERING_ACCOUNT_ID!,
+            cfApiToken: env.BROWSER_RENDERING_API_TOKEN!,
           },
         });
 

@@ -69,8 +69,8 @@ Required in `.dev.vars` (local) and Cloudflare secrets (production):
 - `HATENA_CONSUMER_SECRET`: From Hatena OAuth app
 
 For AI-powered suggestions (`/api/habu/suggest`):
-- `CF_ACCOUNT_ID`: Your Cloudflare account ID (note: `CLOUDFLARE_ACCOUNT_ID` is reserved by Workers Builds)
-- `CLOUDFLARE_API_TOKEN`: API token with Browser Rendering permissions
+- `BROWSER_RENDERING_ACCOUNT_ID`: Your Cloudflare account ID (note: `CF_*` and `CLOUDFLARE_*` prefixes are reserved by Wrangler)
+- `BROWSER_RENDERING_API_TOKEN`: API token with Browser Rendering permissions
 - `OPENAI_API_KEY`: OpenAI API key for GPT
 
 Set production secrets with:
@@ -78,8 +78,8 @@ Set production secrets with:
 wrangler secret put BETTER_AUTH_SECRET
 wrangler secret put HATENA_CONSUMER_KEY
 wrangler secret put HATENA_CONSUMER_SECRET
-wrangler secret put CF_ACCOUNT_ID
-wrangler secret put CLOUDFLARE_API_TOKEN
+wrangler secret put BROWSER_RENDERING_ACCOUNT_ID
+wrangler secret put BROWSER_RENDERING_API_TOKEN
 wrangler secret put OPENAI_API_KEY
 ```
 

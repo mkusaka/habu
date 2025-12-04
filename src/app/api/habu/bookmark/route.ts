@@ -43,7 +43,14 @@ async function fetchHatenaTags(
 
   if (!response.ok) {
     const errorText = await response.text();
+    const wwwAuth = response.headers.get("WWW-Authenticate");
     console.error("[fetchHatenaTags] Error:", response.status, errorText);
+    console.error("[fetchHatenaTags] WWW-Authenticate:", wwwAuth);
+    // Extract OAuth problem code if present
+    const problemMatch = wwwAuth?.match(/oauth_problem="([^"]+)"/);
+    if (problemMatch) {
+      console.error("[fetchHatenaTags] OAuth Problem:", problemMatch[1]);
+    }
     throw new Error(`Hatena Tags API error: ${response.status} - ${errorText}`);
   }
 
@@ -251,6 +258,15 @@ export async function POST(request: NextRequest) {
 
     if (!response.ok) {
       const errorText = await response.text();
+      const wwwAuth = response.headers.get("WWW-Authenticate");
+
+      // Log OAuth problem code if present
+      console.error("[bookmark] Hatena Bookmark API error:", response.status, errorText);
+      console.error("[bookmark] WWW-Authenticate:", wwwAuth);
+      const problemMatch = wwwAuth?.match(/oauth_problem="([^"]+)"/);
+      if (problemMatch) {
+        console.error("[bookmark] OAuth Problem:", problemMatch[1]);
+      }
 
       // Try to parse error message from Hatena
       let errorMessage = `Hatena API error: ${response.status}`;

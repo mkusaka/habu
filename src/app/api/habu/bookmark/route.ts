@@ -20,6 +20,9 @@ async function fetchHatenaTags(
   consumerKey: string,
   consumerSecret: string,
 ): Promise<string[]> {
+  console.log("[fetchHatenaTags] accessToken:", accessToken?.substring(0, 10) + "...");
+  console.log("[fetchHatenaTags] consumerKey:", consumerKey?.substring(0, 10) + "...");
+
   const authHeaders = createSignedRequest(
     HATENA_TAGS_API_URL,
     "GET",
@@ -29,17 +32,23 @@ async function fetchHatenaTags(
     consumerSecret,
   );
 
+  console.log("[fetchHatenaTags] Authorization:", authHeaders.Authorization?.substring(0, 80) + "...");
+
   const response = await fetch(HATENA_TAGS_API_URL, {
     method: "GET",
     headers: authHeaders,
   });
 
+  console.log("[fetchHatenaTags] Response status:", response.status);
+
   if (!response.ok) {
     const errorText = await response.text();
+    console.error("[fetchHatenaTags] Error:", response.status, errorText);
     throw new Error(`Hatena Tags API error: ${response.status} - ${errorText}`);
   }
 
   const data = (await response.json()) as HatenaTagsResponse;
+  console.log("[fetchHatenaTags] Got", data.tags.length, "tags");
   return data.tags.map((t) => t.tag);
 }
 
@@ -112,9 +121,15 @@ export async function POST(request: NextRequest) {
 
     const { accessToken: hatenaAccessToken, accessTokenSecret: hatenaAccessTokenSecret } = tokens;
 
+    console.log("[bookmark] DB tokens - scope:", tokens.scope);
+    console.log("[bookmark] DB tokens - updatedAt:", tokens.updatedAt);
+
     // Get consumer credentials from env
     const consumerKey = env.HATENA_CONSUMER_KEY;
     const consumerSecret = env.HATENA_CONSUMER_SECRET;
+
+    console.log("[bookmark] env.HATENA_CONSUMER_KEY exists:", !!consumerKey);
+    console.log("[bookmark] env.HATENA_CONSUMER_SECRET exists:", !!consumerSecret);
 
     if (!consumerKey || !consumerSecret) {
       console.error("Missing HATENA_CONSUMER_KEY or HATENA_CONSUMER_SECRET in env");

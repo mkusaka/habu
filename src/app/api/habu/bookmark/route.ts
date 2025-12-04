@@ -145,6 +145,9 @@ export async function POST(request: NextRequest) {
     const body: BookmarkRequest = await request.json();
     const { url, comment } = body;
 
+    console.log("[bookmark] Request - url:", url);
+    console.log("[bookmark] Request - comment:", comment ? `"${comment.substring(0, 30)}..."` : "(empty)");
+
     if (!url) {
       return NextResponse.json({ success: false, error: "URL is required" } as BookmarkResponse, {
         status: 400,

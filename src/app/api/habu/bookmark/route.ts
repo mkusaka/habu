@@ -121,6 +121,8 @@ export async function POST(request: NextRequest) {
 
     const { accessToken: hatenaAccessToken, accessTokenSecret: hatenaAccessTokenSecret } = tokens;
 
+    console.log("[bookmark] session.user.id:", session.user.id);
+    console.log("[bookmark] DB tokens - userId:", tokens.userId);
     console.log("[bookmark] DB tokens - scope:", tokens.scope);
     console.log("[bookmark] DB tokens - updatedAt:", tokens.updatedAt);
 
@@ -241,6 +243,8 @@ export async function POST(request: NextRequest) {
       },
       body: new URLSearchParams(bodyParams).toString(),
     });
+
+    console.log("[bookmark] Hatena Bookmark API response status:", response.status);
 
     if (!response.ok) {
       const errorText = await response.text();

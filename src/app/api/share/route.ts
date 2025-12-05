@@ -20,9 +20,9 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Redirect to the share page with query params
+    // Redirect to the root page with query params
     const shareUrl = request.nextUrl.clone();
-    shareUrl.pathname = "/share";
+    shareUrl.pathname = "/";
     shareUrl.search = "";
 
     if (url) shareUrl.searchParams.set("url", url);
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("Share POST error:", error);
     const fallbackUrl = request.nextUrl.clone();
-    fallbackUrl.pathname = "/share";
+    fallbackUrl.pathname = "/";
     fallbackUrl.search = "";
     return NextResponse.redirect(fallbackUrl, 303);
   }

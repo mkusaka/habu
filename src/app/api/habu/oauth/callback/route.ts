@@ -148,34 +148,24 @@ export async function GET(request: NextRequest) {
     // If existingUserWithHatenaId.id === session.user.id, we're already the correct user
 
     // Store Hatena tokens in database (upsert by userId)
-    const existingTokens = await db
-      .select()
-      .from(hatenaTokens)
-      .where(eq(hatenaTokens.userId, targetUserId))
-      .get();
-
-    if (existingTokens) {
-      // Update existing tokens
-      console.log("[oauth/callback] Updating existing tokens for user:", targetUserId);
-      await db
-        .update(hatenaTokens)
-        .set({
-          accessToken,
-          accessTokenSecret,
-          scope: "read_public,read_private,write_public",
-          updatedAt: new Date(),
-        })
-        .where(eq(hatenaTokens.userId, targetUserId));
-    } else {
-      // Insert new tokens
-      console.log("[oauth/callback] Inserting new tokens for user:", targetUserId);
-      await db.insert(hatenaTokens).values({
+    console.log("[oauth/callback] Upserting tokens for user:", targetUserId);
+    await db
+      .insert(hatenaTokens)
+      .values({
         userId: targetUserId,
         accessToken,
         accessTokenSecret,
         scope: "read_public,read_private,write_public",
+      })
+      .onConflictDoUpdate({
+        target: hatenaTokens.userId,
+        set: {
+          accessToken,
+          accessTokenSecret,
+          scope: "read_public,read_private,write_public",
+          updatedAt: new Date(),
+        },
       });
-    }
     console.log("[oauth/callback] Token saved successfully");
 
     // Clear OAuth state cookie and redirect to return URL

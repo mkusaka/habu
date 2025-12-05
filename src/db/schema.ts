@@ -74,6 +74,7 @@ export const hatenaTokens = sqliteTable("hatena_tokens", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   userId: text("user_id")
     .notNull()
+    .unique() // One token per user
     .references(() => users.id, { onDelete: "cascade" }),
   accessToken: text("access_token").notNull(),
   accessTokenSecret: text("access_token_secret").notNull(),

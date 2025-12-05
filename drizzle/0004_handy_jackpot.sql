@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX `hatena_tokens_user_id_unique` ON `hatena_tokens` (`user_id`);

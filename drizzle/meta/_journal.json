@@ -22,6 +22,13 @@
       "when": 1763922661398,
       "tag": "0002_chunky_black_widow",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1764958695587,
+      "tag": "0003_neat_outlaw_kid",
+      "breakpoints": true
     }
   ]
 }

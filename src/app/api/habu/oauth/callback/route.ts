@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAccessToken } from "@/lib/hatena-oauth";
+import { getAccessToken, fetchHatenaUserInfo } from "@/lib/hatena-oauth";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { getDb } from "@/db/client";
-import { hatenaTokens } from "@/db/schema";
+import { hatenaTokens, users, sessions } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { createAuth } from "@/lib/auth";
 import CryptoJS from "crypto-js";
@@ -83,7 +83,19 @@ export async function GET(request: NextRequest) {
     console.log("[oauth/callback] Got access token:", accessToken?.substring(0, 10) + "...");
     console.log("[oauth/callback] Token length:", accessToken?.length);
     console.log("[oauth/callback] Token contains special chars:", /[+/=]/.test(accessToken || ""));
+
+    // Fetch Hatena user info to get hatenaId
+    const { hatenaId, displayName } = await fetchHatenaUserInfo(
+      accessToken,
+      accessTokenSecret,
+      consumerKey,
+      consumerSecret,
+    );
+    console.log("[oauth/callback] Hatena ID:", hatenaId);
+    console.log("[oauth/callback] Hatena display name:", displayName);
+
     const auth = createAuth(env.DB);
+    const db = getDb(env.DB);
 
     // Get current user session
     const session = await auth.api.getSession({
@@ -94,19 +106,57 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(new URL("/settings?error=not_authenticated", request.url));
     }
 
-    // Store Hatena tokens in database
-    const db = getDb(env.DB);
-
-    // Check if user already has tokens (upsert)
-    const existing = await db
+    // Check if there's an existing user with this hatenaId
+    const existingUserWithHatenaId = await db
       .select()
-      .from(hatenaTokens)
-      .where(eq(hatenaTokens.userId, session.user.id))
+      .from(users)
+      .where(eq(users.hatenaId, hatenaId))
       .get();
 
-    if (existing) {
+    let targetUserId = session.user.id;
+
+    if (existingUserWithHatenaId && existingUserWithHatenaId.id !== session.user.id) {
+      // Another user already has this hatenaId - switch to that user
+      console.log("[oauth/callback] Found existing user with hatenaId:", existingUserWithHatenaId.id);
+      console.log("[oauth/callback] Switching session from", session.user.id, "to", existingUserWithHatenaId.id);
+
+      // Update the current session to point to the existing user
+      await db
+        .update(sessions)
+        .set({
+          userId: existingUserWithHatenaId.id,
+          updatedAt: new Date(),
+        })
+        .where(eq(sessions.userId, session.user.id));
+
+      targetUserId = existingUserWithHatenaId.id;
+
+      // Optionally delete the orphaned anonymous user (if it has no other data)
+      // For now, we leave it as is - it will just be an orphaned record
+    } else if (!existingUserWithHatenaId) {
+      // No user with this hatenaId yet - update current user's hatenaId
+      console.log("[oauth/callback] Setting hatenaId for current user:", session.user.id);
+      await db
+        .update(users)
+        .set({
+          hatenaId,
+          name: displayName || session.user.name,
+          updatedAt: new Date(),
+        })
+        .where(eq(users.id, session.user.id));
+    }
+    // If existingUserWithHatenaId.id === session.user.id, we're already the correct user
+
+    // Store Hatena tokens in database (upsert by userId)
+    const existingTokens = await db
+      .select()
+      .from(hatenaTokens)
+      .where(eq(hatenaTokens.userId, targetUserId))
+      .get();
+
+    if (existingTokens) {
       // Update existing tokens
-      console.log("[oauth/callback] Updating existing tokens for user:", session.user.id);
+      console.log("[oauth/callback] Updating existing tokens for user:", targetUserId);
       await db
         .update(hatenaTokens)
         .set({
@@ -115,12 +165,12 @@ export async function GET(request: NextRequest) {
           scope: "read_public,read_private,write_public",
           updatedAt: new Date(),
         })
-        .where(eq(hatenaTokens.userId, session.user.id));
+        .where(eq(hatenaTokens.userId, targetUserId));
     } else {
       // Insert new tokens
-      console.log("[oauth/callback] Inserting new tokens for user:", session.user.id);
+      console.log("[oauth/callback] Inserting new tokens for user:", targetUserId);
       await db.insert(hatenaTokens).values({
-        userId: session.user.id,
+        userId: targetUserId,
         accessToken,
         accessTokenSecret,
         scope: "read_public,read_private,write_public",

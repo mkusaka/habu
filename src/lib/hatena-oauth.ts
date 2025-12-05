@@ -154,6 +154,53 @@ export async function getAccessToken(
   return { accessToken, accessTokenSecret };
 }
 
+// Hatena user info API response type
+interface HatenaUserInfo {
+  url_name: string;
+  display_name?: string;
+}
+
+const HATENA_USER_INFO_URL = "https://n.hatena.com/applications/my.json";
+
+// Fetch Hatena user info (url_name = Hatena ID)
+export async function fetchHatenaUserInfo(
+  accessToken: string,
+  accessTokenSecret: string,
+  consumerKey: string,
+  consumerSecret: string,
+): Promise<{ hatenaId: string; displayName?: string }> {
+  const oauth = createOAuthClient(consumerKey, consumerSecret);
+
+  const requestData = {
+    url: HATENA_USER_INFO_URL,
+    method: "GET",
+  };
+
+  const headers = oauth.toHeader(
+    oauth.authorize(requestData, {
+      key: accessToken,
+      secret: accessTokenSecret,
+    }),
+  );
+
+  const response = await fetch(HATENA_USER_INFO_URL, {
+    method: "GET",
+    headers: { ...headers },
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Failed to fetch Hatena user info: ${response.status} - ${errorText}`);
+  }
+
+  const data = (await response.json()) as HatenaUserInfo;
+
+  return {
+    hatenaId: data.url_name,
+    displayName: data.display_name,
+  };
+}
+
 // Create signed request to Hatena API
 export function createSignedRequest(
   url: string,

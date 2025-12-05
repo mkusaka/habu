@@ -10,6 +10,7 @@ export const users = sqliteTable("users", {
   name: text("name"),
   image: text("image"),
   isAnonymous: integer("is_anonymous", { mode: "boolean" }).default(false), // For anonymous plugin
+  hatenaId: text("hatena_id").unique(), // Hatena user ID (url_name) - one user per Hatena account
   createdAt: integer("created_at", { mode: "timestamp_ms" })
     .notNull()
     .default(sql`(unixepoch('now') * 1000)`),

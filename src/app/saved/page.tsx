@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Settings } from "lucide-react";
 
 export default function SavedPage() {
   const router = useRouter();
@@ -34,6 +34,10 @@ export default function SavedPage() {
           <Button onClick={() => router.push("/queue")}>View Queue</Button>
           <Button variant="outline" onClick={() => router.push("/")}>
             Go Home
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => router.push("/settings")}>
+            <Settings className="w-4 h-4 mr-2" />
+            Connect to Hatena
           </Button>
         </div>
       </CardContent>

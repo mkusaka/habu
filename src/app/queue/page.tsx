@@ -28,6 +28,7 @@ import {
   Trash2,
   Home,
   Copy,
+  Settings,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -238,6 +239,16 @@ export default function QueuePage() {
               <div className="text-muted-foreground">Errors</div>
             </div>
           </div>
+
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full"
+            onClick={() => router.push("/settings")}
+          >
+            <Settings className="w-4 h-4 mr-2" />
+            Connect to Hatena Bookmark
+          </Button>
         </CardContent>
       </Card>
 

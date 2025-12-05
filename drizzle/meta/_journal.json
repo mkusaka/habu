@@ -36,6 +36,13 @@
       "when": 1764958886148,
       "tag": "0004_handy_jackpot",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1764963663321,
+      "tag": "0005_flimsy_mantis",
+      "breakpoints": true
     }
   ]
 }

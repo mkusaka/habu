@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createSignedRequest } from "@/lib/hatena-oauth";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { getDb } from "@/db/client";
-import { hatenaTokens } from "@/db/schema";
+import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { createAuth } from "@/lib/auth";
 import type { BookmarkRequest, BookmarkResponse, HatenaTagsResponse } from "@/types/habu";
@@ -162,28 +162,27 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Get Hatena tokens from database
+    // Get user with hatenaToken relation
     const db = getDb(env.DB);
 
-    const tokens = await db
-      .select()
-      .from(hatenaTokens)
-      .where(eq(hatenaTokens.userId, session.user.id))
-      .get();
+    const user = await db.query.users.findFirst({
+      where: eq(users.id, session.user.id),
+      with: { hatenaToken: true },
+    });
 
-    if (!tokens) {
+    if (!user?.hatenaToken) {
       return NextResponse.json(
         { success: false, error: "Hatena not connected" } as BookmarkResponse,
         { status: 400 },
       );
     }
 
-    const { accessToken: hatenaAccessToken, accessTokenSecret: hatenaAccessTokenSecret } = tokens;
+    const { accessToken: hatenaAccessToken, accessTokenSecret: hatenaAccessTokenSecret } = user.hatenaToken;
 
     console.log("[bookmark] session.user.id:", session.user.id);
-    console.log("[bookmark] DB tokens - userId:", tokens.userId);
-    console.log("[bookmark] DB tokens - scope:", tokens.scope);
-    console.log("[bookmark] DB tokens - updatedAt:", tokens.updatedAt);
+    console.log("[bookmark] user.hatenaId:", user.hatenaId);
+    console.log("[bookmark] DB tokens - scope:", user.hatenaToken.scope);
+    console.log("[bookmark] DB tokens - updatedAt:", user.hatenaToken.updatedAt);
 
     // Get consumer credentials from env
     const consumerKey = env.HATENA_CONSUMER_KEY;

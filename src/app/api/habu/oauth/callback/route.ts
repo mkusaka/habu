@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAccessToken, fetchHatenaUserInfo } from "@/lib/hatena-oauth";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { getDb } from "@/db/client";
-import { hatenaTokens, users, sessions } from "@/db/schema";
+import { hatenaTokens, users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { createAuth } from "@/lib/auth";
 import CryptoJS from "crypto-js";
@@ -112,79 +112,30 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(new URL("/settings?error=not_authenticated", request.url));
     }
 
-    // Get current user from DB to check isAnonymous status
-    const currentUser = await db
-      .select()
-      .from(users)
-      .where(eq(users.id, session.user.id))
-      .get();
+    // Update current user with hatenaId and mark as non-anonymous
+    console.log("[oauth/callback] Updating user:", session.user.id, "with hatenaId:", hatenaId);
+    await db
+      .update(users)
+      .set({
+        hatenaId,
+        name: displayName || session.user.name,
+        isAnonymous: false,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, session.user.id));
 
-    // Check if there's an existing user with this hatenaId
-    const existingUserWithHatenaId = await db
-      .select()
-      .from(users)
-      .where(eq(users.hatenaId, hatenaId))
-      .get();
-
-    let targetUserId = session.user.id;
-
-    if (existingUserWithHatenaId && existingUserWithHatenaId.id !== session.user.id) {
-      // Another user already has this hatenaId - switch to that user
-      console.log("[oauth/callback] Found existing user with hatenaId:", existingUserWithHatenaId.id);
-      console.log("[oauth/callback] Switching session from", session.user.id, "to", existingUserWithHatenaId.id);
-
-      // Update the current session to point to the existing user
-      await db
-        .update(sessions)
-        .set({
-          userId: existingUserWithHatenaId.id,
-          updatedAt: new Date(),
-        })
-        .where(eq(sessions.userId, session.user.id));
-
-      targetUserId = existingUserWithHatenaId.id;
-
-      // Optionally delete the orphaned anonymous user (if it has no other data)
-      // For now, we leave it as is - it will just be an orphaned record
-    } else if (!existingUserWithHatenaId) {
-      // No user with this hatenaId yet - update current user's hatenaId and mark as non-anonymous
-      console.log("[oauth/callback] Setting hatenaId for current user:", session.user.id);
-      await db
-        .update(users)
-        .set({
-          hatenaId,
-          name: displayName || session.user.name,
-          isAnonymous: false,
-          updatedAt: new Date(),
-        })
-        .where(eq(users.id, session.user.id));
-    } else {
-      // existingUserWithHatenaId.id === session.user.id - we're already the correct user
-      // Just ensure isAnonymous is false (in case it wasn't updated before)
-      if (currentUser?.isAnonymous) {
-        console.log("[oauth/callback] Marking existing user as non-anonymous:", session.user.id);
-        await db
-          .update(users)
-          .set({
-            isAnonymous: false,
-            updatedAt: new Date(),
-          })
-          .where(eq(users.id, session.user.id));
-      }
-    }
-
-    // Store Hatena tokens in database (upsert by userId)
-    console.log("[oauth/callback] Upserting tokens for user:", targetUserId);
+    // Store Hatena tokens in database (upsert by hatenaId)
+    console.log("[oauth/callback] Upserting tokens for hatenaId:", hatenaId);
     await db
       .insert(hatenaTokens)
       .values({
-        userId: targetUserId,
+        hatenaId,
         accessToken,
         accessTokenSecret,
         scope: "read_public,read_private,write_public",
       })
       .onConflictDoUpdate({
-        target: hatenaTokens.userId,
+        target: hatenaTokens.hatenaId,
         set: {
           accessToken,
           accessTokenSecret,

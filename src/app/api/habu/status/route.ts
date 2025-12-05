@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { getDb } from "@/db/client";
-import { hatenaTokens } from "@/db/schema";
+import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { createAuth } from "@/lib/auth";
 
@@ -23,18 +23,14 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Check if user has Hatena tokens in database
     const db = getDb(env.DB);
-
-    const tokens = await db
-      .select()
-      .from(hatenaTokens)
-      .where(eq(hatenaTokens.userId, session.user.id))
-      .get();
+    const user = await db.query.users.findFirst({
+      where: eq(users.id, session.user.id),
+    });
 
     return NextResponse.json({
       authenticated: true,
-      hasHatena: !!tokens,
+      hasHatena: !!user?.hatenaId,
     });
   } catch (error) {
     console.error("Status check error:", error);

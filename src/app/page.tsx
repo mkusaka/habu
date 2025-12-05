@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { createAuth } from "@/lib/auth";
 import { getDb } from "@/db/client";
-import { hatenaTokens } from "@/db/schema";
+import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Bookmark, List, Settings, Plus, ExternalLink } from "lucide-react";
@@ -25,13 +25,10 @@ export default async function Home() {
 
   if (session?.user) {
     const db = getDb(env.DB);
-    const tokens = await db
-      .select()
-      .from(hatenaTokens)
-      .where(eq(hatenaTokens.userId, session.user.id))
-      .get();
-
-    hasHatena = !!tokens;
+    const user = await db.query.users.findFirst({
+      where: eq(users.id, session.user.id),
+    });
+    hasHatena = !!user?.hatenaId;
   }
 
   return (

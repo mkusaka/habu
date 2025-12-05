@@ -69,13 +69,9 @@ export const verifications = sqliteTable("verifications", {
     .default(sql`(unixepoch('now') * 1000)`),
 });
 
-// Hatena OAuth tokens (separate from Better Auth accounts for explicit management)
+// Hatena OAuth tokens - keyed by hatenaId so multiple users can share the same token
 export const hatenaTokens = sqliteTable("hatena_tokens", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
-  userId: text("user_id")
-    .notNull()
-    .unique() // One token per user
-    .references(() => users.id, { onDelete: "cascade" }),
+  hatenaId: text("hatena_id").primaryKey(), // Hatena user ID as primary key
   accessToken: text("access_token").notNull(),
   accessTokenSecret: text("access_token_secret").notNull(),
   scope: text("scope").notNull(),
@@ -88,15 +84,15 @@ export const hatenaTokens = sqliteTable("hatena_tokens", {
 });
 
 // Relations
-export const usersRelations = relations(users, ({ many }) => ({
+export const usersRelations = relations(users, ({ many, one }) => ({
   sessions: many(sessions),
   accounts: many(accounts),
-  hatenaTokens: many(hatenaTokens),
+  hatenaToken: one(hatenaTokens, {
+    fields: [users.hatenaId],
+    references: [hatenaTokens.hatenaId],
+  }),
 }));
 
-export const hatenaTokensRelations = relations(hatenaTokens, ({ one }) => ({
-  user: one(users, {
-    fields: [hatenaTokens.userId],
-    references: [users.id],
-  }),
+export const hatenaTokensRelations = relations(hatenaTokens, ({ many }) => ({
+  users: many(users),
 }));

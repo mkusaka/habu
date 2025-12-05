@@ -20,43 +20,88 @@ async function fetchHatenaTags(
   consumerKey: string,
   consumerSecret: string,
 ): Promise<string[]> {
-  console.log("[fetchHatenaTags] accessToken:", accessToken?.substring(0, 10) + "...");
-  console.log("[fetchHatenaTags] consumerKey:", consumerKey?.substring(0, 10) + "...");
+  const maxRetries = 3;
+  const baseDelay = 500; // 500ms, 1000ms, 2000ms
 
-  const authHeaders = createSignedRequest(
-    HATENA_TAGS_API_URL,
-    "GET",
-    accessToken,
-    accessTokenSecret,
-    consumerKey,
-    consumerSecret,
-  );
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    console.log(`[fetchHatenaTags] Attempt ${attempt}/${maxRetries}`);
+    console.log("[fetchHatenaTags] accessToken:", accessToken?.substring(0, 10) + "...");
+    console.log("[fetchHatenaTags] consumerKey:", consumerKey?.substring(0, 10) + "...");
+    console.log("[fetchHatenaTags] Current time (ISO):", new Date().toISOString());
 
-  console.log("[fetchHatenaTags] Authorization:", authHeaders.Authorization?.substring(0, 80) + "...");
+    // Generate fresh OAuth headers for each attempt (new nonce/timestamp)
+    const authHeaders = createSignedRequest(
+      HATENA_TAGS_API_URL,
+      "GET",
+      accessToken,
+      accessTokenSecret,
+      consumerKey,
+      consumerSecret,
+    );
 
-  const response = await fetch(HATENA_TAGS_API_URL, {
-    method: "GET",
-    headers: authHeaders,
-  });
+    // Extract and log nonce/timestamp from Authorization header
+    const authHeader = authHeaders.Authorization || "";
+    const nonceMatch = authHeader.match(/oauth_nonce="([^"]+)"/);
+    const timestampMatch = authHeader.match(/oauth_timestamp="([^"]+)"/);
+    console.log("[fetchHatenaTags] oauth_nonce:", nonceMatch?.[1]);
+    console.log("[fetchHatenaTags] oauth_timestamp:", timestampMatch?.[1]);
 
-  console.log("[fetchHatenaTags] Response status:", response.status);
+    try {
+      const response = await fetch(HATENA_TAGS_API_URL, {
+        method: "GET",
+        headers: authHeaders,
+        redirect: "error", // Detect silent redirects
+      });
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    const wwwAuth = response.headers.get("WWW-Authenticate");
-    console.error("[fetchHatenaTags] Error:", response.status, errorText);
-    console.error("[fetchHatenaTags] WWW-Authenticate:", wwwAuth);
-    // Extract OAuth problem code if present
-    const problemMatch = wwwAuth?.match(/oauth_problem="([^"]+)"/);
-    if (problemMatch) {
-      console.error("[fetchHatenaTags] OAuth Problem:", problemMatch[1]);
+      // Log CF-Ray for debugging IP/POP issues
+      const cfRay = response.headers.get("cf-ray");
+      console.log("[fetchHatenaTags] Response status:", response.status, "cf-ray:", cfRay);
+
+      if (response.ok) {
+        const data = (await response.json()) as HatenaTagsResponse;
+        console.log("[fetchHatenaTags] Got", data.tags.length, "tags");
+        return data.tags.map((t) => t.tag);
+      }
+
+      // Handle error
+      const errorText = await response.text();
+      const wwwAuth = response.headers.get("WWW-Authenticate");
+      console.error("[fetchHatenaTags] Error:", response.status, errorText);
+      console.error("[fetchHatenaTags] WWW-Authenticate:", wwwAuth);
+
+      const problemMatch = wwwAuth?.match(/oauth_problem="([^"]+)"/);
+      if (problemMatch) {
+        console.error("[fetchHatenaTags] OAuth Problem:", problemMatch[1]);
+      }
+
+      // Don't retry on non-401 errors or if we have a specific oauth_problem
+      if (response.status !== 401 || problemMatch) {
+        throw new Error(`Hatena Tags API error: ${response.status} - ${errorText}`);
+      }
+
+      // 401 without oauth_problem - retry with backoff
+      if (attempt < maxRetries) {
+        const delay = baseDelay * Math.pow(2, attempt - 1);
+        console.log(`[fetchHatenaTags] Retrying in ${delay}ms...`);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      } else {
+        throw new Error(`Hatena Tags API error: ${response.status} - ${errorText}`);
+      }
+    } catch (error) {
+      // Handle redirect errors
+      if (error instanceof TypeError && error.message.includes("redirect")) {
+        console.error("[fetchHatenaTags] Redirect detected - Authorization header may be lost");
+      }
+      if (attempt >= maxRetries) {
+        throw error;
+      }
+      const delay = baseDelay * Math.pow(2, attempt - 1);
+      console.log(`[fetchHatenaTags] Error, retrying in ${delay}ms...`, error);
+      await new Promise((resolve) => setTimeout(resolve, delay));
     }
-    throw new Error(`Hatena Tags API error: ${response.status} - ${errorText}`);
   }
 
-  const data = (await response.json()) as HatenaTagsResponse;
-  console.log("[fetchHatenaTags] Got", data.tags.length, "tags");
-  return data.tags.map((t) => t.tag);
+  throw new Error("Hatena Tags API error: max retries exceeded");
 }
 
 /**

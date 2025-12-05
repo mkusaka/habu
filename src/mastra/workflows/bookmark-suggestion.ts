@@ -38,6 +38,44 @@ interface PageMetadata {
   };
 }
 
+// YouTube oEmbed response type
+interface YouTubeOEmbedResponse {
+  title?: string;
+  author_name?: string;
+  author_url?: string;
+  type?: string;
+  provider_name?: string;
+}
+
+// Helper to check if URL is YouTube
+function isYouTubeUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return (
+      parsed.hostname === "www.youtube.com" ||
+      parsed.hostname === "youtube.com" ||
+      parsed.hostname === "youtu.be" ||
+      parsed.hostname === "m.youtube.com"
+    );
+  } catch {
+    return false;
+  }
+}
+
+// Fetch YouTube metadata via oEmbed API
+async function fetchYouTubeOEmbed(url: string): Promise<YouTubeOEmbedResponse | null> {
+  try {
+    const oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`;
+    const response = await fetch(oembedUrl);
+    if (!response.ok) {
+      return null;
+    }
+    return (await response.json()) as YouTubeOEmbedResponse;
+  } catch {
+    return null;
+  }
+}
+
 // Input/Output schemas
 const WorkflowInputSchema = z.object({
   url: z.string().url(),
@@ -134,7 +172,7 @@ const fetchMarkdownAndModerateStep = createStep({
   },
 });
 
-// Step 1b: Fetch metadata from page-meta-proxy
+// Step 1b: Fetch metadata from page-meta-proxy (with YouTube oEmbed fallback)
 const fetchMetadataStep = createStep({
   id: "fetch-metadata",
   inputSchema: WorkflowInputSchema,
@@ -145,10 +183,44 @@ const fetchMetadataStep = createStep({
     try {
       const response = await fetch(`${PAGE_META_PROXY_URL}?url=${encodeURIComponent(url)}`);
       if (!response.ok) {
+        // If meta proxy fails and it's YouTube, try oEmbed
+        if (isYouTubeUrl(url)) {
+          const oembed = await fetchYouTubeOEmbed(url);
+          if (oembed) {
+            return {
+              metadata: {
+                title: oembed.title,
+                author: oembed.author_name,
+                siteName: "YouTube",
+                ogType: "video",
+              },
+            };
+          }
+        }
         return { metadata: {} };
       }
 
       const meta = (await response.json()) as PageMetadata;
+
+      // Check if meta proxy returned empty/generic YouTube data
+      const hasValidTitle = meta?.title && !meta.title.match(/^-?\s*YouTube$/);
+      const hasValidOg = meta?.og && Object.keys(meta.og).length > 0 && meta.og.title;
+
+      // If YouTube URL and metadata is empty/generic, fallback to oEmbed
+      if (isYouTubeUrl(url) && !hasValidTitle && !hasValidOg) {
+        const oembed = await fetchYouTubeOEmbed(url);
+        if (oembed) {
+          return {
+            metadata: {
+              title: oembed.title,
+              author: oembed.author_name,
+              siteName: "YouTube",
+              ogType: "video",
+            },
+          };
+        }
+      }
+
       return {
         metadata: {
           title: meta?.title || meta?.og?.title || meta?.twitter?.title,
@@ -161,6 +233,20 @@ const fetchMetadataStep = createStep({
         },
       };
     } catch {
+      // On error, try YouTube oEmbed as last resort
+      if (isYouTubeUrl(url)) {
+        const oembed = await fetchYouTubeOEmbed(url);
+        if (oembed) {
+          return {
+            metadata: {
+              title: oembed.title,
+              author: oembed.author_name,
+              siteName: "YouTube",
+              ogType: "video",
+            },
+          };
+        }
+      }
       return { metadata: {} };
     }
   },

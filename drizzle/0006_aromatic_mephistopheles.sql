@@ -1,0 +1,1 @@
+DROP INDEX `users_hatena_id_unique`;

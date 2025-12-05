@@ -43,6 +43,13 @@
       "when": 1764963663321,
       "tag": "0005_flimsy_mantis",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1764964750029,
+      "tag": "0006_aromatic_mephistopheles",
+      "breakpoints": true
     }
   ]
 }

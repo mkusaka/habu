@@ -18,6 +18,48 @@ interface SaveFormProps {
   hasHatena: boolean;
 }
 
+interface DraftData {
+  url: string;
+  title: string;
+  comment: string;
+  timestamp: number;
+}
+
+const DRAFT_KEY = "habu-draft";
+const DRAFT_EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+// Save draft to localStorage
+function saveDraft(url: string, title: string, comment: string) {
+  if (!url && !title && !comment) {
+    localStorage.removeItem(DRAFT_KEY);
+    return;
+  }
+  const draft: DraftData = { url, title, comment, timestamp: Date.now() };
+  localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+}
+
+// Load draft from localStorage
+function loadDraft(): DraftData | null {
+  try {
+    const stored = localStorage.getItem(DRAFT_KEY);
+    if (!stored) return null;
+    const draft = JSON.parse(stored) as DraftData;
+    // Check if draft is expired
+    if (Date.now() - draft.timestamp > DRAFT_EXPIRY_MS) {
+      localStorage.removeItem(DRAFT_KEY);
+      return null;
+    }
+    return draft;
+  } catch {
+    return null;
+  }
+}
+
+// Clear draft from localStorage
+function clearDraft() {
+  localStorage.removeItem(DRAFT_KEY);
+}
+
 // Validate URL format
 function isValidUrl(urlString: string): boolean {
   if (!urlString) return false;
@@ -50,8 +92,35 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
   const [isOnline, setIsOnline] = useState(true);
   const [isFetchingTitle, setIsFetchingTitle] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [draftRestored, setDraftRestored] = useState(false);
 
   const debouncedUrl = useDebounce(url, 500);
+
+  // Restore draft on mount (only if no initial values from URL params)
+  useEffect(() => {
+    if (!initialUrl && !initialTitle && !initialComment) {
+      const draft = loadDraft();
+      if (draft && (draft.url || draft.title || draft.comment)) {
+        setUrl(draft.url);
+        setTitle(draft.title);
+        setComment(draft.comment);
+        setDraftRestored(true);
+      }
+    }
+  }, [initialUrl, initialTitle, initialComment]);
+
+  // Save draft when fields change (debounced)
+  const debouncedTitle = useDebounce(title, 500);
+  const debouncedComment = useDebounce(comment, 500);
+
+  useEffect(() => {
+    // Don't save draft if we just restored it
+    if (draftRestored) {
+      setDraftRestored(false);
+      return;
+    }
+    saveDraft(debouncedUrl, debouncedTitle, debouncedComment);
+  }, [debouncedUrl, debouncedTitle, debouncedComment, draftRestored]);
 
   // Track online status
   useEffect(() => {
@@ -152,10 +221,11 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
         : "Will sync when connected to Hatena.",
     });
 
-    // Clear form
+    // Clear form and draft
     setUrl("");
     setTitle("");
     setComment("");
+    clearDraft();
     setIsSaving(false);
 
     // Try to close window (works when opened as share target)

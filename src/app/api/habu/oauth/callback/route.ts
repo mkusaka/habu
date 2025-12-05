@@ -64,9 +64,15 @@ export async function GET(request: NextRequest) {
 
     const { token: storedToken, tokenSecret, returnTo = "/settings" } = oauthState;
 
+    // Debug logging for token comparison
+    console.log("[oauth/callback] oauth_token from URL:", oauthToken);
+    console.log("[oauth/callback] storedToken from cookie:", storedToken);
+    console.log("[oauth/callback] tokens match:", oauthToken === storedToken);
+
     // Verify that the callback token matches the request token we initiated
     // This prevents token fixation attacks
     if (oauthToken !== storedToken) {
+      console.error("[oauth/callback] Token mismatch! URL:", oauthToken, "Cookie:", storedToken);
       return NextResponse.redirect(new URL("/settings?error=token_mismatch", request.url));
     }
 

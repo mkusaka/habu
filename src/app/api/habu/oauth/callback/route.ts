@@ -64,15 +64,9 @@ export async function GET(request: NextRequest) {
 
     const { token: storedToken, tokenSecret, returnTo = "/settings" } = oauthState;
 
-    // Debug logging for token comparison
-    console.log("[oauth/callback] oauth_token from URL:", oauthToken);
-    console.log("[oauth/callback] storedToken from cookie:", storedToken);
-    console.log("[oauth/callback] tokens match:", oauthToken === storedToken);
-
     // Verify that the callback token matches the request token we initiated
     // This prevents token fixation attacks
     if (oauthToken !== storedToken) {
-      console.error("[oauth/callback] Token mismatch! URL:", oauthToken, "Cookie:", storedToken);
       return NextResponse.redirect(new URL("/settings?error=token_mismatch", request.url));
     }
 
@@ -85,11 +79,6 @@ export async function GET(request: NextRequest) {
       consumerSecret,
     );
 
-    // Log token info for debugging (masked)
-    console.log("[oauth/callback] Got access token:", accessToken?.substring(0, 10) + "...");
-    console.log("[oauth/callback] Token length:", accessToken?.length);
-    console.log("[oauth/callback] Token contains special chars:", /[+/=]/.test(accessToken || ""));
-
     // Fetch Hatena user info to get hatenaId
     const { hatenaId, displayName } = await fetchHatenaUserInfo(
       accessToken,
@@ -97,8 +86,6 @@ export async function GET(request: NextRequest) {
       consumerKey,
       consumerSecret,
     );
-    console.log("[oauth/callback] Hatena ID:", hatenaId);
-    console.log("[oauth/callback] Hatena display name:", displayName);
 
     const auth = createAuth(env.DB);
     const db = getDb(env.DB);
@@ -113,7 +100,6 @@ export async function GET(request: NextRequest) {
     }
 
     // Update current user with hatenaId and mark as non-anonymous
-    console.log("[oauth/callback] Updating user:", session.user.id, "with hatenaId:", hatenaId);
     await db
       .update(users)
       .set({
@@ -125,7 +111,6 @@ export async function GET(request: NextRequest) {
       .where(eq(users.id, session.user.id));
 
     // Store Hatena tokens in database (upsert by hatenaId)
-    console.log("[oauth/callback] Upserting tokens for hatenaId:", hatenaId);
     await db
       .insert(hatenaTokens)
       .values({
@@ -143,7 +128,6 @@ export async function GET(request: NextRequest) {
           updatedAt: new Date(),
         },
       });
-    console.log("[oauth/callback] Token saved successfully");
 
     // Clear OAuth state cookie and redirect to return URL
     const response = NextResponse.redirect(

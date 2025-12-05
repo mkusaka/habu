@@ -154,6 +154,16 @@ export async function GET(request: NextRequest) {
     return response;
   } catch (error) {
     console.error("OAuth callback error:", error);
+
+    // Check for specific OAuth errors
+    const errorMessage = error instanceof Error ? error.message : "";
+    if (errorMessage.includes("verifier_invalid")) {
+      return NextResponse.redirect(new URL("/settings?error=verifier_invalid", request.url));
+    }
+    if (errorMessage.includes("token_rejected")) {
+      return NextResponse.redirect(new URL("/settings?error=token_rejected", request.url));
+    }
+
     return NextResponse.redirect(new URL("/settings?error=oauth_failed", request.url));
   }
 }

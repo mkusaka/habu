@@ -50,12 +50,19 @@ async function fetchHatenaTags(
       const response = await fetch(HATENA_TAGS_API_URL, {
         method: "GET",
         headers: authHeaders,
-        redirect: "error", // Detect silent redirects
+        redirect: "manual", // Detect silent redirects (CF Workers doesn't support "error")
       });
 
       // Log CF-Ray for debugging IP/POP issues
       const cfRay = response.headers.get("cf-ray");
       console.log("[fetchHatenaTags] Response status:", response.status, "cf-ray:", cfRay);
+
+      // Check for redirect manually (Authorization header may be stripped)
+      if (response.status >= 300 && response.status < 400) {
+        const location = response.headers.get("Location");
+        console.error("[fetchHatenaTags] Redirect detected:", response.status, "Location:", location);
+        throw new Error(`Hatena Tags API redirect detected: ${response.status} -> ${location}`);
+      }
 
       if (response.ok) {
         const data = (await response.json()) as HatenaTagsResponse;

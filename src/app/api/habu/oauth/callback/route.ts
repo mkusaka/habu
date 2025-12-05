@@ -78,6 +78,11 @@ export async function GET(request: NextRequest) {
       consumerKey,
       consumerSecret,
     );
+
+    // Log token info for debugging (masked)
+    console.log("[oauth/callback] Got access token:", accessToken?.substring(0, 10) + "...");
+    console.log("[oauth/callback] Token length:", accessToken?.length);
+    console.log("[oauth/callback] Token contains special chars:", /[+/=]/.test(accessToken || ""));
     const auth = createAuth(env.DB);
 
     // Get current user session
@@ -101,6 +106,7 @@ export async function GET(request: NextRequest) {
 
     if (existing) {
       // Update existing tokens
+      console.log("[oauth/callback] Updating existing tokens for user:", session.user.id);
       await db
         .update(hatenaTokens)
         .set({
@@ -112,6 +118,7 @@ export async function GET(request: NextRequest) {
         .where(eq(hatenaTokens.userId, session.user.id));
     } else {
       // Insert new tokens
+      console.log("[oauth/callback] Inserting new tokens for user:", session.user.id);
       await db.insert(hatenaTokens).values({
         userId: session.user.id,
         accessToken,
@@ -119,6 +126,7 @@ export async function GET(request: NextRequest) {
         scope: "read_public,read_private,write_public",
       });
     }
+    console.log("[oauth/callback] Token saved successfully");
 
     // Clear OAuth state cookie and redirect to return URL
     const response = NextResponse.redirect(

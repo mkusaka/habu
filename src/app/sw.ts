@@ -35,6 +35,7 @@ interface WindowClient {
   readonly url: string;
   focus(): Promise<WindowClient>;
   navigate(url: string): Promise<WindowClient | null>;
+  postMessage(message: unknown): void;
 }
 
 interface Clients {
@@ -245,6 +246,23 @@ async function registerBackgroundSync(): Promise<void> {
   }
 }
 
+// Notify all clients of bookmark status changes
+async function notifyClients(message: {
+  type: "bookmark-error" | "bookmark-success";
+  url: string;
+  title?: string;
+  error?: string;
+}): Promise<void> {
+  try {
+    const clients = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+    for (const client of clients) {
+      client.postMessage(message);
+    }
+  } catch (error) {
+    console.error("SW: Failed to notify clients:", error);
+  }
+}
+
 // Show push notification for errors
 async function showErrorNotification(title: string, errorMessage: string, url?: string): Promise<void> {
   try {
@@ -445,7 +463,13 @@ async function processQueue(): Promise<void> {
             });
             console.log(`SW: Bookmark ${item.id} failed, will retry in ${delay / 1000}s`);
 
-            // Show error notification
+            // Notify clients and show error notification
+            await notifyClients({
+              type: "bookmark-error",
+              url: item.url,
+              title: item.title,
+              error: result.error || "Unknown error",
+            });
             await showErrorNotification(
               "Bookmark failed",
               result.error || "Unknown error",
@@ -471,7 +495,13 @@ async function processQueue(): Promise<void> {
           }
           console.error(`SW: Error processing bookmark ${item.id}:`, error);
 
-          // Show error notification
+          // Notify clients and show error notification
+          await notifyClients({
+            type: "bookmark-error",
+            url: item.url,
+            title: item.title,
+            error: errorMessage,
+          });
           await showErrorNotification("Bookmark failed", errorMessage, item.url);
         }
       })

@@ -2,15 +2,50 @@
 
 import { useEffect } from "react";
 import { triggerSync } from "@/lib/queue-sync";
+import { toast } from "sonner";
+
+interface SWMessage {
+  type: "bookmark-error" | "bookmark-success";
+  url: string;
+  title?: string;
+  error?: string;
+}
 
 /**
- * Fallback sync trigger for browsers without Background Sync API (e.g., Safari).
+ * Handles background sync fallback and Service Worker messages.
  *
  * Listens for:
  * - online event: triggers sync when browser comes back online
  * - visibilitychange: triggers sync when user returns to the tab
+ * - SW messages: shows toast notifications for bookmark errors/success
  */
 export function BackgroundSyncFallback() {
+  // Listen for SW messages
+  useEffect(() => {
+    if (!("serviceWorker" in navigator)) return;
+
+    const handleMessage = (event: MessageEvent<SWMessage>) => {
+      const { type, title, url, error } = event.data;
+
+      if (type === "bookmark-error") {
+        toast.error("Bookmark failed", {
+          description: `${title || url}: ${error}`,
+        });
+      } else if (type === "bookmark-success") {
+        toast.success("Bookmark saved", {
+          description: title || url,
+        });
+      }
+    };
+
+    navigator.serviceWorker.addEventListener("message", handleMessage);
+
+    return () => {
+      navigator.serviceWorker.removeEventListener("message", handleMessage);
+    };
+  }, []);
+
+  // Fallback sync for browsers without Background Sync API
   useEffect(() => {
     // Check if Background Sync is supported
     const hasBackgroundSync =

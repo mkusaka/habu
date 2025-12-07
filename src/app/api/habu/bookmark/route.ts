@@ -327,6 +327,7 @@ export async function POST(request: NextRequest) {
               userId: session.user.id,
               hatenaId: user.hatenaId,
               url,
+              gitSha: process.env.NEXT_PUBLIC_GIT_SHA,
             },
           },
         });

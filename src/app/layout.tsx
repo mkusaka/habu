@@ -45,7 +45,9 @@ export default function RootLayout({
       >
         <ServiceWorkerRegister />
         <BackgroundSyncFallback />
-        <main className="h-full p-2 bg-gray-50 overflow-auto">{children}</main>
+        <main className="h-full p-2 bg-gray-50 overflow-auto">
+          <div className="max-w-lg mx-auto">{children}</div>
+        </main>
         <Toaster />
       </body>
     </html>

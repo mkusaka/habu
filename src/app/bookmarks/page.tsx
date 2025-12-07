@@ -20,6 +20,8 @@ import {
 import { LinkButton } from "@/components/ui/link-button";
 import { RefreshButton } from "./refresh-button";
 
+export const dynamic = "force-dynamic";
+
 const PAGE_SIZE = 20;
 const HATENA_MY_API_URL = "https://bookmark.hatenaapis.com/rest/1/my";
 
@@ -300,7 +302,7 @@ export default async function BookmarksPage({ searchParams }: BookmarksPageProps
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Suspense fallback={<BookmarkListLoading />}>
+          <Suspense key={page} fallback={<BookmarkListLoading />}>
             <BookmarkList page={page} />
           </Suspense>
         </CardContent>

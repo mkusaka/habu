@@ -5,7 +5,7 @@ import { getDb } from "@/db/client";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Home, Settings } from "lucide-react";
+import { ListTodo, Home, Settings } from "lucide-react";
 import { LinkButton } from "@/components/ui/link-button";
 import { SyncButton } from "./sync-button";
 import { QueueStats, QueueList, ClearCompletedButton } from "./queue-list";
@@ -37,38 +37,39 @@ export default async function QueuePage() {
   const hasHatena = await getHatenaStatus();
 
   return (
-    <div className="w-full space-y-4">
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Bookmark Queue</CardTitle>
+    <Card className="w-full">
+      <CardHeader className="pb-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <ListTodo className="w-6 h-6 text-primary" />
+            <CardTitle className="text-xl">Bookmark Queue</CardTitle>
+          </div>
+          <div className="flex items-center gap-1">
+            <SyncButton />
             <LinkButton href="/" variant="ghost" size="icon">
               <Home className="w-5 h-5" />
             </LinkButton>
           </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Sync controls */}
-          <div className="flex gap-2">
-            <SyncButton />
-            <ClearCompletedButton />
-          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Stats */}
+        <QueueStats />
 
-          {/* Stats */}
-          <QueueStats />
+        {/* Connect to Hatena (only when not connected) */}
+        {!hasHatena && (
+          <LinkButton href="/settings" variant="outline" size="sm" className="w-full">
+            <Settings className="w-4 h-4 mr-2" />
+            Connect to Hatena Bookmark
+          </LinkButton>
+        )}
 
-          {/* Connect to Hatena (only when not connected) */}
-          {!hasHatena && (
-            <LinkButton href="/settings" variant="outline" size="sm" className="w-full">
-              <Settings className="w-4 h-4 mr-2" />
-              Connect to Hatena Bookmark
-            </LinkButton>
-          )}
-        </CardContent>
-      </Card>
+        {/* Queue items */}
+        <QueueList />
 
-      {/* Queue items */}
-      <QueueList />
-    </div>
+        {/* Clear completed button */}
+        <ClearCompletedButton />
+      </CardContent>
+    </Card>
   );
 }

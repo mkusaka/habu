@@ -5,7 +5,6 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { db, deleteQueueItem, clearCompletedItems } from "@/lib/queue-db";
 import { saveBookmark } from "@/lib/bookmark-client";
 import type { BookmarkQueue } from "@/types/habu";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -173,11 +172,9 @@ export function QueueList() {
 
   if (items.length === 0) {
     return (
-      <Card>
-        <CardContent className="py-8 text-center text-muted-foreground">
-          No bookmarks in queue
-        </CardContent>
-      </Card>
+      <div className="text-center py-8 text-muted-foreground">
+        <p>No bookmarks in queue</p>
+      </div>
     );
   }
 
@@ -185,80 +182,79 @@ export function QueueList() {
     <>
       <div className="space-y-2">
         {items.map((item, index) => (
-          <Card key={item.id || index}>
-            <CardContent className="py-4">
-              <div className="flex items-start gap-3">
-                <div className="mt-1">{getStatusIcon(item.status)}</div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium truncate">{item.title || item.url}</div>
-                  <div className="text-xs text-muted-foreground truncate">{item.url}</div>
-                  {item.status === "done" && item.generatedSummary && (
-                    <div className="text-xs mt-1 p-2 bg-green-50 rounded border border-green-200">
-                      <div className="text-green-700">{item.generatedSummary}</div>
-                      {item.generatedTags && item.generatedTags.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {item.generatedTags.map((tag, i) => (
-                            <span
-                              key={i}
-                              className="px-1.5 py-0.5 bg-green-100 text-green-700 rounded text-xs"
-                            >
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  {item.comment && !item.generatedSummary && (
-                    <div className="text-xs text-muted-foreground mt-1">{item.comment}</div>
-                  )}
-                  {item.lastError && (
-                    <div className="text-xs text-red-600 mt-1 p-2 bg-red-50 rounded border border-red-200">
-                      <span className="font-semibold">Error:</span> {item.lastError}
-                    </div>
-                  )}
-                  <div className="text-xs text-muted-foreground mt-1">
-                    {getStatusText(item.status)} • {new Date(item.createdAt).toLocaleString()}
-                    {item.retryCount > 0 && ` • Retry ${item.retryCount}`}
-                    {item.nextRetryAt && item.status === "error" && (
-                      <span> • Next retry: {new Date(item.nextRetryAt).toLocaleTimeString()}</span>
-                    )}
+          <div
+            key={item.id || index}
+            className="w-full text-left p-3 rounded-md border hover:bg-muted/50 transition-colors"
+          >
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5">{getStatusIcon(item.status)}</div>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-medium text-sm truncate">{item.title || item.url}</h3>
+                <div className="text-xs text-muted-foreground truncate">{item.url}</div>
+                {item.status === "done" && item.generatedTags && item.generatedTags.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {item.generatedTags.map((tag, i) => (
+                      <span
+                        key={i}
+                        className="px-1.5 py-0.5 bg-primary/10 text-primary rounded text-xs"
+                      >
+                        {tag}
+                      </span>
+                    ))}
                   </div>
-                </div>
-                <div className="flex gap-1">
+                )}
+                {item.status === "done" && item.generatedSummary && (
+                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                    {item.generatedSummary}
+                  </p>
+                )}
+                {item.comment && !item.generatedSummary && (
+                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{item.comment}</p>
+                )}
+                {item.lastError && (
+                  <div className="text-xs text-red-600 mt-1 p-2 bg-red-50 rounded border border-red-200">
+                    <span className="font-semibold">Error:</span> {item.lastError}
+                  </div>
+                )}
+                <p className="text-xs text-muted-foreground mt-1">
+                  {getStatusText(item.status)} • {new Date(item.createdAt).toLocaleString()}
+                  {item.retryCount > 0 && ` • Retry ${item.retryCount}`}
+                  {item.nextRetryAt && item.status === "error" && (
+                    <span> • Next retry: {new Date(item.nextRetryAt).toLocaleTimeString()}</span>
+                  )}
+                </p>
+              </div>
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => handleCopyUrl(item.url)}
+                  title="Copy URL"
+                >
+                  <Copy className="w-4 h-4" />
+                </Button>
+                {(item.status === "error" || item.status === "done") && item.id && (
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => handleCopyUrl(item.url)}
-                    title="Copy URL"
+                    onClick={() => handleRetry(item.id!)}
+                    title="Re-save"
                   >
-                    <Copy className="w-4 h-4" />
+                    <RefreshCw className="w-4 h-4" />
                   </Button>
-                  {(item.status === "error" || item.status === "done") && item.id && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleRetry(item.id!)}
-                      title="Re-save"
-                    >
-                      <RefreshCw className="w-4 h-4" />
-                    </Button>
-                  )}
-                  {item.id && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() =>
-                        setDeleteTarget({ id: item.id!, title: item.title || item.url })
-                      }
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  )}
-                </div>
+                )}
+                {item.id && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setDeleteTarget({ id: item.id!, title: item.title || item.url })}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                )}
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         ))}
       </div>
 

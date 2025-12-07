@@ -42,27 +42,22 @@ export function SyncButton() {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <span className="flex-1">
-          <Button
-            onClick={handleSync}
-            disabled={syncing || swAvailable === false}
-            className="w-full"
-          >
-            {syncing ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Syncing...
-              </>
-            ) : (
-              <>
-                <RefreshCw className="w-4 h-4 mr-2" />
-                Sync Now
-              </>
-            )}
-          </Button>
-        </span>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={handleSync}
+          disabled={syncing || swAvailable === false}
+        >
+          {syncing ? (
+            <Loader2 className="w-5 h-5 animate-spin" />
+          ) : (
+            <RefreshCw className="w-5 h-5" />
+          )}
+        </Button>
       </TooltipTrigger>
-      {swAvailable === false && <TooltipContent>Background sync is not available</TooltipContent>}
+      <TooltipContent>
+        {swAvailable === false ? "Background sync is not available" : "Sync Now"}
+      </TooltipContent>
     </Tooltip>
   );
 }

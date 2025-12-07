@@ -8,10 +8,17 @@ import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { createSignedRequest } from "@/lib/hatena-oauth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Bookmark, Home, AlertCircle, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import {
+  Bookmark,
+  Home,
+  AlertCircle,
+  ChevronLeft,
+  ChevronRight,
+  Loader2,
+  ExternalLink,
+} from "lucide-react";
 import { LinkButton } from "@/components/ui/link-button";
 import { RefreshButton } from "./refresh-button";
-import { ExternalLinkButton } from "./external-link-button";
 
 const PAGE_SIZE = 20;
 const HATENA_MY_API_URL = "https://bookmark.hatenaapis.com/rest/1/my";
@@ -224,7 +231,14 @@ async function BookmarkList({ page }: { page: number }) {
                   {formatDate(bookmark.bookmarkedAt)}
                 </p>
               </div>
-              <ExternalLinkButton href={bookmark.url} />
+              <a
+                href={bookmark.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-muted-foreground hover:text-foreground flex-shrink-0"
+              >
+                <ExternalLink className="w-4 h-4" />
+              </a>
             </div>
           </Link>
         ))}

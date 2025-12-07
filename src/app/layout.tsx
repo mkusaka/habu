@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { ServiceWorkerRegister } from "@/components/sw-register";
 import { BackgroundSyncFallback } from "@/components/background-sync";
 
@@ -45,11 +46,13 @@ export default function RootLayout({
       >
         <ServiceWorkerRegister />
         <BackgroundSyncFallback />
-        <main className="h-full p-2 bg-gray-50 overflow-auto">
-          <div className="min-h-full flex items-center">
-            <div className="max-w-lg mx-auto w-full">{children}</div>
-          </div>
-        </main>
+        <TooltipProvider>
+          <main className="h-full p-2 bg-gray-50 overflow-auto">
+            <div className="min-h-full flex items-center">
+              <div className="max-w-lg mx-auto w-full">{children}</div>
+            </div>
+          </main>
+        </TooltipProvider>
         <Toaster />
       </body>
     </html>

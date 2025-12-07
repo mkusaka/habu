@@ -16,7 +16,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { CheckCircle2, Clock, AlertCircle, Loader2, RefreshCw, Trash2, Copy } from "lucide-react";
+import { CheckCircle2, Clock, AlertCircle, Loader2, Sparkles, Trash2, Copy } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 
 // Extract tags from comment string like "[tag1][tag2]summary text"
@@ -179,8 +181,24 @@ export function QueueList() {
 
   if (items === undefined) {
     return (
-      <div className="flex items-center justify-center py-8">
-        <Loader2 className="w-8 h-8 animate-spin" />
+      <div className="space-y-2">
+        {Array.from({ length: 20 }).map((_, i) => (
+          <div key={i} className="w-full p-3 rounded-md border">
+            <div className="flex items-start gap-3">
+              <Skeleton className="w-5 h-5 rounded-full mt-0.5" />
+              <div className="flex-1 min-w-0 space-y-2">
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-3 w-full" />
+                <Skeleton className="h-3 w-32" />
+              </div>
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <Skeleton className="h-8 w-8 rounded" />
+                <Skeleton className="h-8 w-8 rounded" />
+                <Skeleton className="h-8 w-8 rounded" />
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
     );
   }
@@ -255,32 +273,50 @@ export function QueueList() {
                 </p>
               </div>
               <div className="flex items-center gap-1 flex-shrink-0">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => handleCopyUrl(item.url)}
-                  title="Copy URL"
-                >
-                  <Copy className="w-4 h-4" />
-                </Button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleCopyUrl(item.url)}
+                      className="cursor-pointer"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Copy URL</TooltipContent>
+                </Tooltip>
                 {(item.status === "error" || item.status === "done") && item.id && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleRetry(item.id!)}
-                    title="Re-save"
-                  >
-                    <RefreshCw className="w-4 h-4" />
-                  </Button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleRetry(item.id!)}
+                        className="cursor-pointer"
+                      >
+                        <Sparkles className="w-4 h-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Regenerate</TooltipContent>
+                  </Tooltip>
                 )}
                 {item.id && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setDeleteTarget({ id: item.id!, title: item.title || item.url })}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() =>
+                          setDeleteTarget({ id: item.id!, title: item.title || item.url })
+                        }
+                        className="cursor-pointer"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Delete</TooltipContent>
+                  </Tooltip>
                 )}
               </div>
             </div>

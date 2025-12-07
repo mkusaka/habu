@@ -71,6 +71,7 @@ export interface SuggestResponse {
   formattedComment?: string;
   // Raw content for preview
   markdown?: string;
+  markdownError?: string;
   metadata?: PageMetadata;
 }
 

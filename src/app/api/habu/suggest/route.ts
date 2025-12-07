@@ -35,7 +35,11 @@ interface PageMetaProxyResponse {
 /**
  * Fetch markdown content from Cloudflare Browser Rendering
  */
-async function fetchMarkdown(url: string, cfAccountId: string, cfApiToken: string): Promise<string> {
+async function fetchMarkdown(url: string, cfAccountId: string, cfApiToken: string): Promise<{ markdown: string; error?: string }> {
+  if (!cfAccountId || !cfApiToken) {
+    return { markdown: "", error: "Missing CF credentials" };
+  }
+
   try {
     const response = await fetch(
       `https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/browser-rendering/markdown`,
@@ -49,15 +53,22 @@ async function fetchMarkdown(url: string, cfAccountId: string, cfApiToken: strin
       }
     );
 
-    if (response.ok) {
-      const data = (await response.json()) as { success: boolean; result?: string };
-      if (data.success && data.result) {
-        return data.result.slice(0, MAX_MARKDOWN_CHARS);
-      }
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Markdown fetch failed:", response.status, errorText);
+      return { markdown: "", error: `HTTP ${response.status}: ${errorText.slice(0, 200)}` };
     }
-    return "";
-  } catch {
-    return "";
+
+    const data = (await response.json()) as { success: boolean; result?: string; errors?: unknown[] };
+    if (data.success && data.result) {
+      return { markdown: data.result.slice(0, MAX_MARKDOWN_CHARS) };
+    }
+
+    console.error("Markdown API returned failure:", data);
+    return { markdown: "", error: `API error: ${JSON.stringify(data.errors)}` };
+  } catch (error) {
+    console.error("Markdown fetch exception:", error);
+    return { markdown: "", error: error instanceof Error ? error.message : "Unknown error" };
   }
 }
 
@@ -243,10 +254,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Fetch markdown, metadata, and existing tags in parallel
-    const cfAccountId = env.BROWSER_RENDERING_ACCOUNT_ID!;
-    const cfApiToken = env.BROWSER_RENDERING_API_TOKEN!;
+    const cfAccountId = env.BROWSER_RENDERING_ACCOUNT_ID ?? "";
+    const cfApiToken = env.BROWSER_RENDERING_API_TOKEN ?? "";
 
-    const [markdown, metadata, existingTags] = await Promise.all([
+    const [markdownResult, metadata, existingTags] = await Promise.all([
       fetchMarkdown(url, cfAccountId, cfApiToken),
       fetchMetadata(url),
       fetchHatenaTags(
@@ -256,6 +267,9 @@ export async function POST(request: NextRequest) {
         consumerSecret,
       ),
     ]);
+
+    const markdown = markdownResult.markdown;
+    const markdownError = markdownResult.error;
 
     // Run the bookmark suggestion workflow
     const workflow = mastra.getWorkflow("bookmark-suggestion");
@@ -285,6 +299,7 @@ export async function POST(request: NextRequest) {
       tags,
       formattedComment,
       markdown,
+      markdownError,
       metadata,
     } as SuggestResponse);
   } catch (error) {

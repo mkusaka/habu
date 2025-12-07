@@ -98,6 +98,7 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
     tags?: string[];
     formattedComment?: string;
     markdown?: string;
+    markdownError?: string;
     metadata?: {
       title?: string;
       description?: string;
@@ -245,6 +246,7 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
         tags?: string[];
         formattedComment?: string;
         markdown?: string;
+        markdownError?: string;
         metadata?: {
           title?: string;
           description?: string;
@@ -265,6 +267,7 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
         tags: data.tags,
         formattedComment: data.formattedComment,
         markdown: data.markdown,
+        markdownError: data.markdownError,
         metadata: data.metadata,
       });
 
@@ -441,7 +444,7 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
             </div>
 
             {/* Raw Content Toggle */}
-            {(generatedResult.markdown || generatedResult.metadata) && (
+            {(generatedResult.markdown || generatedResult.markdownError || generatedResult.metadata) && (
               <div className="border-t pt-2">
                 <button
                   type="button"
@@ -492,7 +495,7 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
                     )}
 
                     {/* Markdown */}
-                    {generatedResult.markdown && (
+                    {generatedResult.markdown ? (
                       <div>
                         <div className="flex items-center gap-1 text-xs font-medium mb-1">
                           <FileText className="w-3 h-3" />
@@ -503,7 +506,17 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
                           {generatedResult.markdown.length > 5000 && "\n\n... (truncated)"}
                         </pre>
                       </div>
-                    )}
+                    ) : generatedResult.markdownError ? (
+                      <div>
+                        <div className="flex items-center gap-1 text-xs font-medium mb-1 text-yellow-600">
+                          <AlertCircle className="w-3 h-3" />
+                          Markdown fetch error
+                        </div>
+                        <pre className="bg-yellow-50 dark:bg-yellow-900/20 p-2 rounded text-xs text-yellow-800 dark:text-yellow-200 overflow-auto max-h-24 whitespace-pre-wrap break-all">
+                          {generatedResult.markdownError}
+                        </pre>
+                      </div>
+                    ) : null}
                   </div>
                 )}
               </div>

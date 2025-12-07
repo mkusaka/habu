@@ -460,6 +460,17 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
                   <code className="text-xs bg-background p-2 rounded block break-all">
                     {generatedResult.formattedComment}
                   </code>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setComment(generatedResult.formattedComment!);
+                      toast.success("Applied generated comment");
+                    }}
+                    className="mt-2 w-full"
+                  >
+                    Apply to Comment
+                  </Button>
                 </div>
               )}
             </div>

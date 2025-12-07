@@ -29,9 +29,8 @@
     },
     "types": [
       "./cloudflare-env.d.ts",
-      "./cloudflare-env.d.ts",
       "node",
-      "node"
+      "@cloudflare/vitest-pool-workers"
     ]
   },
   "include": [

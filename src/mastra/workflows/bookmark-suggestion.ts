@@ -291,15 +291,18 @@ const mergeContentStep = createStep({
   },
 });
 
-// Summary output schema (max 100 characters enforced by prompt, not schema - OpenAI doesn't support maxLength)
+// Summary output schema
 const SummaryOutputSchema = z.object({
-  summary: z.string().describe("Concise summary in Japanese, maximum 100 characters"),
+  summary: z.string().max(100).describe("Concise summary in Japanese, ideally 70-100 characters"),
   webContext: z.string().optional(),
 });
 
-// Tags output schema (constraints enforced by prompt - OpenAI doesn't support maxLength/maxItems)
+// Tags output schema
 const TagsOutputSchema = z.object({
-  tags: z.array(z.string()).describe("Relevant tags, 3-10 items, each max 10 characters"),
+  tags: z
+    .array(z.string().max(10))
+    .max(10)
+    .describe("Relevant tags, 3-10 items, each max 10 characters"),
 });
 
 // Step 3a: Generate summary (runs in parallel with tags)
@@ -340,7 +343,7 @@ Adapt your tone to the content type (product, article, news, tool, etc.).
 
 <output_requirements>
 - Language: Japanese only
-- Length: 50-100 characters (full-width = 1)
+- Length: Aim for 70-100 characters (full-width = 1), must not exceed 100
 - Include at least ONE concrete detail from the content (feature, number, method, etc.)
 - Keep technical terms in their original form (e.g., "API", "Docker", "React") - do NOT translate them into Japanese
 </output_requirements>
@@ -410,7 +413,7 @@ You are a bookmark curator for Hatena Bookmark. Generate relevant tags.
 
 <rules>
 - Generate 3-5 tags (maximum 10)
-- Each tag must be 10 characters or less
+- Each tag should be 10 characters or less (hard limit)
 - Forbidden characters: ? / % [ ] :
 - Keep technical terms in their original form (e.g., "API", "Docker", "React", "TypeScript") - do NOT translate them
 - Match content language for non-technical terms: Japanese content → Japanese, English → English

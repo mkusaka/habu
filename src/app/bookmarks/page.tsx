@@ -192,7 +192,13 @@ function BookmarkListLoading() {
 
 async function BookmarkList({ page }: { page: number }) {
   const offset = (page - 1) * PAGE_SIZE;
+  console.log("[BookmarkList] Fetching", { page, offset });
   const result = await fetchBookmarks(offset);
+  console.log("[BookmarkList] Result", {
+    success: result.success,
+    count: result.bookmarks?.length,
+    firstTitle: result.bookmarks?.[0]?.title?.slice(0, 30),
+  });
 
   if (!result.success) {
     return (

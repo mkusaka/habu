@@ -11,7 +11,7 @@ import type {
   SuggestResponse,
   PageMetadata,
 } from "@/types/habu";
-import { getMastra } from "@/mastra";
+import { mastra } from "@/mastra";
 import { fetchPageMeta, isMetaExtractionResult } from "@/lib/page-meta";
 
 const HATENA_TAGS_API_URL = "https://bookmark.hatenaapis.com/rest/1/my/tags";
@@ -259,7 +259,6 @@ export async function POST(request: NextRequest) {
     const markdownError = markdownResult.error;
 
     // Run the bookmark suggestion workflow
-    const mastra = getMastra(env.MASTRA_CLOUD_ACCESS_TOKEN);
     const workflow = mastra.getWorkflow("bookmark-suggestion");
     const run = await workflow.createRunAsync();
     const result = await run.start({

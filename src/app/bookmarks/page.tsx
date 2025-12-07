@@ -1,101 +1,183 @@
-"use client";
-
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { cookies } from "next/headers";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { createAuth } from "@/lib/auth";
+import { getDb } from "@/db/client";
+import { users } from "@/db/schema";
+import { eq } from "drizzle-orm";
+import { createSignedRequest } from "@/lib/hatena-oauth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import {
-  Bookmark,
-  Loader2,
-  ChevronLeft,
-  ChevronRight,
-  ExternalLink,
-  RefreshCw,
-  Home,
-} from "lucide-react";
+import { Bookmark, Home, AlertCircle } from "lucide-react";
 import { LinkButton } from "@/components/ui/link-button";
-import type { BookmarkItem, BookmarksResponse } from "@/app/api/habu/bookmarks/route";
+import { BookmarkList } from "./bookmark-list";
 
 const PAGE_SIZE = 20;
+const HATENA_MY_API_URL = "https://bookmark.hatenaapis.com/rest/1/my";
 
-export default function BookmarksPage() {
-  const router = useRouter();
-  const [bookmarks, setBookmarks] = useState<BookmarkItem[]>([]);
-  const [username, setUsername] = useState<string>("");
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [offset, setOffset] = useState(0);
-  const [hasMore, setHasMore] = useState(true);
+interface HatenaMyResponse {
+  name: string;
+}
 
-  const fetchBookmarks = async (newOffset: number) => {
-    setIsLoading(true);
-    setError(null);
+interface HatenaBookmarkEntry {
+  title: string;
+  canonical_url: string;
+}
 
-    try {
-      const response = await fetch(`/api/habu/bookmarks?limit=${PAGE_SIZE}&offset=${newOffset}`, {
-        credentials: "include",
-      });
+interface HatenaBookmarkItem {
+  url: string;
+  comment: string;
+  tags: string[];
+  created: string;
+  entry: HatenaBookmarkEntry;
+}
 
-      const data = (await response.json()) as BookmarksResponse;
-
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || "Failed to fetch bookmarks");
-      }
-
-      setBookmarks(data.bookmarks || []);
-      setUsername(data.username || "");
-      setHasMore((data.bookmarks || []).length === PAGE_SIZE);
-      setOffset(newOffset);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Unknown error");
-    } finally {
-      setIsLoading(false);
-    }
+interface HatenaBookmarksApiResponse {
+  item: {
+    bookmarks: HatenaBookmarkItem[];
   };
+}
 
-  useEffect(() => {
-    fetchBookmarks(0);
-  }, []);
+export interface BookmarkItem {
+  url: string;
+  title: string;
+  comment: string;
+  tags: string[];
+  bookmarkedAt: string;
+}
 
-  const handlePrevPage = () => {
-    if (offset >= PAGE_SIZE) {
-      fetchBookmarks(offset - PAGE_SIZE);
-    }
-  };
+interface FetchBookmarksResult {
+  success: boolean;
+  error?: string;
+  bookmarks?: BookmarkItem[];
+  username?: string;
+}
 
-  const handleNextPage = () => {
-    if (hasMore) {
-      fetchBookmarks(offset + PAGE_SIZE);
-    }
-  };
+async function fetchBookmarks(offset: number): Promise<FetchBookmarksResult> {
+  const cookieStore = await cookies();
+  const { env } = getCloudflareContext();
+  const auth = createAuth(env.DB);
 
-  const handleRefresh = () => {
-    fetchBookmarks(offset);
-  };
+  const session = await auth.api.getSession({
+    headers: {
+      cookie: cookieStore.toString(),
+    },
+  });
 
-  const handleBookmarkClick = (url: string) => {
-    router.push(`/bookmarks/detail?url=${encodeURIComponent(url)}`);
-  };
+  if (!session?.user) {
+    return { success: false, error: "Not authenticated" };
+  }
 
-  const formatDate = (dateStr: string) => {
-    if (!dateStr) return "";
-    try {
-      const date = new Date(dateStr);
-      return date.toLocaleDateString("ja-JP", {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-      });
-    } catch {
-      return dateStr;
-    }
-  };
+  const db = getDb(env.DB);
+  const user = await db.query.users.findFirst({
+    where: eq(users.id, session.user.id),
+    with: { hatenaToken: true },
+  });
 
-  // Extract comment text without tags
-  const extractComment = (comment: string) => {
-    // Remove [tag] patterns at the beginning
-    return comment.replace(/^(\[[^\]]+\])+/, "").trim();
-  };
+  if (!user?.hatenaToken) {
+    return { success: false, error: "Hatena not connected" };
+  }
+
+  const { accessToken: hatenaAccessToken, accessTokenSecret: hatenaAccessTokenSecret } =
+    user.hatenaToken;
+
+  const consumerKey = env.HATENA_CONSUMER_KEY;
+  const consumerSecret = env.HATENA_CONSUMER_SECRET;
+
+  if (!consumerKey || !consumerSecret) {
+    return { success: false, error: "Server configuration error" };
+  }
+
+  // Get username
+  const authHeaders = createSignedRequest(
+    HATENA_MY_API_URL,
+    "GET",
+    hatenaAccessToken,
+    hatenaAccessTokenSecret,
+    consumerKey,
+    consumerSecret,
+  );
+
+  const myResponse = await fetch(HATENA_MY_API_URL, {
+    method: "GET",
+    headers: authHeaders,
+  });
+
+  if (!myResponse.ok) {
+    const errorText = await myResponse.text();
+    return {
+      success: false,
+      error: `Failed to get user info: ${myResponse.status} - ${errorText}`,
+    };
+  }
+
+  const myData = (await myResponse.json()) as HatenaMyResponse;
+  const username = myData.name;
+
+  // Fetch bookmarks using unofficial API
+  const bookmarksApiUrl = `https://b.hatena.ne.jp/api/users/${username}/bookmarks?limit=${PAGE_SIZE}&offset=${offset}`;
+
+  const bookmarksResponse = await fetch(bookmarksApiUrl, {
+    headers: {
+      Accept: "application/json",
+    },
+  });
+
+  if (!bookmarksResponse.ok) {
+    return { success: false, error: `Failed to fetch bookmarks: ${bookmarksResponse.status}` };
+  }
+
+  const bookmarksData = (await bookmarksResponse.json()) as HatenaBookmarksApiResponse;
+
+  const bookmarks: BookmarkItem[] = bookmarksData.item.bookmarks.map((item) => ({
+    url: item.entry.canonical_url || item.url,
+    title: item.entry.title,
+    comment: item.comment,
+    tags: item.tags,
+    bookmarkedAt: item.created,
+  }));
+
+  return { success: true, bookmarks, username };
+}
+
+interface BookmarksPageProps {
+  searchParams: Promise<{ page?: string }>;
+}
+
+export default async function BookmarksPage({ searchParams }: BookmarksPageProps) {
+  const params = await searchParams;
+  const page = Math.max(1, parseInt(params.page || "1", 10));
+  const offset = (page - 1) * PAGE_SIZE;
+
+  const result = await fetchBookmarks(offset);
+
+  if (!result.success) {
+    return (
+      <main className="min-h-screen p-4 flex items-start justify-center">
+        <Card className="w-full max-w-2xl">
+          <CardHeader className="pb-4">
+            <div className="flex items-center gap-3">
+              <Bookmark className="w-6 h-6 text-primary" />
+              <CardTitle className="text-xl">My Bookmarks</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center gap-2 p-4 bg-red-50 dark:bg-red-900/20 rounded-md text-sm text-red-800 dark:text-red-200">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              <span>{result.error}</span>
+            </div>
+            <div className="pt-4 border-t">
+              <LinkButton href="/" variant="outline" className="w-full" size="sm">
+                <Home className="w-4 h-4 mr-2" />
+                Home
+              </LinkButton>
+            </div>
+          </CardContent>
+        </Card>
+      </main>
+    );
+  }
+
+  const bookmarks = result.bookmarks || [];
+  const hasMore = bookmarks.length === PAGE_SIZE;
 
   return (
     <main className="min-h-screen p-4 flex items-start justify-center">
@@ -106,94 +188,15 @@ export default function BookmarksPage() {
               <Bookmark className="w-6 h-6 text-primary" />
               <div>
                 <CardTitle className="text-xl">My Bookmarks</CardTitle>
-                {username && <p className="text-xs text-muted-foreground">@{username}</p>}
+                {result.username && (
+                  <p className="text-xs text-muted-foreground">@{result.username}</p>
+                )}
               </div>
             </div>
-            <Button variant="ghost" size="icon" onClick={handleRefresh} disabled={isLoading}>
-              <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
-            </Button>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Error State */}
-          {error && (
-            <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-md text-sm text-red-800 dark:text-red-200">
-              {error}
-            </div>
-          )}
-
-          {/* Loading State */}
-          {isLoading && (
-            <div className="flex justify-center py-8">
-              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-            </div>
-          )}
-
-          {/* Empty State */}
-          {!isLoading && !error && bookmarks.length === 0 && (
-            <div className="text-center py-8 text-muted-foreground">
-              <p>No bookmarks found</p>
-            </div>
-          )}
-
-          {/* Bookmark List */}
-          {!isLoading && bookmarks.length > 0 && (
-            <div className="space-y-2">
-              {bookmarks.map((bookmark, index) => (
-                <button
-                  key={`${bookmark.url}-${index}`}
-                  onClick={() => handleBookmarkClick(bookmark.url)}
-                  className="w-full text-left p-3 rounded-md border hover:bg-muted/50 transition-colors"
-                >
-                  <div className="flex items-start gap-2">
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-medium text-sm truncate">
-                        {bookmark.title || bookmark.url}
-                      </h3>
-                      {bookmark.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {bookmark.tags.map((tag, i) => (
-                            <span
-                              key={i}
-                              className="px-1.5 py-0.5 bg-primary/10 text-primary rounded text-xs"
-                            >
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                      {extractComment(bookmark.comment) && (
-                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                          {extractComment(bookmark.comment)}
-                        </p>
-                      )}
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {formatDate(bookmark.bookmarkedAt)}
-                      </p>
-                    </div>
-                    <ExternalLink className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* Pagination */}
-          {!isLoading && bookmarks.length > 0 && (
-            <div className="flex items-center justify-between pt-2">
-              <Button variant="outline" size="sm" onClick={handlePrevPage} disabled={offset === 0}>
-                <ChevronLeft className="w-4 h-4 mr-1" />
-                Prev
-              </Button>
-              <span className="text-sm text-muted-foreground">
-                {offset + 1} - {offset + bookmarks.length}
-              </span>
-              <Button variant="outline" size="sm" onClick={handleNextPage} disabled={!hasMore}>
-                Next
-                <ChevronRight className="w-4 h-4 ml-1" />
-              </Button>
-            </div>
-          )}
+          <BookmarkList bookmarks={bookmarks} page={page} hasMore={hasMore} />
 
           {/* Navigation */}
           <div className="pt-4 border-t">

@@ -11,6 +11,7 @@ let cachedAccessToken: string | undefined;
 export function getMastra(accessToken?: string): Mastra {
   // Return cached instance if token matches
   if (cachedMastra && cachedAccessToken === accessToken) {
+    console.log("[Mastra] Returning cached instance", { hasAccessToken: !!accessToken });
     return cachedMastra;
   }
 

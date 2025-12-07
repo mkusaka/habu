@@ -21,6 +21,7 @@ import {
   ChevronUp,
   FileText,
   Info,
+  Copy,
 } from "lucide-react";
 import { LinkButton } from "@/components/ui/link-button";
 
@@ -299,6 +300,15 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
     }
   };
 
+  const handleCopy = async (text: string, label: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success(`${label} copied`);
+    } catch {
+      toast.error("Failed to copy");
+    }
+  };
+
   const handleSave = async () => {
     if (!url) {
       toast.error("URL is required");
@@ -502,9 +512,23 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
                     {generatedResult.metadata &&
                       Object.keys(generatedResult.metadata).length > 0 && (
                         <div>
-                          <div className="flex items-center gap-1 text-xs font-medium mb-1">
-                            <Info className="w-3 h-3" />
-                            Metadata
+                          <div className="flex items-center justify-between text-xs font-medium mb-1">
+                            <div className="flex items-center gap-1">
+                              <Info className="w-3 h-3" />
+                              Metadata
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleCopy(
+                                  JSON.stringify(generatedResult.metadata, null, 2),
+                                  "Metadata",
+                                )
+                              }
+                              className="text-muted-foreground hover:text-foreground"
+                            >
+                              <Copy className="w-3 h-3" />
+                            </button>
                           </div>
                           <div className="bg-background p-2 rounded text-xs space-y-1">
                             {generatedResult.metadata.title && (
@@ -556,20 +580,39 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
                     {/* Markdown */}
                     {generatedResult.markdown ? (
                       <div>
-                        <div className="flex items-center gap-1 text-xs font-medium mb-1">
-                          <FileText className="w-3 h-3" />
-                          Markdown ({generatedResult.markdown.length.toLocaleString()} chars)
+                        <div className="flex items-center justify-between text-xs font-medium mb-1">
+                          <div className="flex items-center gap-1">
+                            <FileText className="w-3 h-3" />
+                            Markdown ({generatedResult.markdown.length.toLocaleString()} chars)
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleCopy(generatedResult.markdown!, "Markdown")}
+                            className="text-muted-foreground hover:text-foreground"
+                          >
+                            <Copy className="w-3 h-3" />
+                          </button>
                         </div>
-                        <pre className="bg-background p-2 rounded text-xs overflow-auto max-h-48 whitespace-pre-wrap break-all">
-                          {generatedResult.markdown.slice(0, 5000)}
-                          {generatedResult.markdown.length > 5000 && "\n\n... (truncated)"}
+                        <pre className="bg-background p-2 rounded text-xs overflow-auto whitespace-pre-wrap break-all">
+                          {generatedResult.markdown}
                         </pre>
                       </div>
                     ) : generatedResult.markdownError ? (
                       <div>
-                        <div className="flex items-center gap-1 text-xs font-medium mb-1 text-yellow-600">
-                          <AlertCircle className="w-3 h-3" />
-                          Markdown fetch error
+                        <div className="flex items-center justify-between text-xs font-medium mb-1 text-yellow-600">
+                          <div className="flex items-center gap-1">
+                            <AlertCircle className="w-3 h-3" />
+                            Markdown fetch error
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleCopy(generatedResult.markdownError!, "Markdown error")
+                            }
+                            className="text-muted-foreground hover:text-foreground"
+                          >
+                            <Copy className="w-3 h-3" />
+                          </button>
                         </div>
                         <pre className="bg-yellow-50 dark:bg-yellow-900/20 p-2 rounded text-xs text-yellow-800 dark:text-yellow-200 overflow-auto max-h-24 whitespace-pre-wrap break-all">
                           {generatedResult.markdownError}

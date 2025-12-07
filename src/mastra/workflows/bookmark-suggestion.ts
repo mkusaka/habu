@@ -382,6 +382,7 @@ ${markdown}
       webContext,
     };
   },
+  retries: 2,
 });
 
 // Step 3b: Generate tags (runs in parallel with summary)
@@ -456,6 +457,7 @@ ${markdown.slice(0, 10000)}
       tags,
     };
   },
+  retries: 2,
 });
 
 // Step 4: Merge parallel results

@@ -1,25 +1,43 @@
-"use client";
-
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { cookies } from "next/headers";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { createAuth } from "@/lib/auth";
+import { getDb } from "@/db/client";
+import { users } from "@/db/schema";
+import { eq } from "drizzle-orm";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { CheckCircle2, Settings } from "lucide-react";
+import { LinkButton } from "@/components/ui/link-button";
+import { AutoRedirect } from "./auto-redirect";
 
-export default function SavedPage() {
-  const router = useRouter();
+async function getHatenaStatus(): Promise<boolean> {
+  const cookieStore = await cookies();
+  const { env } = getCloudflareContext();
+  const auth = createAuth(env.DB);
 
-  useEffect(() => {
-    // Auto-redirect after 2 seconds
-    const timer = setTimeout(() => {
-      router.push("/queue");
-    }, 2000);
+  const session = await auth.api.getSession({
+    headers: {
+      cookie: cookieStore.toString(),
+    },
+  });
 
-    return () => clearTimeout(timer);
-  }, [router]);
+  if (!session?.user) {
+    return false;
+  }
+
+  const db = getDb(env.DB);
+  const user = await db.query.users.findFirst({
+    where: eq(users.id, session.user.id),
+  });
+
+  return !!user?.hatenaId;
+}
+
+export default async function SavedPage() {
+  const hasHatena = await getHatenaStatus();
 
   return (
     <Card className="w-full text-center">
+      <AutoRedirect />
       <CardHeader>
         <div className="flex justify-center mb-4">
           <CheckCircle2 className="w-16 h-16 text-green-500" />
@@ -31,14 +49,16 @@ export default function SavedPage() {
           Your bookmark has been added to the queue and will be synced to Hatena Bookmark.
         </p>
         <div className="flex flex-col gap-2">
-          <Button onClick={() => router.push("/queue")}>View Queue</Button>
-          <Button variant="outline" onClick={() => router.push("/")}>
+          <LinkButton href="/queue">View Queue</LinkButton>
+          <LinkButton href="/" variant="outline">
             Go Home
-          </Button>
-          <Button variant="ghost" size="sm" onClick={() => router.push("/settings")}>
-            <Settings className="w-4 h-4 mr-2" />
-            Connect to Hatena
-          </Button>
+          </LinkButton>
+          {!hasHatena && (
+            <LinkButton href="/settings" variant="ghost" size="sm">
+              <Settings className="w-4 h-4 mr-2" />
+              Connect to Hatena
+            </LinkButton>
+          )}
         </div>
       </CardContent>
     </Card>

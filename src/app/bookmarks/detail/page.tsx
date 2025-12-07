@@ -228,7 +228,7 @@ export default async function BookmarkDetailPage({ searchParams }: BookmarkDetai
   const bookmarkUrl = params.url || "";
 
   return (
-    <Card className="w-full max-w-md">
+    <Card className="w-full">
       <CardHeader className="text-center pb-4">
         <div className="flex justify-center mb-3">
           <Bookmark className="w-12 h-12 text-primary" />

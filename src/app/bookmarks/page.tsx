@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { LinkButton } from "@/components/ui/link-button";
 import { RefreshButton } from "./refresh-button";
+import { RegenerateButton } from "./regenerate-button";
 
 const PAGE_SIZE = 20;
 const HATENA_MY_API_URL = "https://bookmark.hatenaapis.com/rest/1/my";
@@ -235,14 +236,17 @@ async function BookmarkList({ page }: { page: number }) {
                   {formatDate(bookmark.bookmarkedAt)}
                 </p>
               </div>
-              <a
-                href={bookmark.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="relative z-10 text-muted-foreground hover:text-foreground flex-shrink-0"
-              >
-                <ExternalLink className="w-4 h-4" />
-              </a>
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <RegenerateButton url={bookmark.url} title={bookmark.title} />
+                <a
+                  href={bookmark.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="relative z-10 p-1 text-muted-foreground hover:text-foreground"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                </a>
+              </div>
             </div>
           </div>
         ))}

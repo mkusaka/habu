@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Loader2, RefreshCw } from "lucide-react";
-import { triggerSync } from "@/lib/queue-sync";
+import { triggerSync } from "@/lib/bookmark-client";
 import { toast } from "sonner";
 
 export function SyncButton() {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { triggerSync } from "@/lib/queue-sync";
+import { triggerSync } from "@/lib/bookmark-client";
 import { toast } from "sonner";
 
 interface SWMessage {

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db, deleteQueueItem, clearCompletedItems } from "@/lib/queue-db";
+import { saveBookmark } from "@/lib/bookmark-client";
 import type { BookmarkQueue } from "@/types/habu";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -100,7 +101,6 @@ export function QueueList() {
 
       await deleteQueueItem(id);
 
-      const { saveBookmark } = await import("@/lib/queue-sync");
       const result = await saveBookmark(item.url, item.title, item.comment);
 
       if (result.success) {

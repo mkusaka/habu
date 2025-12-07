@@ -305,6 +305,8 @@ export default async function BookmarksPage({ searchParams }: BookmarksPageProps
   const params = await searchParams;
   const page = Math.max(1, parseInt(params.page || "1", 10));
 
+  console.log("[BookmarksPage] Rendering", { params, page });
+
   return (
     <Card className="w-full">
       <CardHeader className="pb-4">

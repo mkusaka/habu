@@ -12,6 +12,7 @@ import type {
   PageMetadata,
 } from "@/types/habu";
 import { mastra } from "@/mastra";
+import { RuntimeContext } from "@mastra/core/di";
 import { fetchPageMeta, isMetaExtractionResult } from "@/lib/page-meta";
 
 const HATENA_TAGS_API_URL = "https://bookmark.hatenaapis.com/rest/1/my/tags";
@@ -261,20 +262,21 @@ export async function POST(request: NextRequest) {
     // Run the bookmark suggestion workflow
     const workflow = mastra.getWorkflow("bookmark-suggestion");
     const run = await workflow.createRunAsync();
+
+    // Create RuntimeContext with metadata for tracing
+    const runtimeContext = new RuntimeContext();
+    runtimeContext.set("userId", session.user.id);
+    runtimeContext.set("hatenaId", user.hatenaId || "");
+    runtimeContext.set("url", url);
+    runtimeContext.set("gitSha", process.env.NEXT_PUBLIC_GIT_SHA || "");
+
     const result = await run.start({
       inputData: {
         url,
         existingTags,
         userContext,
       },
-      tracingOptions: {
-        metadata: {
-          userId: session.user.id,
-          hatenaId: user.hatenaId,
-          url,
-          gitSha: process.env.NEXT_PUBLIC_GIT_SHA,
-        },
-      },
+      runtimeContext,
     });
 
     if (result.status !== "success" || !result.result) {

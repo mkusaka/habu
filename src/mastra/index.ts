@@ -20,6 +20,8 @@ export const mastra = new Mastra({
         serviceName: isDevelopment ? "habu-dev" : "habu",
         sampling: { type: SamplingStrategyType.ALWAYS },
         exporters: isDevelopment ? [new DefaultExporter()] : [new CloudExporter({ accessToken })],
+        // Extract these RuntimeContext keys as metadata for all spans
+        runtimeContextKeys: ["userId", "hatenaId", "url", "gitSha"],
       },
     },
   },

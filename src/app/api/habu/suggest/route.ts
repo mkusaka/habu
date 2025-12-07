@@ -5,10 +5,87 @@ import { getDb } from "@/db/client";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { createAuth } from "@/lib/auth";
-import type { HatenaTagsResponse, SuggestRequest, SuggestResponse } from "@/types/habu";
+import type { HatenaTagsResponse, SuggestRequest, SuggestResponse, PageMetadata } from "@/types/habu";
 import { mastra } from "@/mastra";
 
 const HATENA_TAGS_API_URL = "https://bookmark.hatenaapis.com/rest/1/my/tags";
+const PAGE_META_PROXY_URL = "https://page-meta-proxy.polyfill.workers.dev/meta";
+const MAX_MARKDOWN_CHARS = 800000;
+
+interface PageMetaProxyResponse {
+  title?: string;
+  lang?: string;
+  og?: {
+    title?: string;
+    description?: string;
+    type?: string;
+    site_name?: string;
+  };
+  twitter?: {
+    title?: string;
+    description?: string;
+  };
+  metaByName?: {
+    description?: string;
+    keywords?: string;
+    author?: string;
+  };
+}
+
+/**
+ * Fetch markdown content from Cloudflare Browser Rendering
+ */
+async function fetchMarkdown(url: string, cfAccountId: string, cfApiToken: string): Promise<string> {
+  try {
+    const response = await fetch(
+      `https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/browser-rendering/markdown`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${cfApiToken}`,
+        },
+        body: JSON.stringify({ url }),
+      }
+    );
+
+    if (response.ok) {
+      const data = (await response.json()) as { success: boolean; result?: string };
+      if (data.success && data.result) {
+        return data.result.slice(0, MAX_MARKDOWN_CHARS);
+      }
+    }
+    return "";
+  } catch {
+    return "";
+  }
+}
+
+/**
+ * Fetch page metadata from page-meta-proxy
+ */
+async function fetchMetadata(url: string): Promise<PageMetadata> {
+  try {
+    const response = await fetch(`${PAGE_META_PROXY_URL}?url=${encodeURIComponent(url)}`);
+    if (!response.ok) {
+      return {};
+    }
+
+    const meta = (await response.json()) as PageMetaProxyResponse;
+
+    return {
+      title: meta?.title || meta?.og?.title || meta?.twitter?.title,
+      description: meta?.og?.description || meta?.twitter?.description || meta?.metaByName?.description,
+      lang: meta?.lang,
+      ogType: meta?.og?.type,
+      siteName: meta?.og?.site_name,
+      keywords: meta?.metaByName?.keywords,
+      author: meta?.metaByName?.author,
+    };
+  } catch {
+    return {};
+  }
+}
 
 /**
  * Fetch user's existing tags from Hatena Bookmark API
@@ -165,13 +242,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Fetch user's existing Hatena tags
-    const existingTags = await fetchHatenaTags(
-      hatenaAccessToken,
-      hatenaAccessTokenSecret,
-      consumerKey,
-      consumerSecret,
-    );
+    // Fetch markdown, metadata, and existing tags in parallel
+    const cfAccountId = env.BROWSER_RENDERING_ACCOUNT_ID!;
+    const cfApiToken = env.BROWSER_RENDERING_API_TOKEN!;
+
+    const [markdown, metadata, existingTags] = await Promise.all([
+      fetchMarkdown(url, cfAccountId, cfApiToken),
+      fetchMetadata(url),
+      fetchHatenaTags(
+        hatenaAccessToken,
+        hatenaAccessTokenSecret,
+        consumerKey,
+        consumerSecret,
+      ),
+    ]);
 
     // Run the bookmark suggestion workflow
     const workflow = mastra.getWorkflow("bookmark-suggestion");
@@ -180,8 +264,8 @@ export async function POST(request: NextRequest) {
       inputData: {
         url,
         existingTags,
-        cfAccountId: env.BROWSER_RENDERING_ACCOUNT_ID!,
-        cfApiToken: env.BROWSER_RENDERING_API_TOKEN!,
+        cfAccountId,
+        cfApiToken,
       },
     });
 
@@ -200,6 +284,8 @@ export async function POST(request: NextRequest) {
       summary,
       tags,
       formattedComment,
+      markdown,
+      metadata,
     } as SuggestResponse);
   } catch (error) {
     console.error("Suggest API error:", error);

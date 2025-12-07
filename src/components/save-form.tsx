@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Bookmark, List, Settings, Loader2, WifiOff, AlertCircle, Sparkles } from "lucide-react";
+import { Bookmark, List, Settings, Loader2, WifiOff, AlertCircle, Sparkles, ChevronDown, ChevronUp, FileText, Info } from "lucide-react";
 import { LinkButton } from "@/components/ui/link-button";
 
 interface SaveFormProps {
@@ -97,7 +97,18 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
     summary?: string;
     tags?: string[];
     formattedComment?: string;
+    markdown?: string;
+    metadata?: {
+      title?: string;
+      description?: string;
+      lang?: string;
+      ogType?: string;
+      siteName?: string;
+      keywords?: string;
+      author?: string;
+    };
   } | null>(null);
+  const [showRawContent, setShowRawContent] = useState(false);
   const [draftRestored, setDraftRestored] = useState(false);
 
   const debouncedUrl = useDebounce(url, 500);
@@ -233,6 +244,16 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
         summary?: string;
         tags?: string[];
         formattedComment?: string;
+        markdown?: string;
+        metadata?: {
+          title?: string;
+          description?: string;
+          lang?: string;
+          ogType?: string;
+          siteName?: string;
+          keywords?: string;
+          author?: string;
+        };
       };
 
       if (!response.ok || !data.success) {
@@ -243,6 +264,8 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
         summary: data.summary,
         tags: data.tags,
         formattedComment: data.formattedComment,
+        markdown: data.markdown,
+        metadata: data.metadata,
       });
 
       toast.success("Generated!", {
@@ -388,29 +411,101 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
 
         {/* Generated Result */}
         {generatedResult && (
-          <div className="p-3 bg-muted rounded-md space-y-2 text-sm">
-            <div className="font-medium flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-primary" />
-              Generated Preview
-            </div>
-            {generatedResult.tags && generatedResult.tags.length > 0 && (
-              <div className="flex flex-wrap gap-1">
-                {generatedResult.tags.map((tag, i) => (
-                  <span key={i} className="px-2 py-0.5 bg-primary/10 text-primary rounded text-xs">
-                    {tag}
-                  </span>
-                ))}
+          <div className="p-3 bg-muted rounded-md space-y-3 text-sm">
+            {/* AI Generated Summary */}
+            <div>
+              <div className="font-medium flex items-center gap-2 mb-2">
+                <Sparkles className="w-4 h-4 text-primary" />
+                Generated Preview
               </div>
-            )}
-            {generatedResult.summary && (
-              <p className="text-muted-foreground">{generatedResult.summary}</p>
-            )}
-            {generatedResult.formattedComment && (
-              <div className="pt-2 border-t">
-                <p className="text-xs text-muted-foreground mb-1">Formatted comment:</p>
-                <code className="text-xs bg-background p-2 rounded block break-all">
-                  {generatedResult.formattedComment}
-                </code>
+              {generatedResult.tags && generatedResult.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1 mb-2">
+                  {generatedResult.tags.map((tag, i) => (
+                    <span key={i} className="px-2 py-0.5 bg-primary/10 text-primary rounded text-xs">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              )}
+              {generatedResult.summary && (
+                <p className="text-muted-foreground">{generatedResult.summary}</p>
+              )}
+              {generatedResult.formattedComment && (
+                <div className="pt-2 border-t">
+                  <p className="text-xs text-muted-foreground mb-1">Formatted comment:</p>
+                  <code className="text-xs bg-background p-2 rounded block break-all">
+                    {generatedResult.formattedComment}
+                  </code>
+                </div>
+              )}
+            </div>
+
+            {/* Raw Content Toggle */}
+            {(generatedResult.markdown || generatedResult.metadata) && (
+              <div className="border-t pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowRawContent(!showRawContent)}
+                  className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground w-full"
+                >
+                  {showRawContent ? (
+                    <ChevronUp className="w-3 h-3" />
+                  ) : (
+                    <ChevronDown className="w-3 h-3" />
+                  )}
+                  <span>Raw content (debug)</span>
+                </button>
+
+                {showRawContent && (
+                  <div className="mt-2 space-y-3">
+                    {/* Metadata */}
+                    {generatedResult.metadata && Object.keys(generatedResult.metadata).length > 0 && (
+                      <div>
+                        <div className="flex items-center gap-1 text-xs font-medium mb-1">
+                          <Info className="w-3 h-3" />
+                          Metadata
+                        </div>
+                        <div className="bg-background p-2 rounded text-xs space-y-1">
+                          {generatedResult.metadata.title && (
+                            <div><span className="text-muted-foreground">title:</span> {generatedResult.metadata.title}</div>
+                          )}
+                          {generatedResult.metadata.description && (
+                            <div><span className="text-muted-foreground">description:</span> {generatedResult.metadata.description}</div>
+                          )}
+                          {generatedResult.metadata.siteName && (
+                            <div><span className="text-muted-foreground">site:</span> {generatedResult.metadata.siteName}</div>
+                          )}
+                          {generatedResult.metadata.lang && (
+                            <div><span className="text-muted-foreground">lang:</span> {generatedResult.metadata.lang}</div>
+                          )}
+                          {generatedResult.metadata.ogType && (
+                            <div><span className="text-muted-foreground">type:</span> {generatedResult.metadata.ogType}</div>
+                          )}
+                          {generatedResult.metadata.keywords && (
+                            <div><span className="text-muted-foreground">keywords:</span> {generatedResult.metadata.keywords}</div>
+                          )}
+                          {generatedResult.metadata.author && (
+                            <div><span className="text-muted-foreground">author:</span> {generatedResult.metadata.author}</div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Markdown */}
+                    {generatedResult.markdown && (
+                      <div>
+                        <div className="flex items-center gap-1 text-xs font-medium mb-1">
+                          <FileText className="w-3 h-3" />
+                          Markdown ({generatedResult.markdown.length.toLocaleString()} chars)
+                        </div>
+                        <pre className="bg-background p-2 rounded text-xs overflow-auto max-h-48 whitespace-pre-wrap break-all">
+                          {generatedResult.markdown.slice(0, 5000)}
+                          {generatedResult.markdown.length > 5000 && "\n\n... (truncated)"}
+                        </pre>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </div>

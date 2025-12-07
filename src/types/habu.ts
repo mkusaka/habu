@@ -53,12 +53,25 @@ export interface SuggestRequest {
   url: string;
 }
 
+export interface PageMetadata {
+  title?: string;
+  description?: string;
+  lang?: string;
+  ogType?: string;
+  siteName?: string;
+  keywords?: string;
+  author?: string;
+}
+
 export interface SuggestResponse {
   success: boolean;
   error?: string;
   summary?: string;
   tags?: string[];
   formattedComment?: string;
+  // Raw content for preview
+  markdown?: string;
+  metadata?: PageMetadata;
 }
 
 // Hatena API types

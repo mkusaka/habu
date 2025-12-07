@@ -7,7 +7,6 @@ import { eq } from "drizzle-orm";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle2, Settings } from "lucide-react";
 import { LinkButton } from "@/components/ui/link-button";
-import { AutoRedirect } from "./auto-redirect";
 
 async function getHatenaStatus(): Promise<boolean> {
   const cookieStore = await cookies();
@@ -37,7 +36,6 @@ export default async function SavedPage() {
 
   return (
     <Card className="w-full text-center">
-      <AutoRedirect />
       <CardHeader>
         <div className="flex justify-center mb-4">
           <CheckCircle2 className="w-16 h-16 text-green-500" />

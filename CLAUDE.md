@@ -72,6 +72,7 @@ For AI-powered suggestions (`/api/habu/suggest`):
 - `BROWSER_RENDERING_ACCOUNT_ID`: Your Cloudflare account ID (note: `CF_*` and `CLOUDFLARE_*` prefixes are reserved by Wrangler)
 - `BROWSER_RENDERING_API_TOKEN`: API token with Browser Rendering permissions
 - `OPENAI_API_KEY`: OpenAI API key for GPT
+- `MASTRA_CLOUD_ACCESS_TOKEN`: Mastra Cloud access token for AI tracing
 
 Set production secrets with:
 ```bash
@@ -81,6 +82,7 @@ wrangler secret put HATENA_CONSUMER_SECRET
 wrangler secret put BROWSER_RENDERING_ACCOUNT_ID
 wrangler secret put BROWSER_RENDERING_API_TOKEN
 wrangler secret put OPENAI_API_KEY
+wrangler secret put MASTRA_CLOUD_ACCESS_TOKEN
 ```
 
 ## Important Implementation Details
@@ -117,7 +119,7 @@ When `/api/habu/bookmark` is called without a comment:
 3. OpenAI GPT generates summary (Japanese, max 100 chars) and tags (page language, max 10)
 4. Formatted as `[tag1][tag2]summary` and sent to Hatena
 
-Requires environment variables: `CF_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN`, `OPENAI_API_KEY`
+Requires environment variables: `BROWSER_RENDERING_ACCOUNT_ID`, `BROWSER_RENDERING_API_TOKEN`, `OPENAI_API_KEY`, `MASTRA_CLOUD_ACCESS_TOKEN`
 
 ## Testing Hatena OAuth Locally
 

@@ -28,7 +28,10 @@
 			"database_id": "85d113db-f5bf-4f4b-93ba-fc3787bf396f",
 			"migrations_dir": "drizzle"
 		}
-	]
+	],
+	"vars": {
+		"NEXTJS_ENV": "production"
+	}
 	/**
 	 * Smart Placement
 	 * Docs: https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement

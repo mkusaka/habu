@@ -6,7 +6,7 @@ import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { createAuth } from "@/lib/auth";
 import type { BookmarkRequest, BookmarkResponse, HatenaTagsResponse } from "@/types/habu";
-import { mastra } from "@/mastra";
+import { getMastra } from "@/mastra";
 
 const HATENA_BOOKMARK_API_URL = "https://bookmark.hatenaapis.com/rest/1/my/bookmark";
 const HATENA_TAGS_API_URL = "https://bookmark.hatenaapis.com/rest/1/my/tags";
@@ -315,6 +315,7 @@ export async function POST(request: NextRequest) {
         );
 
         // Run the bookmark suggestion workflow
+        const mastra = getMastra(env.MASTRA_CLOUD_ACCESS_TOKEN);
         const workflow = mastra.getWorkflow("bookmark-suggestion");
         const run = await workflow.createRunAsync();
         const result = await run.start({

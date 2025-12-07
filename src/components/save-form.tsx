@@ -343,7 +343,10 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
       // Fire-and-forget: queue the bookmark
       queueBookmark(initialUrl, initialTitle, initialComment);
 
-      // Clear draft since we're auto-saving
+      // Clear form fields and draft since we're auto-saving
+      setUrl("");
+      setTitle("");
+      setComment("");
       clearDraft();
 
       // Close the window immediately - SW handles the rest

@@ -7,6 +7,9 @@ declare namespace Cloudflare {
 		BETTER_AUTH_SECRET: string;
 		HATENA_CONSUMER_KEY: string;
 		HATENA_CONSUMER_SECRET: string;
+		MASTRA_CLOUD_ACCESS_TOKEN: string;
+		BROWSER_RENDERING_ACCOUNT_ID: string;
+		BROWSER_RENDERING_API_TOKEN: string;
 		DB: D1Database;
 		ASSETS: Fetcher;
 	}

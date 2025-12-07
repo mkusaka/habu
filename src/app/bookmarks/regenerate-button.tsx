@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Sparkles, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { saveBookmark } from "@/lib/bookmark-client";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface RegenerateButtonProps {
   url: string;
@@ -37,17 +38,21 @@ export function RegenerateButton({ url, title }: RegenerateButtonProps) {
   };
 
   return (
-    <button
-      onClick={handleRegenerate}
-      disabled={isRegenerating}
-      className="relative z-10 p-1 text-muted-foreground hover:text-primary disabled:opacity-50 flex-shrink-0 cursor-pointer"
-      title="Regenerate"
-    >
-      {isRegenerating ? (
-        <Loader2 className="w-4 h-4 animate-spin" />
-      ) : (
-        <Sparkles className="w-4 h-4" />
-      )}
-    </button>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          onClick={handleRegenerate}
+          disabled={isRegenerating}
+          className="relative z-10 p-1 text-muted-foreground hover:text-primary disabled:opacity-50 flex-shrink-0 cursor-pointer"
+        >
+          {isRegenerating ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <Sparkles className="w-4 h-4" />
+          )}
+        </button>
+      </TooltipTrigger>
+      <TooltipContent>Regenerate</TooltipContent>
+    </Tooltip>
   );
 }

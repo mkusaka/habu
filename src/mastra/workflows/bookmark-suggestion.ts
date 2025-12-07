@@ -80,8 +80,6 @@ async function fetchYouTubeOEmbed(url: string): Promise<YouTubeOEmbedResponse | 
 const WorkflowInputSchema = z.object({
   url: z.string().url(),
   existingTags: z.array(z.string()),
-  cfAccountId: z.string(),
-  cfApiToken: z.string(),
 });
 
 const WorkflowOutputSchema = z.object({
@@ -161,37 +159,41 @@ const fetchMarkdownAndModerateStep = createStep({
   inputSchema: WorkflowInputSchema,
   outputSchema: MarkdownOutputSchema,
   execute: async ({ inputData }) => {
-    const { url, cfAccountId, cfApiToken } = inputData;
+    const { url } = inputData;
+    const cfAccountId = process.env.BROWSER_RENDERING_ACCOUNT_ID;
+    const cfApiToken = process.env.BROWSER_RENDERING_API_TOKEN;
 
     let markdown = "";
 
     // Try to fetch markdown from Cloudflare Browser Rendering
     // PDFs and some other content types may fail - that's ok, we'll use metadata only
-    try {
-      const response = await fetch(
-        `https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/browser-rendering/markdown`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${cfApiToken}`,
+    if (cfAccountId && cfApiToken) {
+      try {
+        const response = await fetch(
+          `https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/browser-rendering/markdown`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${cfApiToken}`,
+            },
+            body: JSON.stringify({ url }),
           },
-          body: JSON.stringify({ url }),
-        },
-      );
+        );
 
-      if (response.ok) {
-        const data = (await response.json()) as {
-          success: boolean;
-          result?: string;
-          errors?: unknown[];
-        };
-        if (data.success && data.result) {
-          markdown = data.result.slice(0, MAX_MARKDOWN_CHARS);
+        if (response.ok) {
+          const data = (await response.json()) as {
+            success: boolean;
+            result?: string;
+            errors?: unknown[];
+          };
+          if (data.success && data.result) {
+            markdown = data.result.slice(0, MAX_MARKDOWN_CHARS);
+          }
         }
+      } catch (error) {
+        console.warn("Failed to fetch markdown, will use metadata only:", error);
       }
-    } catch (error) {
-      console.warn("Failed to fetch markdown, will use metadata only:", error);
     }
 
     // Run moderation on the markdown content if we have any

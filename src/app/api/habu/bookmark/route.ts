@@ -321,8 +321,6 @@ export async function POST(request: NextRequest) {
           inputData: {
             url,
             existingTags,
-            cfAccountId: env.BROWSER_RENDERING_ACCOUNT_ID!,
-            cfApiToken: env.BROWSER_RENDERING_API_TOKEN!,
           },
         });
 

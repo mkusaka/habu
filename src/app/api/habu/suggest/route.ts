@@ -287,8 +287,6 @@ export async function POST(request: NextRequest) {
       inputData: {
         url,
         existingTags,
-        cfAccountId,
-        cfApiToken,
       },
     });
 

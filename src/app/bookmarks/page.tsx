@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { cookies } from "next/headers";
 import Link from "next/link";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
@@ -7,8 +8,17 @@ import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { createSignedRequest } from "@/lib/hatena-oauth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Bookmark, Home, AlertCircle, ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
+import {
+  Bookmark,
+  Home,
+  AlertCircle,
+  ChevronLeft,
+  ChevronRight,
+  ExternalLink,
+  Loader2,
+} from "lucide-react";
 import { LinkButton } from "@/components/ui/link-button";
+import { RefreshButton } from "./refresh-button";
 
 const PAGE_SIZE = 20;
 const HATENA_MY_API_URL = "https://bookmark.hatenaapis.com/rest/1/my";
@@ -156,6 +166,107 @@ function extractComment(comment: string) {
   return comment.replace(/^(\[[^\]]+\])+/, "").trim();
 }
 
+function BookmarkListLoading() {
+  return (
+    <div className="flex items-center justify-center py-8">
+      <Loader2 className="w-8 h-8 animate-spin" />
+    </div>
+  );
+}
+
+async function BookmarkList({ page }: { page: number }) {
+  const offset = (page - 1) * PAGE_SIZE;
+  const result = await fetchBookmarks(offset);
+
+  if (!result.success) {
+    return (
+      <div className="flex items-center gap-2 p-4 bg-red-50 dark:bg-red-900/20 rounded-md text-sm text-red-800 dark:text-red-200">
+        <AlertCircle className="w-4 h-4 flex-shrink-0" />
+        <span>{result.error}</span>
+      </div>
+    );
+  }
+
+  const bookmarks = result.bookmarks || [];
+  const hasMore = bookmarks.length === PAGE_SIZE;
+
+  if (bookmarks.length === 0) {
+    return (
+      <div className="text-center py-8 text-muted-foreground">
+        <p>No bookmarks found</p>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="space-y-2">
+        {bookmarks.map((bookmark, index) => (
+          <Link
+            key={`${bookmark.url}-${index}`}
+            href={`/bookmarks/detail?url=${encodeURIComponent(bookmark.url)}`}
+            className="block w-full text-left p-3 rounded-md border hover:bg-muted/50 transition-colors"
+          >
+            <div className="flex items-start gap-2">
+              <div className="flex-1 min-w-0">
+                <h3 className="font-medium text-sm truncate">{bookmark.title || bookmark.url}</h3>
+                {bookmark.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {bookmark.tags.map((tag, i) => (
+                      <span
+                        key={i}
+                        className="px-1.5 py-0.5 bg-primary/10 text-primary rounded text-xs"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {extractComment(bookmark.comment) && (
+                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                    {extractComment(bookmark.comment)}
+                  </p>
+                )}
+                <p className="text-xs text-muted-foreground mt-1">
+                  {formatDate(bookmark.bookmarkedAt)}
+                </p>
+              </div>
+              <ExternalLink className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+            </div>
+          </Link>
+        ))}
+      </div>
+
+      {/* Pagination */}
+      <div className="flex items-center justify-between pt-2">
+        {page > 1 ? (
+          <LinkButton href={`/bookmarks?page=${page - 1}`} variant="outline" size="sm">
+            <ChevronLeft className="w-4 h-4 mr-1" />
+            Prev
+          </LinkButton>
+        ) : (
+          <span className="inline-flex items-center px-3 py-1.5 text-sm text-muted-foreground">
+            <ChevronLeft className="w-4 h-4 mr-1" />
+            Prev
+          </span>
+        )}
+        <span className="text-sm text-muted-foreground">Page {page}</span>
+        {hasMore ? (
+          <LinkButton href={`/bookmarks?page=${page + 1}`} variant="outline" size="sm">
+            Next
+            <ChevronRight className="w-4 h-4 ml-1" />
+          </LinkButton>
+        ) : (
+          <span className="inline-flex items-center px-3 py-1.5 text-sm text-muted-foreground">
+            Next
+            <ChevronRight className="w-4 h-4 ml-1" />
+          </span>
+        )}
+      </div>
+    </>
+  );
+}
+
 interface BookmarksPageProps {
   searchParams: Promise<{ page?: string }>;
 }
@@ -163,39 +274,6 @@ interface BookmarksPageProps {
 export default async function BookmarksPage({ searchParams }: BookmarksPageProps) {
   const params = await searchParams;
   const page = Math.max(1, parseInt(params.page || "1", 10));
-  const offset = (page - 1) * PAGE_SIZE;
-
-  const result = await fetchBookmarks(offset);
-
-  if (!result.success) {
-    return (
-      <main className="min-h-screen p-4 flex items-start justify-center">
-        <Card className="w-full max-w-2xl">
-          <CardHeader className="pb-4">
-            <div className="flex items-center gap-3">
-              <Bookmark className="w-6 h-6 text-primary" />
-              <CardTitle className="text-xl">My Bookmarks</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center gap-2 p-4 bg-red-50 dark:bg-red-900/20 rounded-md text-sm text-red-800 dark:text-red-200">
-              <AlertCircle className="w-4 h-4 flex-shrink-0" />
-              <span>{result.error}</span>
-            </div>
-            <div className="pt-4 border-t">
-              <LinkButton href="/" variant="outline" className="w-full" size="sm">
-                <Home className="w-4 h-4 mr-2" />
-                Home
-              </LinkButton>
-            </div>
-          </CardContent>
-        </Card>
-      </main>
-    );
-  }
-
-  const bookmarks = result.bookmarks || [];
-  const hasMore = bookmarks.length === PAGE_SIZE;
 
   return (
     <main className="min-h-screen p-4 flex items-start justify-center">
@@ -204,98 +282,20 @@ export default async function BookmarksPage({ searchParams }: BookmarksPageProps
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Bookmark className="w-6 h-6 text-primary" />
-              <div>
-                <CardTitle className="text-xl">My Bookmarks</CardTitle>
-                {result.username && (
-                  <p className="text-xs text-muted-foreground">@{result.username}</p>
-                )}
-              </div>
+              <CardTitle className="text-xl">My Bookmarks</CardTitle>
+            </div>
+            <div className="flex items-center gap-1">
+              <RefreshButton />
+              <LinkButton href="/" variant="ghost" size="icon">
+                <Home className="w-5 h-5" />
+              </LinkButton>
             </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Bookmark List */}
-          {bookmarks.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <p>No bookmarks found</p>
-            </div>
-          ) : (
-            <>
-              <div className="space-y-2">
-                {bookmarks.map((bookmark, index) => (
-                  <Link
-                    key={`${bookmark.url}-${index}`}
-                    href={`/bookmarks/detail?url=${encodeURIComponent(bookmark.url)}`}
-                    className="block w-full text-left p-3 rounded-md border hover:bg-muted/50 transition-colors"
-                  >
-                    <div className="flex items-start gap-2">
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-medium text-sm truncate">
-                          {bookmark.title || bookmark.url}
-                        </h3>
-                        {bookmark.tags.length > 0 && (
-                          <div className="flex flex-wrap gap-1 mt-1">
-                            {bookmark.tags.map((tag, i) => (
-                              <span
-                                key={i}
-                                className="px-1.5 py-0.5 bg-primary/10 text-primary rounded text-xs"
-                              >
-                                {tag}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                        {extractComment(bookmark.comment) && (
-                          <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                            {extractComment(bookmark.comment)}
-                          </p>
-                        )}
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {formatDate(bookmark.bookmarkedAt)}
-                        </p>
-                      </div>
-                      <ExternalLink className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                    </div>
-                  </Link>
-                ))}
-              </div>
-
-              {/* Pagination */}
-              <div className="flex items-center justify-between pt-2">
-                {page > 1 ? (
-                  <LinkButton href={`/bookmarks?page=${page - 1}`} variant="outline" size="sm">
-                    <ChevronLeft className="w-4 h-4 mr-1" />
-                    Prev
-                  </LinkButton>
-                ) : (
-                  <span className="inline-flex items-center px-3 py-1.5 text-sm text-muted-foreground">
-                    <ChevronLeft className="w-4 h-4 mr-1" />
-                    Prev
-                  </span>
-                )}
-                <span className="text-sm text-muted-foreground">Page {page}</span>
-                {hasMore ? (
-                  <LinkButton href={`/bookmarks?page=${page + 1}`} variant="outline" size="sm">
-                    Next
-                    <ChevronRight className="w-4 h-4 ml-1" />
-                  </LinkButton>
-                ) : (
-                  <span className="inline-flex items-center px-3 py-1.5 text-sm text-muted-foreground">
-                    Next
-                    <ChevronRight className="w-4 h-4 ml-1" />
-                  </span>
-                )}
-              </div>
-            </>
-          )}
-
-          {/* Navigation */}
-          <div className="pt-4 border-t">
-            <LinkButton href="/" variant="outline" className="w-full" size="sm">
-              <Home className="w-4 h-4 mr-2" />
-              Home
-            </LinkButton>
-          </div>
+          <Suspense fallback={<BookmarkListLoading />}>
+            <BookmarkList page={page} />
+          </Suspense>
         </CardContent>
       </Card>
     </main>

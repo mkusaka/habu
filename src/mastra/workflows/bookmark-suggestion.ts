@@ -70,7 +70,7 @@ When evaluating accuracy, prioritize the user-provided context over auto-fetched
 
 <output_format>
 - passed: true if all criteria met, false otherwise
-- reason: 1-2 sentences explaining the decision. If rejected, specify which criterion failed and how to improve.
+- reason: 1-2 sentences explaining the decision. Keep feedback brief and actionable.
 </output_format>`,
     prompt: `<page_metadata>
 Title: ${context.title || "(no title)"}
@@ -124,6 +124,7 @@ Pass if ALL of the following are true:
 3. BALANCED: Mix of topic tags (what) and type tags (tutorial, news, tool, library, etc.)
 4. NO_DUPLICATES: No redundant or near-duplicate tags
 5. COUNT: 3-10 tags total
+6. LENGTH: Each tag must be 10 characters or less
 </evaluation_criteria>
 ${
   hasUserContext
@@ -141,9 +142,15 @@ When evaluating relevance, prioritize the user-provided context over auto-fetche
 - ["JavaScript", "TypeScript", "Python", "Go", "Rust"] (listing technologies without context)
 </rejection_examples>
 
+<constraint_reminder>
+When suggesting improvements, ONLY suggest tags that are 10 characters or less.
+Examples of valid tags: "React", "security", "CVE", "脆弱性", "RSC", "APT"
+Examples of INVALID tags (too long): "React Server Components", "CVE-2025-55182", "remote code execution"
+</constraint_reminder>
+
 <output_format>
 - passed: true if all criteria met, false otherwise
-- reason: 1-2 sentences explaining the decision. If rejected, specify which criterion failed and suggest improvements.
+- reason: 1-2 sentences explaining the decision. If rejected, specify which criterion failed and suggest short (≤10 char) improvements.
 </output_format>`,
     prompt: `<page_metadata>
 Title: ${context.title || "(no title)"}

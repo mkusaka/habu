@@ -5,6 +5,8 @@ pre-commit:
       glob: "*.{ts,tsx,js,jsx}"
       run: pnpm format:check
     typecheck:
+      glob: "*.{ts,tsx}"
       run: pnpm tsc --noEmit
     lint:
+      glob: "*.{ts,tsx,js,jsx}"
       run: pnpm lint

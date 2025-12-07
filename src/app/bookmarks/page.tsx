@@ -8,15 +8,8 @@ import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { createSignedRequest } from "@/lib/hatena-oauth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Bookmark,
-  Home,
-  AlertCircle,
-  ChevronLeft,
-  ChevronRight,
-  Loader2,
-  ExternalLink,
-} from "lucide-react";
+import { Bookmark, Home, AlertCircle, ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { LinkButton } from "@/components/ui/link-button";
 import { RefreshButton } from "./refresh-button";
 import { RegenerateButton } from "./regenerate-button";
@@ -172,8 +165,27 @@ function extractComment(comment: string) {
 
 function BookmarkListLoading() {
   return (
-    <div className="flex items-center justify-center py-8">
-      <Loader2 className="w-8 h-8 animate-spin" />
+    <div className="space-y-2">
+      {Array.from({ length: 5 }).map((_, i) => (
+        <div key={i} className="w-full p-3 rounded-md border">
+          <div className="flex items-start gap-2">
+            <div className="flex-1 min-w-0 space-y-2">
+              <Skeleton className="h-4 w-3/4" />
+              <div className="flex gap-1">
+                <Skeleton className="h-5 w-12 rounded" />
+                <Skeleton className="h-5 w-16 rounded" />
+                <Skeleton className="h-5 w-10 rounded" />
+              </div>
+              <Skeleton className="h-3 w-full" />
+              <Skeleton className="h-3 w-24" />
+            </div>
+            <div className="flex items-center gap-1 flex-shrink-0">
+              <Skeleton className="h-8 w-8 rounded" />
+              <Skeleton className="h-8 w-8 rounded" />
+            </div>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

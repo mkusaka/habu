@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Bookmark, ExternalLink, ArrowLeft, AlertCircle } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { LinkButton } from "@/components/ui/link-button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { BookmarkEditForm } from "./bookmark-edit-form";
 
 export const dynamic = "force-dynamic";
@@ -122,20 +123,20 @@ function BookmarkDetailLoading() {
   return (
     <div className="space-y-4">
       <div className="space-y-2">
-        <div className="h-4 w-12 bg-muted rounded animate-pulse" />
-        <div className="h-10 bg-muted rounded animate-pulse" />
+        <Skeleton className="h-4 w-12" />
+        <Skeleton className="h-10 w-full" />
       </div>
       <div className="space-y-2">
-        <div className="h-4 w-12 bg-muted rounded animate-pulse" />
-        <div className="h-10 bg-muted rounded animate-pulse" />
+        <Skeleton className="h-4 w-12" />
+        <Skeleton className="h-10 w-full" />
       </div>
       <div className="space-y-2">
-        <div className="h-4 w-16 bg-muted rounded animate-pulse" />
-        <div className="h-20 bg-muted rounded animate-pulse" />
+        <Skeleton className="h-4 w-16" />
+        <Skeleton className="h-20 w-full" />
       </div>
       <div className="flex gap-2">
-        <div className="h-10 flex-1 bg-muted rounded animate-pulse" />
-        <div className="h-10 flex-1 bg-muted rounded animate-pulse" />
+        <Skeleton className="h-10 flex-1" />
+        <Skeleton className="h-10 flex-1" />
       </div>
     </div>
   );

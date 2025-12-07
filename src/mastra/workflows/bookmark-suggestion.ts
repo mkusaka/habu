@@ -39,6 +39,9 @@ async function judgeSummary(
   const hasUserContext = !!context.userContext;
   const primaryContent = hasUserContext ? context.userContext : context.markdown;
 
+  // Pre-calculate character count since LLMs are bad at counting
+  const summaryLength = summary.length;
+
   const { experimental_output } = await generateText({
     model: openai("gpt-5.1"),
     system: `<role>
@@ -50,7 +53,7 @@ Pass if ALL of the following are true:
 1. CONCRETE: Contains at least one specific detail from the content (feature name, number, method, technology)
 2. ACCURATE: Claims match the actual page content
 3. JAPANESE: Written in Japanese
-4. LENGTH: 70-100 characters (acceptable: 50-100)
+4. LENGTH: 70-100 characters (acceptable: 50-100). See <character_count> for the actual length.
 </evaluation_criteria>
 ${
   hasUserContext
@@ -86,6 +89,11 @@ ${primaryContent}
 ${summary}
 </summary_to_evaluate>
 
+<character_count>
+Summary length: ${summaryLength} characters
+Length OK: ${summaryLength >= 50 && summaryLength <= 100 ? "YES (within 50-100)" : `NO (${summaryLength < 50 ? "too short, need 50+" : "too long, max 100"})`}
+</character_count>
+
 Evaluate this summary against the criteria.`,
     experimental_output: Output.object({ schema: JudgeResultSchema }),
     providerOptions: { openai: { structuredOutputs: true } },
@@ -111,6 +119,15 @@ async function judgeTags(
   const hasUserContext = !!context.userContext;
   const primaryContent = hasUserContext ? context.userContext : context.markdown;
 
+  // Pre-calculate tag lengths since LLMs are bad at counting
+  const tagLengthInfo = tags.map((tag) => ({
+    tag,
+    length: tag.length,
+    valid: tag.length <= 10,
+  }));
+  const invalidTags = tagLengthInfo.filter((t) => !t.valid);
+  const allTagsValid = invalidTags.length === 0;
+
   const { experimental_output } = await generateText({
     model: openai("gpt-5.1"),
     system: `<role>
@@ -124,7 +141,7 @@ Pass if ALL of the following are true:
 3. BALANCED: Mix of topic tags (what) and type tags (tutorial, news, tool, library, etc.)
 4. NO_DUPLICATES: No redundant or near-duplicate tags
 5. COUNT: 3-10 tags total
-6. LENGTH: Each tag must be 10 characters or less
+6. LENGTH: Each tag must be 10 characters or less. See <tag_length_analysis> for pre-calculated lengths.
 </evaluation_criteria>
 ${
   hasUserContext
@@ -164,6 +181,14 @@ ${primaryContent}
 <tags_to_evaluate>
 ${tags.join(", ")}
 </tags_to_evaluate>
+
+<tag_length_analysis>
+Total tags: ${tags.length}
+Tag count OK: ${tags.length >= 3 && tags.length <= 10 ? "YES" : `NO (need 3-10, got ${tags.length})`}
+Individual tag lengths:
+${tagLengthInfo.map((t) => `  - "${t.tag}": ${t.length} chars ${t.valid ? "✓" : "✗ TOO LONG"}`).join("\n")}
+All tags within 10 chars: ${allTagsValid ? "YES" : `NO - these tags are too long: ${invalidTags.map((t) => `"${t.tag}" (${t.length} chars)`).join(", ")}`}
+</tag_length_analysis>
 
 Evaluate these tags against the criteria.`,
     experimental_output: Output.object({ schema: JudgeResultSchema }),

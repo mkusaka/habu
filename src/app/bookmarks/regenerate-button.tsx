@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Sparkles, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { saveBookmark } from "@/lib/bookmark-client";
+import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface RegenerateButtonProps {
@@ -44,23 +45,23 @@ export function RegenerateButton({ url, title }: RegenerateButtonProps) {
   };
 
   return (
-    <div className="relative z-10">
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <button
-            onClick={handleRegenerate}
-            disabled={isRegenerating}
-            className="p-1 text-muted-foreground hover:text-primary disabled:opacity-50 flex-shrink-0 cursor-pointer"
-          >
-            {isRegenerating ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Sparkles className="w-4 h-4" />
-            )}
-          </button>
-        </TooltipTrigger>
-        <TooltipContent>Regenerate</TooltipContent>
-      </Tooltip>
-    </div>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={handleRegenerate}
+          disabled={isRegenerating}
+          className="cursor-pointer"
+        >
+          {isRegenerating ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <Sparkles className="w-4 h-4" />
+          )}
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>Regenerate</TooltipContent>
+    </Tooltip>
   );
 }

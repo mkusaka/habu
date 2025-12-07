@@ -270,13 +270,13 @@ async function BookmarkList({ page }: { page: number }) {
               <h3 className="font-medium text-sm truncate flex-1 min-w-0">
                 {bookmark.title || bookmark.url}
               </h3>
-              <div className="flex items-center gap-1 flex-shrink-0">
+              <div className="relative z-10 flex items-center gap-1 flex-shrink-0">
                 <RegenerateButton url={bookmark.url} title={bookmark.title} />
                 <a
                   href={bookmark.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="relative z-10 p-1 text-muted-foreground hover:text-foreground cursor-pointer"
+                  className="p-1 text-muted-foreground hover:text-foreground cursor-pointer"
                 >
                   <ExternalLink className="w-4 h-4" />
                 </a>

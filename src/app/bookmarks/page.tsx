@@ -288,7 +288,7 @@ export default async function BookmarksPage({ searchParams }: BookmarksPageProps
   const page = Math.max(1, parseInt(params.page || "1", 10));
 
   return (
-    <main className="min-h-screen p-4 flex items-start justify-center">
+    <main className="min-h-screen p-2 flex items-start justify-center">
       <Card className="w-full max-w-2xl">
         <CardHeader className="pb-4">
           <div className="flex items-center justify-between">

@@ -69,14 +69,18 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Hatena not connected" }, { status: 400 });
     }
 
-    const { accessToken: hatenaAccessToken, accessTokenSecret: hatenaAccessTokenSecret } = user.hatenaToken;
+    const { accessToken: hatenaAccessToken, accessTokenSecret: hatenaAccessTokenSecret } =
+      user.hatenaToken;
 
     // Get consumer credentials from env
     const consumerKey = env.HATENA_CONSUMER_KEY;
     const consumerSecret = env.HATENA_CONSUMER_SECRET;
 
     if (!consumerKey || !consumerSecret) {
-      return NextResponse.json({ success: false, error: "Server configuration error" }, { status: 500 });
+      return NextResponse.json(
+        { success: false, error: "Server configuration error" },
+        { status: 500 },
+      );
     }
 
     // Build the API URL with the bookmark URL as query param
@@ -257,7 +261,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { accessToken: hatenaAccessToken, accessTokenSecret: hatenaAccessTokenSecret } = user.hatenaToken;
+    const { accessToken: hatenaAccessToken, accessTokenSecret: hatenaAccessTokenSecret } =
+      user.hatenaToken;
 
     // Get consumer credentials from env
     const consumerKey = env.HATENA_CONSUMER_KEY;

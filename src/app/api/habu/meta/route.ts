@@ -41,10 +41,7 @@ export async function GET(request: NextRequest) {
 
     const contentType = response.headers.get("content-type") || "";
     if (!contentType.includes("text/html")) {
-      return NextResponse.json(
-        { error: "URL does not return HTML" },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: "URL does not return HTML" }, { status: 400 });
     }
 
     const html = await response.text();
@@ -53,10 +50,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(meta);
   } catch (error) {
     console.error("Meta fetch error:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch page metadata" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "Failed to fetch page metadata" }, { status: 500 });
   }
 }
 
@@ -67,7 +61,8 @@ function parseMetaTags(html: string): MetaResponse {
   const result: MetaResponse = {};
 
   // Extract og:title or title
-  const ogTitleMatch = html.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i) ||
+  const ogTitleMatch =
+    html.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i) ||
     html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:title["']/i);
 
   const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
@@ -78,10 +73,12 @@ function parseMetaTags(html: string): MetaResponse {
   }
 
   // Extract og:description or meta description
-  const ogDescMatch = html.match(/<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']+)["']/i) ||
+  const ogDescMatch =
+    html.match(/<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']+)["']/i) ||
     html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:description["']/i);
 
-  const descMatch = html.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["']/i) ||
+  const descMatch =
+    html.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["']/i) ||
     html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+name=["']description["']/i);
 
   result.description = ogDescMatch?.[1] || descMatch?.[1] || undefined;
@@ -90,7 +87,8 @@ function parseMetaTags(html: string): MetaResponse {
   }
 
   // Extract og:image
-  const ogImageMatch = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i) ||
+  const ogImageMatch =
+    html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i) ||
     html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i);
 
   result.image = ogImageMatch?.[1] || undefined;

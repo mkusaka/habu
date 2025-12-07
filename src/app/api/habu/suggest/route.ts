@@ -5,7 +5,12 @@ import { getDb } from "@/db/client";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { createAuth } from "@/lib/auth";
-import type { HatenaTagsResponse, SuggestRequest, SuggestResponse, PageMetadata } from "@/types/habu";
+import type {
+  HatenaTagsResponse,
+  SuggestRequest,
+  SuggestResponse,
+  PageMetadata,
+} from "@/types/habu";
 import { mastra } from "@/mastra";
 
 const HATENA_TAGS_API_URL = "https://bookmark.hatenaapis.com/rest/1/my/tags";
@@ -35,7 +40,11 @@ interface PageMetaProxyResponse {
 /**
  * Fetch markdown content from Cloudflare Browser Rendering
  */
-async function fetchMarkdown(url: string, cfAccountId: string, cfApiToken: string): Promise<{ markdown: string; error?: string }> {
+async function fetchMarkdown(
+  url: string,
+  cfAccountId: string,
+  cfApiToken: string,
+): Promise<{ markdown: string; error?: string }> {
   if (!cfAccountId || !cfApiToken) {
     return { markdown: "", error: "Missing CF credentials" };
   }
@@ -50,7 +59,7 @@ async function fetchMarkdown(url: string, cfAccountId: string, cfApiToken: strin
           Authorization: `Bearer ${cfApiToken}`,
         },
         body: JSON.stringify({ url }),
-      }
+      },
     );
 
     if (!response.ok) {
@@ -59,7 +68,11 @@ async function fetchMarkdown(url: string, cfAccountId: string, cfApiToken: strin
       return { markdown: "", error: `HTTP ${response.status}: ${errorText.slice(0, 200)}` };
     }
 
-    const data = (await response.json()) as { success: boolean; result?: string; errors?: unknown[] };
+    const data = (await response.json()) as {
+      success: boolean;
+      result?: string;
+      errors?: unknown[];
+    };
     if (data.success && data.result) {
       return { markdown: data.result.slice(0, MAX_MARKDOWN_CHARS) };
     }
@@ -86,7 +99,8 @@ async function fetchMetadata(url: string): Promise<PageMetadata> {
 
     return {
       title: meta?.title || meta?.og?.title || meta?.twitter?.title,
-      description: meta?.og?.description || meta?.twitter?.description || meta?.metaByName?.description,
+      description:
+        meta?.og?.description || meta?.twitter?.description || meta?.metaByName?.description,
       lang: meta?.lang,
       ogType: meta?.og?.type,
       siteName: meta?.og?.site_name,
@@ -220,7 +234,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { accessToken: hatenaAccessToken, accessTokenSecret: hatenaAccessTokenSecret } = user.hatenaToken;
+    const { accessToken: hatenaAccessToken, accessTokenSecret: hatenaAccessTokenSecret } =
+      user.hatenaToken;
 
     // Get consumer credentials from env
     const consumerKey = env.HATENA_CONSUMER_KEY;
@@ -247,10 +262,9 @@ export async function POST(request: NextRequest) {
     try {
       new URL(url);
     } catch {
-      return NextResponse.json(
-        { success: false, error: "Invalid URL format" } as SuggestResponse,
-        { status: 400 },
-      );
+      return NextResponse.json({ success: false, error: "Invalid URL format" } as SuggestResponse, {
+        status: 400,
+      });
     }
 
     // Fetch markdown, metadata, and existing tags in parallel
@@ -260,12 +274,7 @@ export async function POST(request: NextRequest) {
     const [markdownResult, metadata, existingTags] = await Promise.all([
       fetchMarkdown(url, cfAccountId, cfApiToken),
       fetchMetadata(url),
-      fetchHatenaTags(
-        hatenaAccessToken,
-        hatenaAccessTokenSecret,
-        consumerKey,
-        consumerSecret,
-      ),
+      fetchHatenaTags(hatenaAccessToken, hatenaAccessTokenSecret, consumerKey, consumerSecret),
     ]);
 
     const markdown = markdownResult.markdown;

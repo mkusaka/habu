@@ -20,66 +20,31 @@ export interface BookmarkItem {
   bookmarkedAt: string;
 }
 
+// Unofficial API response types
+interface HatenaBookmarkEntry {
+  title: string;
+  canonical_url: string;
+}
+
+interface HatenaBookmarkItem {
+  url: string;
+  comment: string;
+  tags: string[];
+  created: string;
+  entry: HatenaBookmarkEntry;
+}
+
+interface HatenaBookmarksApiResponse {
+  item: {
+    bookmarks: HatenaBookmarkItem[];
+  };
+}
+
 export interface BookmarksResponse {
   success: boolean;
   error?: string;
   bookmarks?: BookmarkItem[];
   username?: string;
-}
-
-/**
- * Parse RSS XML to extract bookmark items
- */
-function parseRssXml(xml: string): BookmarkItem[] {
-  const items: BookmarkItem[] = [];
-
-  // Simple regex-based XML parsing (works for RSS structure)
-  const itemRegex = /<item[^>]*>([\s\S]*?)<\/item>/g;
-  let match;
-
-  while ((match = itemRegex.exec(xml)) !== null) {
-    const itemContent = match[1];
-
-    // Extract fields
-    const linkMatch = itemContent.match(/<link>([^<]+)<\/link>/);
-    const titleMatch = itemContent.match(/<title>([^<]+)<\/title>/);
-    const descMatch = itemContent.match(/<description>([^<]*)<\/description>/);
-    const dateMatch = itemContent.match(/<dc:date>([^<]+)<\/dc:date>/);
-
-    // Extract tags (dc:subject elements)
-    const tagRegex = /<dc:subject>([^<]+)<\/dc:subject>/g;
-    const tags: string[] = [];
-    let tagMatch;
-    while ((tagMatch = tagRegex.exec(itemContent)) !== null) {
-      tags.push(decodeXmlEntities(tagMatch[1]));
-    }
-
-    if (linkMatch) {
-      items.push({
-        url: decodeXmlEntities(linkMatch[1]),
-        title: titleMatch ? decodeXmlEntities(titleMatch[1]) : "",
-        comment: descMatch ? decodeXmlEntities(descMatch[1]) : "",
-        tags,
-        bookmarkedAt: dateMatch ? dateMatch[1] : "",
-      });
-    }
-  }
-
-  return items;
-}
-
-/**
- * Decode common XML entities
- */
-function decodeXmlEntities(str: string): string {
-  return str
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&amp;/g, "&")
-    .replace(/&quot;/g, '"')
-    .replace(/&apos;/g, "'")
-    .replace(/&#(\d+);/g, (_, num) => String.fromCharCode(parseInt(num, 10)))
-    .replace(/&#x([a-fA-F0-9]+);/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
 }
 
 /**
@@ -102,9 +67,12 @@ export async function GET(request: NextRequest) {
     });
 
     if (!session?.user) {
-      return NextResponse.json({ success: false, error: "Not authenticated" } as BookmarksResponse, {
-        status: 401,
-      });
+      return NextResponse.json(
+        { success: false, error: "Not authenticated" } as BookmarksResponse,
+        {
+          status: 401,
+        },
+      );
     }
 
     // Get user with hatenaToken relation
@@ -122,7 +90,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const { accessToken: hatenaAccessToken, accessTokenSecret: hatenaAccessTokenSecret } = user.hatenaToken;
+    const { accessToken: hatenaAccessToken, accessTokenSecret: hatenaAccessTokenSecret } =
+      user.hatenaToken;
 
     // Get consumer credentials from env
     const consumerKey = env.HATENA_CONSUMER_KEY;
@@ -153,7 +122,10 @@ export async function GET(request: NextRequest) {
     if (!myResponse.ok) {
       const errorText = await myResponse.text();
       return NextResponse.json(
-        { success: false, error: `Failed to get user info: ${myResponse.status} - ${errorText}` } as BookmarksResponse,
+        {
+          success: false,
+          error: `Failed to get user info: ${myResponse.status} - ${errorText}`,
+        } as BookmarksResponse,
         { status: myResponse.status },
       );
     }
@@ -161,28 +133,35 @@ export async function GET(request: NextRequest) {
     const myData = (await myResponse.json()) as HatenaMyResponse;
     const username = myData.name;
 
-    // Fetch RSS feed (public, no auth needed)
-    // Note: RSS only returns ~20 items at a time, so we use the of parameter for pagination
-    const rssUrl = `https://b.hatena.ne.jp/${username}/rss?of=${offset}`;
+    // Fetch bookmarks using unofficial API (supports proper pagination)
+    const bookmarksApiUrl = `https://b.hatena.ne.jp/api/users/${username}/bookmarks?limit=${limit}&offset=${offset}`;
 
-    const rssResponse = await fetch(rssUrl, {
+    const bookmarksResponse = await fetch(bookmarksApiUrl, {
       headers: {
-        "Accept": "application/rss+xml, application/xml, text/xml",
+        Accept: "application/json",
       },
     });
 
-    if (!rssResponse.ok) {
+    if (!bookmarksResponse.ok) {
       return NextResponse.json(
-        { success: false, error: `Failed to fetch bookmarks: ${rssResponse.status}` } as BookmarksResponse,
-        { status: rssResponse.status },
+        {
+          success: false,
+          error: `Failed to fetch bookmarks: ${bookmarksResponse.status}`,
+        } as BookmarksResponse,
+        { status: bookmarksResponse.status },
       );
     }
 
-    const rssXml = await rssResponse.text();
-    const allBookmarks = parseRssXml(rssXml);
+    const bookmarksData = (await bookmarksResponse.json()) as HatenaBookmarksApiResponse;
 
-    // Apply limit (RSS returns all items, we need to slice)
-    const bookmarks = allBookmarks.slice(0, limit);
+    // Map to BookmarkItem format
+    const bookmarks: BookmarkItem[] = bookmarksData.item.bookmarks.map((item) => ({
+      url: item.entry.canonical_url || item.url,
+      title: item.entry.title,
+      comment: item.comment,
+      tags: item.tags,
+      bookmarkedAt: item.created,
+    }));
 
     return NextResponse.json({
       success: true,

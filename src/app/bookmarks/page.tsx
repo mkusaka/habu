@@ -4,7 +4,15 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Bookmark, Loader2, ChevronLeft, ChevronRight, ExternalLink, RefreshCw } from "lucide-react";
+import {
+  Bookmark,
+  Loader2,
+  ChevronLeft,
+  ChevronRight,
+  ExternalLink,
+  RefreshCw,
+  Home,
+} from "lucide-react";
 import { LinkButton } from "@/components/ui/link-button";
 import type { BookmarkItem, BookmarksResponse } from "@/app/api/habu/bookmarks/route";
 
@@ -98,17 +106,10 @@ export default function BookmarksPage() {
               <Bookmark className="w-6 h-6 text-primary" />
               <div>
                 <CardTitle className="text-xl">My Bookmarks</CardTitle>
-                {username && (
-                  <p className="text-xs text-muted-foreground">@{username}</p>
-                )}
+                {username && <p className="text-xs text-muted-foreground">@{username}</p>}
               </div>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleRefresh}
-              disabled={isLoading}
-            >
+            <Button variant="ghost" size="icon" onClick={handleRefresh} disabled={isLoading}>
               <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
             </Button>
           </div>
@@ -180,24 +181,14 @@ export default function BookmarksPage() {
           {/* Pagination */}
           {!isLoading && bookmarks.length > 0 && (
             <div className="flex items-center justify-between pt-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handlePrevPage}
-                disabled={offset === 0}
-              >
+              <Button variant="outline" size="sm" onClick={handlePrevPage} disabled={offset === 0}>
                 <ChevronLeft className="w-4 h-4 mr-1" />
                 Prev
               </Button>
               <span className="text-sm text-muted-foreground">
                 {offset + 1} - {offset + bookmarks.length}
               </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleNextPage}
-                disabled={!hasMore}
-              >
+              <Button variant="outline" size="sm" onClick={handleNextPage} disabled={!hasMore}>
                 Next
                 <ChevronRight className="w-4 h-4 ml-1" />
               </Button>
@@ -207,8 +198,8 @@ export default function BookmarksPage() {
           {/* Navigation */}
           <div className="pt-4 border-t">
             <LinkButton href="/" variant="outline" className="w-full" size="sm">
-              <Bookmark className="w-4 h-4 mr-2" />
-              New Bookmark
+              <Home className="w-4 h-4 mr-2" />
+              Home
             </LinkButton>
           </div>
         </CardContent>

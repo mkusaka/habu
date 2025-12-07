@@ -114,7 +114,10 @@ export async function getAccessToken(
 
   // authorize() merges request.data into the result, but the type definition
   // only includes OAuth.Authorization fields. Cast to include our custom data.
-  const authorized = oauth.authorize(requestData, { key: token, secret: tokenSecret }) as OAuth.Authorization & { oauth_verifier?: string };
+  const authorized = oauth.authorize(requestData, {
+    key: token,
+    secret: tokenSecret,
+  }) as OAuth.Authorization & { oauth_verifier?: string };
 
   // Remove oauth_verifier from Authorization header to avoid double-sending
   // We need to remove it manually since toHeader() includes all data params

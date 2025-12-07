@@ -48,7 +48,10 @@ declare global {
     addEventListener(type: "sync", listener: (event: SyncEvent) => void): void;
     addEventListener(type: "fetch", listener: (event: FetchEvent) => void): void;
     addEventListener(type: "message", listener: (event: SWMessageEvent) => void): void;
-    addEventListener(type: "notificationclick", listener: (event: SWNotificationEvent) => void): void;
+    addEventListener(
+      type: "notificationclick",
+      listener: (event: SWNotificationEvent) => void,
+    ): void;
     readonly registration: ServiceWorkerRegistration;
     readonly location: { origin: string };
     readonly clients: Clients;
@@ -264,7 +267,11 @@ async function notifyClients(message: {
 }
 
 // Show push notification for errors
-async function showErrorNotification(title: string, errorMessage: string, url?: string): Promise<void> {
+async function showErrorNotification(
+  title: string,
+  errorMessage: string,
+  url?: string,
+): Promise<void> {
   try {
     const permission = Notification.permission;
     if (permission !== "granted") {
@@ -291,7 +298,10 @@ self.addEventListener("notificationclick", (event: SWNotificationEvent) => {
 
   event.waitUntil(
     (async () => {
-      const windowClients = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+      const windowClients = await self.clients.matchAll({
+        type: "window",
+        includeUncontrolled: true,
+      });
 
       // Try to find existing PWA window and navigate to queue
       for (const client of windowClients) {
@@ -305,7 +315,7 @@ self.addEventListener("notificationclick", (event: SWNotificationEvent) => {
 
       // No existing window - open queue page (will open in PWA if installed)
       await self.clients.openWindow("/queue");
-    })()
+    })(),
   );
 });
 
@@ -411,8 +421,8 @@ async function processQueue(): Promise<void> {
         db.bookmarks.update(item.id!, {
           status: "sending",
           updatedAt: new Date(),
-        })
-      )
+        }),
+      ),
   );
 
   // Process all items in parallel (using allSettled to handle individual failures gracefully)
@@ -473,7 +483,7 @@ async function processQueue(): Promise<void> {
             await showErrorNotification(
               "Bookmark failed",
               result.error || "Unknown error",
-              item.url
+              item.url,
             );
           }
         } catch (error) {
@@ -504,7 +514,7 @@ async function processQueue(): Promise<void> {
           });
           await showErrorNotification("Bookmark failed", errorMessage, item.url);
         }
-      })
+      }),
   );
 
   // Log summary

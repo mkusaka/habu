@@ -1,13 +1,25 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Bookmark, Loader2, Sparkles, ChevronDown, ChevronUp, FileText, Info, ArrowLeft, ExternalLink, AlertCircle } from "lucide-react";
+import {
+  Bookmark,
+  Loader2,
+  Sparkles,
+  ChevronDown,
+  ChevronUp,
+  FileText,
+  Info,
+  ArrowLeft,
+  ExternalLink,
+  AlertCircle,
+} from "lucide-react";
 import { LinkButton } from "@/components/ui/link-button";
 
 interface BookmarkData {
@@ -42,11 +54,40 @@ function BookmarkDetailContent() {
   const [error, setError] = useState<string | null>(null);
   const [bookmark, setBookmark] = useState<BookmarkData | null>(null);
 
+  const [title, setTitle] = useState("");
   const [comment, setComment] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isFetchingMetadata, setIsFetchingMetadata] = useState(false);
   const [generatedResult, setGeneratedResult] = useState<GeneratedResult | null>(null);
   const [showRawContent, setShowRawContent] = useState(false);
+
+  // Fetch metadata for title
+  const fetchMetadata = useCallback(async () => {
+    if (!bookmarkUrl) return;
+
+    setIsFetchingMetadata(true);
+    try {
+      const response = await fetch(
+        `https://page-meta-proxy.polyfill.workers.dev/meta?url=${encodeURIComponent(bookmarkUrl)}`,
+      );
+      if (response.ok) {
+        const meta = (await response.json()) as {
+          title?: string;
+          og?: { title?: string };
+          twitter?: { title?: string };
+        };
+        const fetchedTitle = meta?.title || meta?.og?.title || meta?.twitter?.title;
+        if (fetchedTitle) {
+          setTitle(fetchedTitle);
+        }
+      }
+    } catch {
+      // Ignore metadata fetch errors
+    } finally {
+      setIsFetchingMetadata(false);
+    }
+  }, [bookmarkUrl]);
 
   // Fetch current bookmark data
   useEffect(() => {
@@ -85,7 +126,8 @@ function BookmarkDetailContent() {
     };
 
     fetchBookmark();
-  }, [bookmarkUrl]);
+    fetchMetadata();
+  }, [bookmarkUrl, fetchMetadata]);
 
   const handleGenerate = async () => {
     if (!bookmarkUrl) {
@@ -172,9 +214,12 @@ function BookmarkDetailContent() {
       toast.success("Bookmark updated!");
 
       // Refresh bookmark data
-      const refreshResponse = await fetch(`/api/habu/bookmark?url=${encodeURIComponent(bookmarkUrl)}`, {
-        credentials: "include",
-      });
+      const refreshResponse = await fetch(
+        `/api/habu/bookmark?url=${encodeURIComponent(bookmarkUrl)}`,
+        {
+          credentials: "include",
+        },
+      );
       if (refreshResponse.ok) {
         const refreshData = (await refreshResponse.json()) as BookmarkData;
         setBookmark(refreshData);
@@ -188,10 +233,17 @@ function BookmarkDetailContent() {
     }
   };
 
-  // Parse tags from comment
+  // Parse tags from comment (e.g., "[tag1][tag2][tag3]summary text")
   const extractTags = (commentStr: string): string[] => {
-    const tagMatches = commentStr.match(/^\[([^\]]+)\]/g) || [];
-    return tagMatches.map((t) => t.slice(1, -1));
+    const tags: string[] = [];
+    const tagRegex = /^\[([^\]]+)\]/;
+    let remaining = commentStr;
+    let match;
+    while ((match = tagRegex.exec(remaining)) !== null) {
+      tags.push(match[1]);
+      remaining = remaining.slice(match[0].length);
+    }
+    return tags;
   };
 
   const extractCommentText = (commentStr: string): string => {
@@ -251,14 +303,34 @@ function BookmarkDetailContent() {
             </div>
           </div>
 
+          {/* Title */}
+          <div className="space-y-2">
+            <Label htmlFor="title">Title</Label>
+            <div className="relative">
+              <Input
+                id="title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder={isFetchingMetadata ? "Fetching..." : "Page title"}
+                disabled={isFetchingMetadata}
+              />
+              {isFetchingMetadata && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* Current Comment */}
           <div className="space-y-2">
             <Label htmlFor="comment">Comment</Label>
-            <Input
+            <Textarea
               id="comment"
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               placeholder="Your comment"
+              rows={3}
             />
             {currentTags.length > 0 && (
               <div className="flex flex-wrap gap-1">
@@ -293,7 +365,10 @@ function BookmarkDetailContent() {
                 {generatedResult.tags && generatedResult.tags.length > 0 && (
                   <div className="flex flex-wrap gap-1 mb-2">
                     {generatedResult.tags.map((tag, i) => (
-                      <span key={i} className="px-2 py-0.5 bg-primary/10 text-primary rounded text-xs">
+                      <span
+                        key={i}
+                        className="px-2 py-0.5 bg-primary/10 text-primary rounded text-xs"
+                      >
                         {tag}
                       </span>
                     ))}
@@ -321,7 +396,9 @@ function BookmarkDetailContent() {
               </div>
 
               {/* Raw Content Toggle */}
-              {(generatedResult.markdown || generatedResult.markdownError || generatedResult.metadata) && (
+              {(generatedResult.markdown ||
+                generatedResult.markdownError ||
+                generatedResult.metadata) && (
                 <div className="border-t pt-2">
                   <button
                     type="button"
@@ -339,37 +416,59 @@ function BookmarkDetailContent() {
                   {showRawContent && (
                     <div className="mt-2 space-y-3">
                       {/* Metadata */}
-                      {generatedResult.metadata && Object.keys(generatedResult.metadata).length > 0 && (
-                        <div>
-                          <div className="flex items-center gap-1 text-xs font-medium mb-1">
-                            <Info className="w-3 h-3" />
-                            Metadata
+                      {generatedResult.metadata &&
+                        Object.keys(generatedResult.metadata).length > 0 && (
+                          <div>
+                            <div className="flex items-center gap-1 text-xs font-medium mb-1">
+                              <Info className="w-3 h-3" />
+                              Metadata
+                            </div>
+                            <div className="bg-background p-2 rounded text-xs space-y-1">
+                              {generatedResult.metadata.title && (
+                                <div>
+                                  <span className="text-muted-foreground">title:</span>{" "}
+                                  {generatedResult.metadata.title}
+                                </div>
+                              )}
+                              {generatedResult.metadata.description && (
+                                <div>
+                                  <span className="text-muted-foreground">description:</span>{" "}
+                                  {generatedResult.metadata.description}
+                                </div>
+                              )}
+                              {generatedResult.metadata.siteName && (
+                                <div>
+                                  <span className="text-muted-foreground">site:</span>{" "}
+                                  {generatedResult.metadata.siteName}
+                                </div>
+                              )}
+                              {generatedResult.metadata.lang && (
+                                <div>
+                                  <span className="text-muted-foreground">lang:</span>{" "}
+                                  {generatedResult.metadata.lang}
+                                </div>
+                              )}
+                              {generatedResult.metadata.ogType && (
+                                <div>
+                                  <span className="text-muted-foreground">type:</span>{" "}
+                                  {generatedResult.metadata.ogType}
+                                </div>
+                              )}
+                              {generatedResult.metadata.keywords && (
+                                <div>
+                                  <span className="text-muted-foreground">keywords:</span>{" "}
+                                  {generatedResult.metadata.keywords}
+                                </div>
+                              )}
+                              {generatedResult.metadata.author && (
+                                <div>
+                                  <span className="text-muted-foreground">author:</span>{" "}
+                                  {generatedResult.metadata.author}
+                                </div>
+                              )}
+                            </div>
                           </div>
-                          <div className="bg-background p-2 rounded text-xs space-y-1">
-                            {generatedResult.metadata.title && (
-                              <div><span className="text-muted-foreground">title:</span> {generatedResult.metadata.title}</div>
-                            )}
-                            {generatedResult.metadata.description && (
-                              <div><span className="text-muted-foreground">description:</span> {generatedResult.metadata.description}</div>
-                            )}
-                            {generatedResult.metadata.siteName && (
-                              <div><span className="text-muted-foreground">site:</span> {generatedResult.metadata.siteName}</div>
-                            )}
-                            {generatedResult.metadata.lang && (
-                              <div><span className="text-muted-foreground">lang:</span> {generatedResult.metadata.lang}</div>
-                            )}
-                            {generatedResult.metadata.ogType && (
-                              <div><span className="text-muted-foreground">type:</span> {generatedResult.metadata.ogType}</div>
-                            )}
-                            {generatedResult.metadata.keywords && (
-                              <div><span className="text-muted-foreground">keywords:</span> {generatedResult.metadata.keywords}</div>
-                            )}
-                            {generatedResult.metadata.author && (
-                              <div><span className="text-muted-foreground">author:</span> {generatedResult.metadata.author}</div>
-                            )}
-                          </div>
-                        </div>
-                      )}
+                        )}
 
                       {/* Markdown */}
                       {generatedResult.markdown ? (
@@ -423,12 +522,7 @@ function BookmarkDetailContent() {
               )}
             </Button>
 
-            <Button
-              onClick={handleUpdate}
-              disabled={isUpdating}
-              className="flex-1"
-              size="lg"
-            >
+            <Button onClick={handleUpdate} disabled={isUpdating} className="flex-1" size="lg">
               {isUpdating ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -455,11 +549,13 @@ function BookmarkDetailContent() {
 
 export default function BookmarkDetailPage() {
   return (
-    <Suspense fallback={
-      <main className="min-h-screen p-4 flex items-center justify-center">
-        <Loader2 className="w-6 h-6 animate-spin" />
-      </main>
-    }>
+    <Suspense
+      fallback={
+        <main className="min-h-screen p-4 flex items-center justify-center">
+          <Loader2 className="w-6 h-6 animate-spin" />
+        </main>
+      }
+    >
       <BookmarkDetailContent />
     </Suspense>
   );

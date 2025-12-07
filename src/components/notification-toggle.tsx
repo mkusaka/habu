@@ -54,9 +54,7 @@ export function NotificationToggle() {
         </Label>
       </div>
       <div className="flex items-center gap-2">
-        {isDenied && (
-          <span className="text-xs text-muted-foreground">Blocked in browser</span>
-        )}
+        {isDenied && <span className="text-xs text-muted-foreground">Blocked in browser</span>}
         <Switch
           id="notification-toggle"
           checked={isEnabled}

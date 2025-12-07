@@ -40,7 +40,9 @@ export default function RootLayout({
       <head>
         <link rel="icon" href="/favicon.svg" type="image/svg+xml"></link>
       </head>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased h-full overflow-hidden`}>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased h-full overflow-hidden`}
+      >
         <ServiceWorkerRegister />
         <BackgroundSyncFallback />
         <main className="h-full p-4 bg-gray-50 overflow-auto">

@@ -316,7 +316,12 @@ export default function QueuePage() {
                       <Copy className="w-4 h-4" />
                     </Button>
                     {(item.status === "error" || item.status === "done") && item.id && (
-                      <Button variant="ghost" size="icon" onClick={() => handleRetry(item.id!)} title="Re-save">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleRetry(item.id!)}
+                        title="Re-save"
+                      >
                         <RefreshCw className="w-4 h-4" />
                       </Button>
                     )}
@@ -324,7 +329,9 @@ export default function QueuePage() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => setDeleteTarget({ id: item.id!, title: item.title || item.url })}
+                        onClick={() =>
+                          setDeleteTarget({ id: item.id!, title: item.title || item.url })
+                        }
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>

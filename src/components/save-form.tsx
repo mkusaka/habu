@@ -6,9 +6,22 @@ import { queueBookmark } from "@/lib/queue-sync";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Bookmark, List, Settings, Loader2, WifiOff, AlertCircle, Sparkles, ChevronDown, ChevronUp, FileText, Info } from "lucide-react";
+import {
+  Bookmark,
+  List,
+  Settings,
+  Loader2,
+  WifiOff,
+  AlertCircle,
+  Sparkles,
+  ChevronDown,
+  ChevronUp,
+  FileText,
+  Info,
+} from "lucide-react";
 import { LinkButton } from "@/components/ui/link-button";
 
 interface SaveFormProps {
@@ -174,24 +187,27 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
   }, [hasHatena, router]);
 
   // Fetch title when URL changes (debounced)
-  const fetchTitle = useCallback(async (targetUrl: string) => {
-    if (!isValidUrl(targetUrl) || !isOnline) return;
+  const fetchTitle = useCallback(
+    async (targetUrl: string) => {
+      if (!isValidUrl(targetUrl) || !isOnline) return;
 
-    setIsFetchingTitle(true);
-    try {
-      const response = await fetch(`/api/habu/meta?url=${encodeURIComponent(targetUrl)}`);
-      if (response.ok) {
-        const data = (await response.json()) as { title?: string };
-        if (data.title && !title) {
-          setTitle(data.title);
+      setIsFetchingTitle(true);
+      try {
+        const response = await fetch(`/api/habu/meta?url=${encodeURIComponent(targetUrl)}`);
+        if (response.ok) {
+          const data = (await response.json()) as { title?: string };
+          if (data.title && !title) {
+            setTitle(data.title);
+          }
         }
+      } catch {
+        // Ignore fetch errors - title is optional
+      } finally {
+        setIsFetchingTitle(false);
       }
-    } catch {
-      // Ignore fetch errors - title is optional
-    } finally {
-      setIsFetchingTitle(false);
-    }
-  }, [isOnline, title]);
+    },
+    [isOnline, title],
+  );
 
   useEffect(() => {
     if (debouncedUrl && isValidUrl(debouncedUrl) && !initialTitle) {
@@ -300,9 +316,10 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
     queueBookmark(url, title, comment);
 
     toast.success("Bookmark saved!", {
-      description: hasHatena && isOnline
-        ? "Syncing with Hatena Bookmark..."
-        : "Will sync when connected to Hatena.",
+      description:
+        hasHatena && isOnline
+          ? "Syncing with Hatena Bookmark..."
+          : "Will sync when connected to Hatena.",
     });
 
     // Clear form and draft
@@ -368,8 +385,8 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
                 className="underline hover:no-underline"
               >
                 Connect to Hatena
-              </button>
-              {" "}to sync bookmarks
+              </button>{" "}
+              to sync bookmarks
             </span>
           </div>
         )}
@@ -404,11 +421,12 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
 
         <div className="space-y-2">
           <Label htmlFor="comment">Comment (optional)</Label>
-          <Input
+          <Textarea
             id="comment"
             value={comment}
             onChange={(e) => setComment(e.target.value)}
             placeholder="Your comment"
+            rows={3}
           />
         </div>
 
@@ -424,7 +442,10 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
               {generatedResult.tags && generatedResult.tags.length > 0 && (
                 <div className="flex flex-wrap gap-1 mb-2">
                   {generatedResult.tags.map((tag, i) => (
-                    <span key={i} className="px-2 py-0.5 bg-primary/10 text-primary rounded text-xs">
+                    <span
+                      key={i}
+                      className="px-2 py-0.5 bg-primary/10 text-primary rounded text-xs"
+                    >
                       {tag}
                     </span>
                   ))}
@@ -444,7 +465,9 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
             </div>
 
             {/* Raw Content Toggle */}
-            {(generatedResult.markdown || generatedResult.markdownError || generatedResult.metadata) && (
+            {(generatedResult.markdown ||
+              generatedResult.markdownError ||
+              generatedResult.metadata) && (
               <div className="border-t pt-2">
                 <button
                   type="button"
@@ -462,37 +485,59 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
                 {showRawContent && (
                   <div className="mt-2 space-y-3">
                     {/* Metadata */}
-                    {generatedResult.metadata && Object.keys(generatedResult.metadata).length > 0 && (
-                      <div>
-                        <div className="flex items-center gap-1 text-xs font-medium mb-1">
-                          <Info className="w-3 h-3" />
-                          Metadata
+                    {generatedResult.metadata &&
+                      Object.keys(generatedResult.metadata).length > 0 && (
+                        <div>
+                          <div className="flex items-center gap-1 text-xs font-medium mb-1">
+                            <Info className="w-3 h-3" />
+                            Metadata
+                          </div>
+                          <div className="bg-background p-2 rounded text-xs space-y-1">
+                            {generatedResult.metadata.title && (
+                              <div>
+                                <span className="text-muted-foreground">title:</span>{" "}
+                                {generatedResult.metadata.title}
+                              </div>
+                            )}
+                            {generatedResult.metadata.description && (
+                              <div>
+                                <span className="text-muted-foreground">description:</span>{" "}
+                                {generatedResult.metadata.description}
+                              </div>
+                            )}
+                            {generatedResult.metadata.siteName && (
+                              <div>
+                                <span className="text-muted-foreground">site:</span>{" "}
+                                {generatedResult.metadata.siteName}
+                              </div>
+                            )}
+                            {generatedResult.metadata.lang && (
+                              <div>
+                                <span className="text-muted-foreground">lang:</span>{" "}
+                                {generatedResult.metadata.lang}
+                              </div>
+                            )}
+                            {generatedResult.metadata.ogType && (
+                              <div>
+                                <span className="text-muted-foreground">type:</span>{" "}
+                                {generatedResult.metadata.ogType}
+                              </div>
+                            )}
+                            {generatedResult.metadata.keywords && (
+                              <div>
+                                <span className="text-muted-foreground">keywords:</span>{" "}
+                                {generatedResult.metadata.keywords}
+                              </div>
+                            )}
+                            {generatedResult.metadata.author && (
+                              <div>
+                                <span className="text-muted-foreground">author:</span>{" "}
+                                {generatedResult.metadata.author}
+                              </div>
+                            )}
+                          </div>
                         </div>
-                        <div className="bg-background p-2 rounded text-xs space-y-1">
-                          {generatedResult.metadata.title && (
-                            <div><span className="text-muted-foreground">title:</span> {generatedResult.metadata.title}</div>
-                          )}
-                          {generatedResult.metadata.description && (
-                            <div><span className="text-muted-foreground">description:</span> {generatedResult.metadata.description}</div>
-                          )}
-                          {generatedResult.metadata.siteName && (
-                            <div><span className="text-muted-foreground">site:</span> {generatedResult.metadata.siteName}</div>
-                          )}
-                          {generatedResult.metadata.lang && (
-                            <div><span className="text-muted-foreground">lang:</span> {generatedResult.metadata.lang}</div>
-                          )}
-                          {generatedResult.metadata.ogType && (
-                            <div><span className="text-muted-foreground">type:</span> {generatedResult.metadata.ogType}</div>
-                          )}
-                          {generatedResult.metadata.keywords && (
-                            <div><span className="text-muted-foreground">keywords:</span> {generatedResult.metadata.keywords}</div>
-                          )}
-                          {generatedResult.metadata.author && (
-                            <div><span className="text-muted-foreground">author:</span> {generatedResult.metadata.author}</div>
-                          )}
-                        </div>
-                      </div>
-                    )}
+                      )}
 
                     {/* Markdown */}
                     {generatedResult.markdown ? (

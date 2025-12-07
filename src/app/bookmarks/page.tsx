@@ -8,11 +8,42 @@ import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { createSignedRequest } from "@/lib/hatena-oauth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Bookmark, Home, AlertCircle, ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
+import {
+  Bookmark,
+  Home,
+  AlertCircle,
+  ChevronLeft,
+  ChevronRight,
+  ExternalLink,
+  Settings,
+} from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LinkButton } from "@/components/ui/link-button";
 import { RefreshButton } from "./refresh-button";
 import { RegenerateButton } from "./regenerate-button";
+
+async function getHatenaStatus(): Promise<boolean> {
+  const cookieStore = await cookies();
+  const { env } = getCloudflareContext();
+  const auth = createAuth(env.DB);
+
+  const session = await auth.api.getSession({
+    headers: {
+      cookie: cookieStore.toString(),
+    },
+  });
+
+  if (!session?.user) {
+    return false;
+  }
+
+  const db = getDb(env.DB);
+  const user = await db.query.users.findFirst({
+    where: eq(users.id, session.user.id),
+  });
+
+  return !!user?.hatenaId;
+}
 
 const PAGE_SIZE = 20;
 const HATENA_MY_API_URL = "https://bookmark.hatenaapis.com/rest/1/my";
@@ -315,6 +346,7 @@ interface BookmarksPageProps {
 export default async function BookmarksPage({ searchParams }: BookmarksPageProps) {
   const params = await searchParams;
   const page = Math.max(1, parseInt(params.page || "1", 10));
+  const hasHatena = await getHatenaStatus();
 
   console.log("[BookmarksPage] Rendering", { params, page });
 
@@ -335,6 +367,13 @@ export default async function BookmarksPage({ searchParams }: BookmarksPageProps
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Connect to Hatena (only when not connected) */}
+        {!hasHatena && (
+          <LinkButton href="/settings" variant="outline" size="sm" className="w-full">
+            <Settings className="w-4 h-4 mr-2" />
+            Connect to Hatena Bookmark
+          </LinkButton>
+        )}
         <Suspense key={page} fallback={<BookmarkListLoading />}>
           <BookmarkList page={page} />
         </Suspense>

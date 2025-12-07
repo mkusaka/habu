@@ -228,7 +228,7 @@ export async function POST(request: NextRequest) {
 
     // Parse request body
     const body: SuggestRequest = await request.json();
-    const { url } = body;
+    const { url, userContext } = body;
 
     if (!url) {
       return NextResponse.json({ success: false, error: "URL is required" } as SuggestResponse, {
@@ -265,6 +265,7 @@ export async function POST(request: NextRequest) {
       inputData: {
         url,
         existingTags,
+        userContext,
       },
       tracingOptions: {
         metadata: {

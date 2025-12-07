@@ -184,6 +184,7 @@ function formatDate(dateStr: string) {
       hour: "2-digit",
       minute: "2-digit",
       second: "2-digit",
+      timeZone: "Asia/Tokyo", // Fix timezone to prevent hydration mismatch
     });
   } catch {
     return dateStr;

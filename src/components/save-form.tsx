@@ -36,6 +36,7 @@ interface DraftData {
   url: string;
   title: string;
   comment: string;
+  context: string;
   timestamp: number;
 }
 
@@ -43,12 +44,12 @@ const DRAFT_KEY = "habu-draft";
 const DRAFT_EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 // Save draft to localStorage
-function saveDraft(url: string, title: string, comment: string) {
-  if (!url && !title && !comment) {
+function saveDraft(url: string, title: string, comment: string, context: string) {
+  if (!url && !title && !comment && !context) {
     localStorage.removeItem(DRAFT_KEY);
     return;
   }
-  const draft: DraftData = { url, title, comment, timestamp: Date.now() };
+  const draft: DraftData = { url, title, comment, context, timestamp: Date.now() };
   localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
 }
 
@@ -102,6 +103,8 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
   const [url, setUrl] = useState(initialUrl);
   const [title, setTitle] = useState(initialTitle);
   const [comment, setComment] = useState(initialComment);
+  const [context, setContext] = useState("");
+  const [showContext, setShowContext] = useState(false);
   const [urlError, setUrlError] = useState<string | null>(null);
   const [isOnline, setIsOnline] = useState(true);
   const [isFetchingTitle, setIsFetchingTitle] = useState(false);
@@ -132,10 +135,12 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
   useEffect(() => {
     if (!initialUrl && !initialTitle && !initialComment) {
       const draft = loadDraft();
-      if (draft && (draft.url || draft.title || draft.comment)) {
+      if (draft && (draft.url || draft.title || draft.comment || draft.context)) {
         setUrl(draft.url);
         setTitle(draft.title);
         setComment(draft.comment);
+        setContext(draft.context || "");
+        if (draft.context) setShowContext(true);
         setDraftRestored(true);
       }
     }
@@ -144,6 +149,7 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
   // Save draft when fields change (debounced)
   const debouncedTitle = useDebounce(title, 500);
   const debouncedComment = useDebounce(comment, 500);
+  const debouncedContext = useDebounce(context, 500);
 
   useEffect(() => {
     // Don't save draft if we just restored it
@@ -151,8 +157,8 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
       setDraftRestored(false);
       return;
     }
-    saveDraft(debouncedUrl, debouncedTitle, debouncedComment);
-  }, [debouncedUrl, debouncedTitle, debouncedComment, draftRestored]);
+    saveDraft(debouncedUrl, debouncedTitle, debouncedComment, debouncedContext);
+  }, [debouncedUrl, debouncedTitle, debouncedComment, debouncedContext, draftRestored]);
 
   // Track online status
   useEffect(() => {
@@ -253,7 +259,7 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ url }),
+        body: JSON.stringify({ url, userContext: context || undefined }),
       });
 
       const data = (await response.json()) as {
@@ -336,6 +342,8 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
     setUrl("");
     setTitle("");
     setComment("");
+    setContext("");
+    setShowContext(false);
     clearDraft();
     setIsSaving(false);
 
@@ -357,6 +365,8 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
       setUrl("");
       setTitle("");
       setComment("");
+      setContext("");
+      setShowContext(false);
       clearDraft();
 
       // Close the window immediately - SW handles the rest
@@ -441,6 +451,37 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
             placeholder="Your comment"
             rows={3}
           />
+        </div>
+
+        {/* Context Toggle */}
+        <div className="space-y-2">
+          <button
+            type="button"
+            onClick={() => setShowContext(!showContext)}
+            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+          >
+            {showContext ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            <span>Add context for AI generation</span>
+          </button>
+          {showContext && (
+            <div className="space-y-2">
+              <Label htmlFor="context" className="text-sm text-muted-foreground">
+                Context (for pages that fail to fetch or need extra info)
+              </Label>
+              <Textarea
+                id="context"
+                value={context}
+                onChange={(e) => setContext(e.target.value)}
+                placeholder="Paste page content, add notes, or provide context for AI to use..."
+                rows={5}
+                className="text-sm"
+              />
+              <p className="text-xs text-muted-foreground">
+                This context will be used when generating summaries and tags. Useful for bot-blocked
+                pages or to add supplementary information.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Generated Result */}

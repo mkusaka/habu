@@ -277,7 +277,7 @@ export async function POST(request: NextRequest) {
 
     // Parse request body
     const body: BookmarkRequest = await request.json();
-    const { url, comment } = body;
+    const { url, comment, userContext } = body;
 
     if (!url) {
       return NextResponse.json({ success: false, error: "URL is required" } as BookmarkResponse, {
@@ -321,6 +321,7 @@ export async function POST(request: NextRequest) {
           inputData: {
             url,
             existingTags,
+            userContext,
           },
           tracingOptions: {
             metadata: {

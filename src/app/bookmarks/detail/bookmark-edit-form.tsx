@@ -46,6 +46,8 @@ export function BookmarkEditForm({
   bookmarkedAt,
 }: BookmarkEditFormProps) {
   const [comment, setComment] = useState(initialComment);
+  const [context, setContext] = useState("");
+  const [showContext, setShowContext] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [generatedResult, setGeneratedResult] = useState<GeneratedResult | null>(null);
@@ -65,7 +67,7 @@ export function BookmarkEditForm({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ url: bookmarkUrl }),
+        body: JSON.stringify({ url: bookmarkUrl, userContext: context || undefined }),
       });
 
       const data = (await response.json()) as {
@@ -197,6 +199,37 @@ export function BookmarkEditForm({
         )}
         {currentCommentText && (
           <p className="text-xs text-muted-foreground">{currentCommentText}</p>
+        )}
+      </div>
+
+      {/* Context Toggle */}
+      <div className="space-y-2">
+        <button
+          type="button"
+          onClick={() => setShowContext(!showContext)}
+          className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+        >
+          {showContext ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          <span>Add context for AI generation</span>
+        </button>
+        {showContext && (
+          <div className="space-y-2">
+            <Label htmlFor="context" className="text-sm text-muted-foreground">
+              Context (for pages that fail to fetch or need extra info)
+            </Label>
+            <Textarea
+              id="context"
+              value={context}
+              onChange={(e) => setContext(e.target.value)}
+              placeholder="Paste page content, add notes, or provide context for AI to use..."
+              rows={5}
+              className="text-sm"
+            />
+            <p className="text-xs text-muted-foreground">
+              This context will be used when generating summaries and tags. Useful for bot-blocked
+              pages or to add supplementary information.
+            </p>
+          </div>
         )}
       </div>
 

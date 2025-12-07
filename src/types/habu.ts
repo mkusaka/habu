@@ -37,6 +37,8 @@ export interface BookmarkQueue {
 export interface BookmarkRequest {
   url: string;
   comment?: string;
+  /** User-provided context for AI generation (e.g., page content, supplementary info) */
+  userContext?: string;
 }
 
 export interface BookmarkResponse {
@@ -51,6 +53,8 @@ export interface BookmarkResponse {
 // Suggest API types (generate without saving)
 export interface SuggestRequest {
   url: string;
+  /** User-provided context for AI generation (e.g., page content, supplementary info) */
+  userContext?: string;
 }
 
 export interface PageMetadata {

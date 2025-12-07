@@ -227,7 +227,13 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
         body: JSON.stringify({ url }),
       });
 
-      const data = await response.json();
+      const data = (await response.json()) as {
+        success: boolean;
+        error?: string;
+        summary?: string;
+        tags?: string[];
+        formattedComment?: string;
+      };
 
       if (!response.ok || !data.success) {
         throw new Error(data.error || "Failed to generate");

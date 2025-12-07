@@ -8,7 +8,11 @@ const withSerwist = withSerwistInit({
 });
 
 // Get git SHA at build time
+// CF_PAGES_COMMIT_SHA is provided by Cloudflare Pages build environment
 const gitSha = (() => {
+	if (process.env.CF_PAGES_COMMIT_SHA) {
+		return process.env.CF_PAGES_COMMIT_SHA.slice(0, 7);
+	}
 	try {
 		return execSync("git rev-parse --short HEAD").toString().trim();
 	} catch {

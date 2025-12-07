@@ -512,15 +512,18 @@ const mergeContentStep = createStep({
   },
 });
 
-// Summary output schema - no hard max constraint, Judge evaluates length
+// Summary output schema
 const SummaryOutputSchema = z.object({
-  summary: z.string().describe("Concise summary in Japanese, ideally 70-100 characters"),
+  summary: z.string().max(100).describe("Concise summary in Japanese, ideally 70-100 characters"),
   webContext: z.string().optional(),
 });
 
-// Tags output schema - no hard max constraint on individual tags, Judge evaluates length
+// Tags output schema
 const TagsOutputSchema = z.object({
-  tags: z.array(z.string()).max(10).describe("Relevant tags, 3-10 items, each max 10 characters"),
+  tags: z
+    .array(z.string().max(10))
+    .max(10)
+    .describe("Relevant tags, 3-10 items, each max 10 characters"),
 });
 
 // Step 3a: Generate summary (runs in parallel with tags)
@@ -626,11 +629,8 @@ ${markdown}
       console.log(`[Summary] Attempt ${attempt + 1} rejected: ${feedback}`);
     }
 
-    // Truncate summary if it exceeds 100 characters (hard limit for Hatena)
-    const finalSummary = lastSummary.length > 100 ? lastSummary.slice(0, 100) : lastSummary;
-
     return {
-      summary: finalSummary,
+      summary: lastSummary,
       webContext,
     };
   },
@@ -708,10 +708,10 @@ ${markdown.slice(0, 10000)}
         },
       });
 
-      // Sanitize tags (remove forbidden characters and filter out too-long tags)
+      // Sanitize tags (remove forbidden characters)
       lastTags = (experimental_output?.tags ?? [])
         .map((t) => t.replace(/[?/%[\]:]/g, ""))
-        .filter((t) => t.length > 0 && t.length <= 10 && t !== "AI要約");
+        .filter((t) => t.length > 0 && t !== "AI要約");
 
       // Skip judge on last attempt - just return what we have
       if (attempt === MAX_JUDGE_ATTEMPTS - 1) break;

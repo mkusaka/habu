@@ -12,23 +12,17 @@ import { Label } from "@/components/ui/label";
 import { LinkButton } from "@/components/ui/link-button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BookmarkEditForm } from "./bookmark-edit-form";
+import { fetchPageMeta, isMetaExtractionResult } from "@/lib/page-meta";
 
 export const dynamic = "force-dynamic";
 
 const HATENA_BOOKMARK_API_URL = "https://bookmark.hatenaapis.com/rest/1/my/bookmark";
-const PAGE_META_PROXY_URL = "https://page-meta-proxy.polyfill.workers.dev/meta";
 
 interface HatenaBookmarkGetResponse {
   url: string;
   comment: string;
   tags: string[];
   created_datetime: string;
-}
-
-interface PageMetaResponse {
-  title?: string;
-  og?: { title?: string };
-  twitter?: { title?: string };
 }
 
 interface FetchResult {
@@ -88,20 +82,15 @@ async function fetchBookmarkData(bookmarkUrl: string): Promise<FetchResult> {
     consumerSecret,
   );
 
-  const [bookmarkResponse, metaResponse] = await Promise.all([
+  const [bookmarkResponse, metaResult] = await Promise.all([
     fetch(apiUrl, { method: "GET", headers: authHeaders }),
-    fetch(`${PAGE_META_PROXY_URL}?url=${encodeURIComponent(bookmarkUrl)}`).catch(() => null),
+    fetchPageMeta(bookmarkUrl).catch(() => null),
   ]);
 
   // Parse title from metadata
   let title: string | undefined;
-  if (metaResponse?.ok) {
-    try {
-      const meta = (await metaResponse.json()) as PageMetaResponse;
-      title = meta?.title || meta?.og?.title || meta?.twitter?.title;
-    } catch {
-      // Ignore metadata parse errors
-    }
+  if (metaResult && isMetaExtractionResult(metaResult)) {
+    title = metaResult.title || metaResult.og?.title || metaResult.twitter?.title;
   }
 
   // Handle bookmark response

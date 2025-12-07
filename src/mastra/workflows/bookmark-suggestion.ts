@@ -3,6 +3,7 @@ import { z } from "zod";
 import OpenAI from "openai";
 import { generateText, Output } from "ai";
 import { openai } from "@ai-sdk/openai";
+import { fetchPageMeta, isMetaExtractionResult } from "@/lib/page-meta";
 
 // Lazy-initialized OpenAI client for moderation API
 let openaiClient: OpenAI | null = null;
@@ -15,28 +16,6 @@ function getOpenAIClient(): OpenAI {
 
 // Constants
 const MAX_MARKDOWN_CHARS = 800000;
-const PAGE_META_PROXY_URL = "https://page-meta-proxy.polyfill.workers.dev/meta";
-
-// Page metadata response type
-interface PageMetadata {
-  title?: string;
-  lang?: string;
-  og?: {
-    title?: string;
-    description?: string;
-    type?: string;
-    site_name?: string;
-  };
-  twitter?: {
-    title?: string;
-    description?: string;
-  };
-  metaByName?: {
-    description?: string;
-    keywords?: string;
-    author?: string;
-  };
-}
 
 // YouTube oEmbed response type
 interface YouTubeOEmbedResponse {
@@ -213,7 +192,7 @@ const fetchMarkdownAndModerateStep = createStep({
   },
 });
 
-// Step 1b: Fetch metadata from page-meta-proxy (with YouTube oEmbed fallback)
+// Step 1b: Fetch metadata using local HTMLRewriter (with YouTube oEmbed fallback)
 const fetchMetadataStep = createStep({
   id: "fetch-metadata",
   inputSchema: WorkflowInputSchema,
@@ -222,9 +201,10 @@ const fetchMetadataStep = createStep({
     const { url } = inputData;
 
     try {
-      const response = await fetch(`${PAGE_META_PROXY_URL}?url=${encodeURIComponent(url)}`);
-      if (!response.ok) {
-        // If meta proxy fails and it's YouTube, try oEmbed
+      const result = await fetchPageMeta(url);
+
+      if (!isMetaExtractionResult(result)) {
+        // Non-HTML response, try YouTube oEmbed if applicable
         if (isYouTubeUrl(url)) {
           const oembed = await fetchYouTubeOEmbed(url);
           if (oembed) {
@@ -241,11 +221,9 @@ const fetchMetadataStep = createStep({
         return { metadata: {} };
       }
 
-      const meta = (await response.json()) as PageMetadata;
-
-      // Check if meta proxy returned empty/generic YouTube data
-      const hasValidTitle = meta?.title && !meta.title.match(/^-?\s*YouTube$/);
-      const hasValidOg = meta?.og && Object.keys(meta.og).length > 0 && meta.og.title;
+      // Check if metadata is empty/generic for YouTube
+      const hasValidTitle = result.title && !result.title.match(/^-?\s*YouTube$/);
+      const hasValidOg = result.og && Object.keys(result.og).length > 0 && result.og.title;
 
       // If YouTube URL and metadata is empty/generic, fallback to oEmbed
       if (isYouTubeUrl(url) && !hasValidTitle && !hasValidOg) {
@@ -264,14 +242,13 @@ const fetchMetadataStep = createStep({
 
       return {
         metadata: {
-          title: meta?.title || meta?.og?.title || meta?.twitter?.title,
-          description:
-            meta?.og?.description || meta?.twitter?.description || meta?.metaByName?.description,
-          lang: meta?.lang,
-          ogType: meta?.og?.type,
-          siteName: meta?.og?.site_name,
-          keywords: meta?.metaByName?.keywords,
-          author: meta?.metaByName?.author,
+          title: result.title || result.og?.title || result.twitter?.title,
+          description: result.og?.description || result.twitter?.description || result.description,
+          lang: result.lang,
+          ogType: result.og?.type,
+          siteName: result.og?.site_name,
+          keywords: result.keywords,
+          author: result.author,
         },
       };
     } catch {

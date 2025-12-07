@@ -12,30 +12,10 @@ import type {
   PageMetadata,
 } from "@/types/habu";
 import { getMastra } from "@/mastra";
+import { fetchPageMeta, isMetaExtractionResult } from "@/lib/page-meta";
 
 const HATENA_TAGS_API_URL = "https://bookmark.hatenaapis.com/rest/1/my/tags";
-const PAGE_META_PROXY_URL = "https://page-meta-proxy.polyfill.workers.dev/meta";
 const MAX_MARKDOWN_CHARS = 800000;
-
-interface PageMetaProxyResponse {
-  title?: string;
-  lang?: string;
-  og?: {
-    title?: string;
-    description?: string;
-    type?: string;
-    site_name?: string;
-  };
-  twitter?: {
-    title?: string;
-    description?: string;
-  };
-  metaByName?: {
-    description?: string;
-    keywords?: string;
-    author?: string;
-  };
-}
 
 /**
  * Fetch markdown content from Cloudflare Browser Rendering
@@ -86,26 +66,24 @@ async function fetchMarkdown(
 }
 
 /**
- * Fetch page metadata from page-meta-proxy
+ * Fetch page metadata using local HTMLRewriter implementation
  */
 async function fetchMetadata(url: string): Promise<PageMetadata> {
   try {
-    const response = await fetch(`${PAGE_META_PROXY_URL}?url=${encodeURIComponent(url)}`);
-    if (!response.ok) {
+    const result = await fetchPageMeta(url);
+
+    if (!isMetaExtractionResult(result)) {
       return {};
     }
 
-    const meta = (await response.json()) as PageMetaProxyResponse;
-
     return {
-      title: meta?.title || meta?.og?.title || meta?.twitter?.title,
-      description:
-        meta?.og?.description || meta?.twitter?.description || meta?.metaByName?.description,
-      lang: meta?.lang,
-      ogType: meta?.og?.type,
-      siteName: meta?.og?.site_name,
-      keywords: meta?.metaByName?.keywords,
-      author: meta?.metaByName?.author,
+      title: result.title || result.og?.title || result.twitter?.title,
+      description: result.og?.description || result.twitter?.description || result.description,
+      lang: result.lang,
+      ogType: result.og?.type,
+      siteName: result.og?.site_name,
+      keywords: result.keywords,
+      author: result.author,
     };
   } catch {
     return {};

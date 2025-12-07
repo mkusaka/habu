@@ -322,6 +322,13 @@ export async function POST(request: NextRequest) {
             url,
             existingTags,
           },
+          tracingOptions: {
+            metadata: {
+              userId: session.user.id,
+              hatenaId: user.hatenaId,
+              url,
+            },
+          },
         });
 
         if (result.status !== "success" || !result.result) {

@@ -27,9 +27,14 @@ const nextConfig: NextConfig = {
 	turbopack: {},
 	// Enable React Compiler for automatic memoization
 	reactCompiler: true,
-	// Restore scroll position on navigation
 	experimental: {
+		// Restore scroll position on navigation
 		scrollRestoration: true,
+		// Disable client-side Router Cache for dynamic pages
+		staleTimes: {
+			dynamic: 0,
+			static: 180,
+		},
 	},
 	// Expose git SHA as environment variable
 	env: {

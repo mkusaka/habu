@@ -73,6 +73,7 @@ export interface SuggestResponse {
   markdown?: string;
   markdownError?: string;
   metadata?: PageMetadata;
+  webContext?: string;
 }
 
 // Hatena API types

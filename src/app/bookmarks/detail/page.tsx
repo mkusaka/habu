@@ -44,6 +44,7 @@ interface GeneratedResult {
     keywords?: string;
     author?: string;
   };
+  webContext?: string;
 }
 
 function BookmarkDetailContent() {
@@ -155,6 +156,7 @@ function BookmarkDetailContent() {
         markdown?: string;
         markdownError?: string;
         metadata?: GeneratedResult["metadata"];
+        webContext?: string;
       };
 
       if (!response.ok || !data.success) {
@@ -168,6 +170,7 @@ function BookmarkDetailContent() {
         markdown: data.markdown,
         markdownError: data.markdownError,
         metadata: data.metadata,
+        webContext: data.webContext,
       });
 
       toast.success("Generated!", {
@@ -398,7 +401,8 @@ function BookmarkDetailContent() {
               {/* Raw Content Toggle */}
               {(generatedResult.markdown ||
                 generatedResult.markdownError ||
-                generatedResult.metadata) && (
+                generatedResult.metadata ||
+                generatedResult.webContext) && (
                 <div className="border-t pt-2">
                   <button
                     type="button"
@@ -470,6 +474,19 @@ function BookmarkDetailContent() {
                           </div>
                         )}
 
+                      {/* Web Context */}
+                      {generatedResult.webContext && (
+                        <div>
+                          <div className="flex items-center gap-1 text-xs font-medium mb-1">
+                            <Info className="w-3 h-3" />
+                            Web Search Context
+                          </div>
+                          <pre className="bg-background p-2 rounded text-xs overflow-auto max-h-48 whitespace-pre-wrap break-all">
+                            {generatedResult.webContext}
+                          </pre>
+                        </div>
+                      )}
+
                       {/* Markdown */}
                       {generatedResult.markdown ? (
                         <div>
@@ -477,9 +494,8 @@ function BookmarkDetailContent() {
                             <FileText className="w-3 h-3" />
                             Markdown ({generatedResult.markdown.length.toLocaleString()} chars)
                           </div>
-                          <pre className="bg-background p-2 rounded text-xs overflow-auto max-h-48 whitespace-pre-wrap break-all">
-                            {generatedResult.markdown.slice(0, 5000)}
-                            {generatedResult.markdown.length > 5000 && "\n\n... (truncated)"}
+                          <pre className="bg-background p-2 rounded text-xs overflow-auto whitespace-pre-wrap break-all">
+                            {generatedResult.markdown}
                           </pre>
                         </div>
                       ) : generatedResult.markdownError ? (

@@ -296,7 +296,7 @@ export async function POST(request: NextRequest) {
       throw new Error("Workflow failed");
     }
 
-    const { summary, tags } = result.result;
+    const { summary, tags, webContext } = result.result;
 
     // Format comment with tags
     const tagPart = tags.map((t: string) => `[${t}]`).join("");
@@ -310,6 +310,7 @@ export async function POST(request: NextRequest) {
       markdown,
       markdownError,
       metadata,
+      webContext,
     } as SuggestResponse);
   } catch (error) {
     console.error("Suggest API error:", error);

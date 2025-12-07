@@ -87,6 +87,7 @@ const WorkflowInputSchema = z.object({
 const WorkflowOutputSchema = z.object({
   summary: z.string(),
   tags: z.array(z.string()),
+  webContext: z.string().optional(),
 });
 
 // Metadata schema
@@ -314,6 +315,7 @@ const mergeContentStep = createStep({
 // Summary output schema (max 100 characters enforced by structured output)
 const SummaryOutputSchema = z.object({
   summary: z.string().max(100).describe("Concise summary in Japanese, maximum 100 characters"),
+  webContext: z.string().optional(),
 });
 
 // Tags output schema (max 10 tags, each max 10 characters)
@@ -428,6 +430,7 @@ ${markdown}
 
     return {
       summary: experimental_output?.summary ?? "",
+      webContext,
     };
   },
 });
@@ -517,6 +520,7 @@ const mergeResultsStep = createStep({
     return {
       summary: inputData["generate-summary"].summary,
       tags: inputData["generate-tags"].tags,
+      webContext: inputData["generate-summary"].webContext,
     };
   },
 });

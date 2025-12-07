@@ -19,6 +19,21 @@ import {
 import { CheckCircle2, Clock, AlertCircle, Loader2, RefreshCw, Trash2, Copy } from "lucide-react";
 import { toast } from "sonner";
 
+// Extract tags from comment string like "[tag1][tag2]summary text"
+function parseComment(comment: string): { tags: string[]; text: string } {
+  const tagRegex = /^\[([^\]]+)\]/g;
+  const tags: string[] = [];
+  let remaining = comment;
+
+  let match;
+  while ((match = tagRegex.exec(comment)) !== null) {
+    tags.push(match[1]);
+    remaining = comment.slice(tagRegex.lastIndex);
+  }
+
+  return { tags, text: remaining.trim() };
+}
+
 export function QueueStats() {
   const items = useLiveQuery(() => db.bookmarks.orderBy("createdAt").reverse().toArray(), []);
 
@@ -191,23 +206,38 @@ export function QueueList() {
               <div className="flex-1 min-w-0">
                 <h3 className="font-medium text-sm truncate">{item.title || item.url}</h3>
                 <div className="text-xs text-muted-foreground truncate">{item.url}</div>
-                {item.status === "done" && item.generatedTags && item.generatedTags.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mt-1">
-                    {item.generatedTags.map((tag, i) => (
-                      <span
-                        key={i}
-                        className="px-1.5 py-0.5 bg-primary/10 text-primary rounded text-xs"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                )}
-                {item.status === "done" && item.generatedSummary && (
-                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                    {item.generatedSummary}
-                  </p>
-                )}
+                {(() => {
+                  // Parse tags and summary from generatedSummary if generatedTags is not available
+                  const hasTags = item.generatedTags && item.generatedTags.length > 0;
+                  const parsed =
+                    item.status === "done" && item.generatedSummary && !hasTags
+                      ? parseComment(item.generatedSummary)
+                      : null;
+                  const displayTags = hasTags ? item.generatedTags : parsed?.tags;
+                  const displaySummary = parsed ? parsed.text : item.generatedSummary;
+
+                  return (
+                    <>
+                      {item.status === "done" && displayTags && displayTags.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {displayTags.map((tag, i) => (
+                            <span
+                              key={i}
+                              className="px-1.5 py-0.5 bg-primary/10 text-primary rounded text-xs"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      {item.status === "done" && displaySummary && (
+                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                          {displaySummary}
+                        </p>
+                      )}
+                    </>
+                  );
+                })()}
                 {item.comment && !item.generatedSummary && (
                   <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{item.comment}</p>
                 )}

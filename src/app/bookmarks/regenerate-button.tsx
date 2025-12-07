@@ -38,21 +38,23 @@ export function RegenerateButton({ url, title }: RegenerateButtonProps) {
   };
 
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <button
-          onClick={handleRegenerate}
-          disabled={isRegenerating}
-          className="relative z-10 p-1 text-muted-foreground hover:text-primary disabled:opacity-50 flex-shrink-0 cursor-pointer"
-        >
-          {isRegenerating ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <Sparkles className="w-4 h-4" />
-          )}
-        </button>
-      </TooltipTrigger>
-      <TooltipContent>Regenerate</TooltipContent>
-    </Tooltip>
+    <div className="relative z-10">
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            onClick={handleRegenerate}
+            disabled={isRegenerating}
+            className="p-1 text-muted-foreground hover:text-primary disabled:opacity-50 flex-shrink-0 cursor-pointer"
+          >
+            {isRegenerating ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Sparkles className="w-4 h-4" />
+            )}
+          </button>
+        </TooltipTrigger>
+        <TooltipContent>Regenerate</TooltipContent>
+      </Tooltip>
+    </div>
   );
 }

@@ -2,9 +2,18 @@ import { Mastra } from "@mastra/core";
 import { CloudExporter, DefaultExporter, SamplingStrategyType } from "@mastra/core/ai-tracing";
 import { bookmarkSuggestionWorkflow } from "./workflows/bookmark-suggestion";
 
-// Create Mastra instance on every call
-// This ensures the access token from Cloudflare env is always used
+// Cache Mastra instance to avoid re-registering AI Tracing
+let cachedMastra: Mastra | null = null;
+let cachedAccessToken: string | undefined;
+
+// Get or create Mastra instance
+// Caches the instance to prevent "AI Tracing instance 'default' already registered" error
 export function getMastra(accessToken?: string): Mastra {
+  // Return cached instance if token matches
+  if (cachedMastra && cachedAccessToken === accessToken) {
+    return cachedMastra;
+  }
+
   const isDevelopment = process.env.NEXTJS_ENV === "development";
 
   console.log("[Mastra] Creating instance", {
@@ -12,7 +21,7 @@ export function getMastra(accessToken?: string): Mastra {
     hasAccessToken: !!accessToken,
   });
 
-  return new Mastra({
+  cachedMastra = new Mastra({
     workflows: {
       "bookmark-suggestion": bookmarkSuggestionWorkflow,
     },
@@ -26,6 +35,9 @@ export function getMastra(accessToken?: string): Mastra {
       },
     },
   });
+  cachedAccessToken = accessToken;
+
+  return cachedMastra;
 }
 
 export { bookmarkSuggestionWorkflow };

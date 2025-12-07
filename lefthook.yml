@@ -1,0 +1,10 @@
+pre-commit:
+  parallel: true
+  commands:
+    format:
+      glob: "*.{ts,tsx,js,jsx}"
+      run: pnpm format:check
+    typecheck:
+      run: pnpm tsc --noEmit
+    lint:
+      run: pnpm lint

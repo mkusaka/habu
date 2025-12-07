@@ -61,6 +61,7 @@
 		"drizzle-kit": "0.31.7",
 		"eslint": "9.39.1",
 		"eslint-config-next": "16.0.5",
+		"lefthook": "^2.0.8",
 		"oxfmt": "0.15.0",
 		"sharp": "0.34.5",
 		"tailwindcss": "4.1.17",

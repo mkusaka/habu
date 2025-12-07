@@ -239,7 +239,6 @@ async function BookmarkList({ page }: { page: number }) {
                 href={bookmark.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                onClick={(e) => e.stopPropagation()}
                 className="relative z-10 text-muted-foreground hover:text-foreground flex-shrink-0"
               >
                 <ExternalLink className="w-4 h-4" />

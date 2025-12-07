@@ -300,8 +300,18 @@ function BookmarkDetailContent() {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-muted-foreground hover:text-foreground"
+                title="Open page"
               >
                 <ExternalLink className="w-4 h-4" />
+              </a>
+              <a
+                href={`https://b.hatena.ne.jp/entry/${bookmarkUrl.startsWith("https://") ? "s/" + bookmarkUrl.slice(8) : bookmarkUrl}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-muted-foreground hover:text-foreground"
+                title="View on Hatena Bookmark"
+              >
+                <Bookmark className="w-4 h-4" />
               </a>
             </div>
           </div>

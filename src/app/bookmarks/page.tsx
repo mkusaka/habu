@@ -231,7 +231,15 @@ async function BookmarkList({ page }: { page: number }) {
                   {formatDate(bookmark.bookmarkedAt)}
                 </p>
               </div>
-              <ExternalLink className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+              <a
+                href={bookmark.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="text-muted-foreground hover:text-foreground flex-shrink-0"
+              >
+                <ExternalLink className="w-4 h-4" />
+              </a>
             </div>
           </Link>
         ))}

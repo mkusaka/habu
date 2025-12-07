@@ -125,6 +125,7 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
       keywords?: string;
       author?: string;
     };
+    webContext?: string;
   } | null>(null);
   const [showRawContent, setShowRawContent] = useState(false);
   const [draftRestored, setDraftRestored] = useState(false);
@@ -279,6 +280,7 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
           keywords?: string;
           author?: string;
         };
+        webContext?: string;
       };
 
       if (!response.ok || !data.success) {
@@ -292,6 +294,7 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
         markdown: data.markdown,
         markdownError: data.markdownError,
         metadata: data.metadata,
+        webContext: data.webContext,
       });
 
       toast.success("Generated!", {
@@ -532,7 +535,8 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
             {/* Raw Content Toggle */}
             {(generatedResult.markdown ||
               generatedResult.markdownError ||
-              generatedResult.metadata) && (
+              generatedResult.metadata ||
+              generatedResult.webContext) && (
               <div className="border-t pt-2">
                 <button
                   type="button"
@@ -617,6 +621,28 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
                           </div>
                         </div>
                       )}
+
+                    {/* Web Context */}
+                    {generatedResult.webContext && (
+                      <div>
+                        <div className="flex items-center justify-between text-xs font-medium mb-1">
+                          <div className="flex items-center gap-1">
+                            <Info className="w-3 h-3" />
+                            Web Search Context
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleCopy(generatedResult.webContext!, "Web Context")}
+                            className="text-muted-foreground hover:text-foreground"
+                          >
+                            <Copy className="w-3 h-3" />
+                          </button>
+                        </div>
+                        <pre className="bg-background p-2 rounded text-xs overflow-auto max-h-48 whitespace-pre-wrap break-all">
+                          {generatedResult.webContext}
+                        </pre>
+                      </div>
+                    )}
 
                     {/* Markdown */}
                     {generatedResult.markdown ? (

@@ -448,13 +448,13 @@ ${markdown.slice(0, 10000)}
       },
     });
 
-    // Sanitize tags (remove forbidden characters)
+    // Sanitize tags (remove forbidden characters) and add AI marker
     const tags = (experimental_output?.tags ?? [])
       .map((t) => t.replace(/[?/%[\]:]/g, ""))
-      .filter((t) => t.length > 0);
+      .filter((t) => t.length > 0 && t !== "AI要約");
 
     return {
-      tags,
+      tags: ["AI要約", ...tags],
     };
   },
   retries: 2,

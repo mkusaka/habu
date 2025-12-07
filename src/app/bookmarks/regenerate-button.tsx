@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Sparkles, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { saveBookmark } from "@/lib/bookmark-client";
@@ -12,6 +13,7 @@ interface RegenerateButtonProps {
 }
 
 export function RegenerateButton({ url, title }: RegenerateButtonProps) {
+  const router = useRouter();
   const [isRegenerating, setIsRegenerating] = useState(false);
 
   const handleRegenerate = async (e: React.MouseEvent) => {
@@ -26,6 +28,8 @@ export function RegenerateButton({ url, title }: RegenerateButtonProps) {
 
       if (result.success) {
         toast.success(result.queued ? "Queued for regeneration" : "Regenerated!");
+        // Refresh the page to show updated data
+        router.refresh();
       } else {
         toast.error(result.error || "Regenerate failed");
       }

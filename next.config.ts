@@ -27,6 +27,10 @@ const nextConfig: NextConfig = {
 	turbopack: {},
 	// Enable React Compiler for automatic memoization
 	reactCompiler: true,
+	// Restore scroll position on navigation
+	experimental: {
+		scrollRestoration: true,
+	},
 	// Expose git SHA as environment variable
 	env: {
 		NEXT_PUBLIC_GIT_SHA: gitSha,

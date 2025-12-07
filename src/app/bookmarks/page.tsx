@@ -14,6 +14,8 @@ import { LinkButton } from "@/components/ui/link-button";
 import { RefreshButton } from "./refresh-button";
 import { RegenerateButton } from "./regenerate-button";
 
+export const dynamic = "force-dynamic";
+
 const PAGE_SIZE = 20;
 const HATENA_MY_API_URL = "https://bookmark.hatenaapis.com/rest/1/my";
 
@@ -166,7 +168,7 @@ function extractComment(comment: string) {
 function BookmarkListLoading() {
   return (
     <div className="space-y-2">
-      {Array.from({ length: 5 }).map((_, i) => (
+      {Array.from({ length: 20 }).map((_, i) => (
         <div key={i} className="w-full p-3 rounded-md border">
           <div className="flex items-start gap-2">
             <div className="flex-1 min-w-0 space-y-2">

@@ -3,7 +3,8 @@ pre-commit:
   commands:
     format:
       glob: "*.{ts,tsx,js,jsx}"
-      run: pnpm format:check
+      run: pnpm format
+      stage_fixed: true
     typecheck:
       glob: "*.{ts,tsx}"
       run: pnpm tsc --noEmit

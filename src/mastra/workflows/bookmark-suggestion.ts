@@ -318,30 +318,42 @@ Generate a summary that captures the SPECIFIC VALUE of this content—not just t
 <output_requirements>
 - Language: Japanese only
 - Length: 50-100 characters (full-width = 1)
-- Must include at least ONE concrete detail from the article body (number, technique name, comparison, etc.)
+- Must include at least ONE concrete detail that is explicitly present in the article body (number, technique name, comparison, specific change, etc.)
 </output_requirements>
 
 <quality_criteria>
-The summary should answer: "What specific thing will I learn or gain from this page?"
+The summary must answer: "What specific thing will I learn or gain from this page?"
 NOT: "What is this page about?"
 </quality_criteria>
 
-<examples>
-Bad (topic only):
-- "TypeScriptの型について解説"
-- "AIツールを紹介する記事"
+<strict_rules>
+- DO NOT invent, infer, or guess any detail not explicitly stated in the provided content.
+- If a detail is not explicitly in the text, omit it (never fill gaps with assumptions).
+- Verify before output: every specific detail you include must be directly supported by the article text.
+- Use only the provided content as source; ignore internal knowledge and unrelated priors.
+- Do NOT include meta-process or reasoning steps in the final summary.
+</strict_rules>
 
-Good (specific value):
-- "TypeScript 5.5でinferがconst assertionに対応。リテラル型推論が簡潔に"
-- "Cursor vs Copilot実測比較。複雑なリファクタで正答率20%差"
-- "Next.js App RouterのcacheがデフォルトでOFFに変更された理由と対応策"
-</examples>
+<bad_examples>
+- 本文にない人物・組織・数値を「よくある話」として追加する
+- 概要だけの情報を拡大解釈し、具体的な手順や時系列を勝手に補完する
+- 曖昧な表現を断定形に言い換え、本文の不確実性を消してしまう
+- タイトルや見出しから内容を推測し、本文未記載の背景や効果を捏造する
+</bad_examples>
+
+<good_examples>
+- "商店街の歩行者天国を実証実験、来街者10%増を自治体が報告"
+- "サブスク離脱率低下の要因を顧客インタビュー3点に整理"
+- "週3の軽い運動が睡眠質を改善、具体的な測定指標も記載"
+- "オフシーズン京都で混雑回避の時間帯と開門時刻を現地取材で提示"
+</good_examples>
 
 <reasoning_hint>
-Before outputting, identify:
-1. The main claim or insight (not the title)
-2. One supporting concrete detail
-Then combine into a single sentence.
+1) Extract the main claim or key learning stated in the article (not just the title).
+2) Extract one supporting concrete detail that is explicitly written (number, config, change, comparison, constraint, cause/effect).
+3) Reflect: check that both extracted items are present verbatim or as clear paraphrases in the article text.
+4) If any required detail is missing from the source, omit it instead of guessing.
+5) Combine into a single Japanese sentence within 50-100 characters.
 </reasoning_hint>
 
 <safety>

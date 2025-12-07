@@ -15,6 +15,11 @@ export function getMastra(accessToken?: string): Mastra {
     return cachedMastra;
   }
 
+  // Set telemetry flag before creating Mastra instance
+  // This suppresses "instrumentation file was not loaded" warning on Cloudflare Workers
+  // (instrumentation.ts only runs in Node.js runtime, not edge/Workers)
+  (globalThis as { ___MASTRA_TELEMETRY___?: boolean }).___MASTRA_TELEMETRY___ = true;
+
   const isDevelopment = process.env.NEXTJS_ENV === "development";
 
   console.log("[Mastra] Creating instance", {

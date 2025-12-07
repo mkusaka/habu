@@ -3,7 +3,6 @@
 // See: https://mastra.ai/en/docs/observability/nextjs-tracing
 
 declare global {
-  // eslint-disable-next-line no-var
   var ___MASTRA_TELEMETRY___: boolean | undefined;
 }
 

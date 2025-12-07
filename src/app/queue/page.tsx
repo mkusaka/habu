@@ -36,9 +36,10 @@ export default function QueuePage() {
   const router = useRouter();
   const [syncing, setSyncing] = useState(false);
   const [swAvailable, setSwAvailable] = useState<boolean | null>(null);
+  const [hasHatena, setHasHatena] = useState<boolean | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ id: number; title: string } | null>(null);
 
-  // Check if Service Worker is available
+  // Check if Service Worker is available and Hatena connection status
   useEffect(() => {
     async function checkSW() {
       if (!("serviceWorker" in navigator)) {
@@ -48,7 +49,19 @@ export default function QueuePage() {
       const registrations = await navigator.serviceWorker.getRegistrations();
       setSwAvailable(registrations.length > 0);
     }
+
+    async function checkHatenaStatus() {
+      try {
+        const res = await fetch("/api/habu/status", { credentials: "include" });
+        const data = (await res.json()) as { hasHatena: boolean };
+        setHasHatena(data.hasHatena);
+      } catch {
+        setHasHatena(false);
+      }
+    }
+
     checkSW();
+    checkHatenaStatus();
   }, []);
 
   // Use live query to automatically update when IndexedDB changes
@@ -240,15 +253,17 @@ export default function QueuePage() {
             </div>
           </div>
 
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full"
-            onClick={() => router.push("/settings")}
-          >
-            <Settings className="w-4 h-4 mr-2" />
-            Connect to Hatena Bookmark
-          </Button>
+          {hasHatena === false && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full"
+              onClick={() => router.push("/settings")}
+            >
+              <Settings className="w-4 h-4 mr-2" />
+              Connect to Hatena Bookmark
+            </Button>
+          )}
         </CardContent>
       </Card>
 

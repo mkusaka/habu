@@ -17,9 +17,11 @@ export function RegenerateButton({ url, title }: RegenerateButtonProps) {
   const [isRegenerating, setIsRegenerating] = useState(false);
 
   const handleRegenerate = async (e: React.MouseEvent) => {
+    console.log("[RegenerateButton] clicked", { url, title });
     e.preventDefault();
     e.stopPropagation();
 
+    console.log("[RegenerateButton] setting isRegenerating to true");
     setIsRegenerating(true);
 
     try {

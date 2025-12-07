@@ -11,6 +11,116 @@ import { mastra } from "@/mastra";
 const HATENA_BOOKMARK_API_URL = "https://bookmark.hatenaapis.com/rest/1/my/bookmark";
 const HATENA_TAGS_API_URL = "https://bookmark.hatenaapis.com/rest/1/my/tags";
 
+interface HatenaBookmarkGetResponse {
+  url: string;
+  comment: string;
+  tags: string[];
+  created_datetime: string;
+}
+
+export interface GetBookmarkResponse {
+  success: boolean;
+  error?: string;
+  bookmark?: HatenaBookmarkGetResponse;
+}
+
+/**
+ * Get a single bookmark by URL
+ * GET /api/habu/bookmark?url=...
+ */
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const url = searchParams.get("url");
+
+    if (!url) {
+      return NextResponse.json({ success: false, error: "URL is required" }, { status: 400 });
+    }
+
+    // Validate URL format
+    try {
+      new URL(url);
+    } catch {
+      return NextResponse.json({ success: false, error: "Invalid URL format" }, { status: 400 });
+    }
+
+    // Get DB connection for auth
+    const { env } = getCloudflareContext();
+    const auth = createAuth(env.DB);
+
+    // Get current user session
+    const session = await auth.api.getSession({
+      headers: request.headers,
+    });
+
+    if (!session?.user) {
+      return NextResponse.json({ success: false, error: "Not authenticated" }, { status: 401 });
+    }
+
+    // Get user with hatenaToken relation
+    const db = getDb(env.DB);
+
+    const user = await db.query.users.findFirst({
+      where: eq(users.id, session.user.id),
+      with: { hatenaToken: true },
+    });
+
+    if (!user?.hatenaToken) {
+      return NextResponse.json({ success: false, error: "Hatena not connected" }, { status: 400 });
+    }
+
+    const { accessToken: hatenaAccessToken, accessTokenSecret: hatenaAccessTokenSecret } = user.hatenaToken;
+
+    // Get consumer credentials from env
+    const consumerKey = env.HATENA_CONSUMER_KEY;
+    const consumerSecret = env.HATENA_CONSUMER_SECRET;
+
+    if (!consumerKey || !consumerSecret) {
+      return NextResponse.json({ success: false, error: "Server configuration error" }, { status: 500 });
+    }
+
+    // Build the API URL with the bookmark URL as query param
+    const apiUrl = `${HATENA_BOOKMARK_API_URL}?url=${encodeURIComponent(url)}`;
+
+    // Create OAuth signed request
+    const authHeaders = createSignedRequest(
+      apiUrl,
+      "GET",
+      hatenaAccessToken,
+      hatenaAccessTokenSecret,
+      consumerKey,
+      consumerSecret,
+    );
+
+    const response = await fetch(apiUrl, {
+      method: "GET",
+      headers: authHeaders,
+    });
+
+    if (response.status === 404) {
+      return NextResponse.json({ success: false, error: "Bookmark not found" }, { status: 404 });
+    }
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      return NextResponse.json(
+        { success: false, error: `Hatena API error: ${response.status} - ${errorText}` },
+        { status: response.status },
+      );
+    }
+
+    const bookmark = (await response.json()) as HatenaBookmarkGetResponse;
+
+    return NextResponse.json(bookmark);
+  } catch (error) {
+    console.error("Get bookmark API error:", error);
+    return NextResponse.json(
+      { success: false, error: error instanceof Error ? error.message : "Internal server error" },
+      { status: 500 },
+    );
+  }
+}
+
 /**
  * Fetch user's existing tags from Hatena Bookmark API
  */

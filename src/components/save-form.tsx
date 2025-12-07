@@ -565,6 +565,10 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
 
         {/* Navigation */}
         <div className="flex gap-2 pt-2">
+          <LinkButton href="/bookmarks" variant="outline" className="flex-1" size="sm">
+            <Bookmark className="w-4 h-4 mr-2" />
+            Bookmarks
+          </LinkButton>
           <LinkButton href="/queue" variant="outline" className="flex-1" size="sm">
             <List className="w-4 h-4 mr-2" />
             Queue

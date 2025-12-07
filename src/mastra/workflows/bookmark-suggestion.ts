@@ -32,8 +32,13 @@ async function judgeSummary(
     description?: string;
     markdown: string;
     webContext?: string;
+    userContext?: string;
   },
 ): Promise<{ passed: boolean; reason: string }> {
+  // Determine primary content source: userContext takes priority over markdown
+  const hasUserContext = !!context.userContext;
+  const primaryContent = hasUserContext ? context.userContext : context.markdown;
+
   const { experimental_output } = await generateText({
     model: openai("gpt-5.1"),
     system: `<role>
@@ -47,7 +52,16 @@ Pass if ALL of the following are true:
 3. JAPANESE: Written in Japanese
 4. LENGTH: 70-100 characters (acceptable: 50-100)
 </evaluation_criteria>
-
+${
+  hasUserContext
+    ? `
+<important>
+The user has provided content context directly. This user-provided context is the PRIMARY and most reliable source of truth.
+When evaluating accuracy, prioritize the user-provided context over auto-fetched page content.
+</important>
+`
+    : ""
+}
 <rejection_examples>
 - "便利なツールを紹介" (too vague, no specific detail)
 - "参考になる記事" (generic, could apply to anything)
@@ -63,8 +77,9 @@ Title: ${context.title || "(no title)"}
 Description: ${context.description || "(no description)"}
 </page_metadata>
 ${context.webContext ? `<web_context>${context.webContext}</web_context>` : ""}
+${hasUserContext ? `<user_provided_context>\n${context.userContext}\n</user_provided_context>` : ""}
 <page_content>
-${context.markdown}
+${primaryContent}
 </page_content>
 
 <summary_to_evaluate>
@@ -89,8 +104,13 @@ async function judgeTags(
     title?: string;
     keywords?: string;
     markdown: string;
+    userContext?: string;
   },
 ): Promise<{ passed: boolean; reason: string }> {
+  // Determine primary content source: userContext takes priority over markdown
+  const hasUserContext = !!context.userContext;
+  const primaryContent = hasUserContext ? context.userContext : context.markdown;
+
   const { experimental_output } = await generateText({
     model: openai("gpt-5.1"),
     system: `<role>
@@ -105,7 +125,16 @@ Pass if ALL of the following are true:
 4. NO_DUPLICATES: No redundant or near-duplicate tags
 5. COUNT: 3-10 tags total
 </evaluation_criteria>
-
+${
+  hasUserContext
+    ? `
+<important>
+The user has provided content context directly. This user-provided context is the PRIMARY and most reliable source of truth.
+When evaluating relevance, prioritize the user-provided context over auto-fetched page content.
+</important>
+`
+    : ""
+}
 <rejection_examples>
 - ["技術", "Web"] (too generic, no specific topics)
 - ["React", "React.js", "ReactJS"] (duplicates)
@@ -120,8 +149,9 @@ Pass if ALL of the following are true:
 Title: ${context.title || "(no title)"}
 Keywords: ${context.keywords || "(no keywords)"}
 </page_metadata>
+${hasUserContext ? `<user_provided_context>\n${context.userContext}\n</user_provided_context>` : ""}
 <page_content>
-${context.markdown}
+${primaryContent}
 </page_content>
 
 <tags_to_evaluate>
@@ -559,6 +589,7 @@ ${markdown}
         description: metadata.description,
         markdown,
         webContext,
+        userContext,
       });
       if (judgeResult.passed) break;
 
@@ -658,6 +689,7 @@ ${markdown.slice(0, 10000)}
         title: metadata.title,
         keywords: metadata.keywords,
         markdown,
+        userContext,
       });
       if (judgeResult.passed) break;
 

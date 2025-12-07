@@ -55,7 +55,7 @@ interface FetchBookmarksResult {
   username?: string;
 }
 
-async function fetchBookmarks(offset: number): Promise<FetchBookmarksResult> {
+async function fetchBookmarks(page: number): Promise<FetchBookmarksResult> {
   const cookieStore = await cookies();
   const { env } = getCloudflareContext();
   const auth = createAuth(env.DB);
@@ -116,8 +116,8 @@ async function fetchBookmarks(offset: number): Promise<FetchBookmarksResult> {
   const myData = (await myResponse.json()) as HatenaMyResponse;
   const username = myData.name;
 
-  // Fetch bookmarks using unofficial API
-  const bookmarksApiUrl = `https://b.hatena.ne.jp/api/users/${username}/bookmarks?limit=${PAGE_SIZE}&offset=${offset}`;
+  // Fetch bookmarks using unofficial API (uses page parameter)
+  const bookmarksApiUrl = `https://b.hatena.ne.jp/api/users/${username}/bookmarks?page=${page}`;
 
   const bookmarksResponse = await fetch(bookmarksApiUrl, {
     headers: {
@@ -191,9 +191,8 @@ function BookmarkListLoading() {
 }
 
 async function BookmarkList({ page }: { page: number }) {
-  const offset = (page - 1) * PAGE_SIZE;
-  console.log("[BookmarkList] Fetching", { page, offset });
-  const result = await fetchBookmarks(offset);
+  console.log("[BookmarkList] Fetching", { page });
+  const result = await fetchBookmarks(page);
   console.log("[BookmarkList] Result", {
     success: result.success,
     count: result.bookmarks?.length,

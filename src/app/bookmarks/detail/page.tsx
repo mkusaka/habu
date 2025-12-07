@@ -118,7 +118,9 @@ function BookmarkDetailContent() {
 
         const data = (await response.json()) as BookmarkData;
         setBookmark(data);
-        setComment(data.comment || "");
+        // Format comment with tags: [tag1][tag2]comment
+        const tagsPart = data.tags?.length ? data.tags.map((t) => `[${t}]`).join("") : "";
+        setComment(tagsPart + (data.comment || ""));
       } catch (err) {
         setError(err instanceof Error ? err.message : "Unknown error");
       } finally {

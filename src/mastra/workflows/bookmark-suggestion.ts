@@ -291,18 +291,15 @@ const mergeContentStep = createStep({
   },
 });
 
-// Summary output schema (max 100 characters enforced by structured output)
+// Summary output schema (max 100 characters enforced by prompt, not schema - OpenAI doesn't support maxLength)
 const SummaryOutputSchema = z.object({
-  summary: z.string().max(100).describe("Concise summary in Japanese, maximum 100 characters"),
+  summary: z.string().describe("Concise summary in Japanese, maximum 100 characters"),
   webContext: z.string().optional(),
 });
 
-// Tags output schema (max 10 tags, each max 10 characters)
+// Tags output schema (constraints enforced by prompt - OpenAI doesn't support maxLength/maxItems)
 const TagsOutputSchema = z.object({
-  tags: z
-    .array(z.string().max(10))
-    .max(10)
-    .describe("Relevant tags, 3-10 items, each max 10 characters"),
+  tags: z.array(z.string()).describe("Relevant tags, 3-10 items, each max 10 characters"),
 });
 
 // Step 3a: Generate summary (runs in parallel with tags)

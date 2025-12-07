@@ -20,8 +20,6 @@ import {
 import { LinkButton } from "@/components/ui/link-button";
 import { RefreshButton } from "./refresh-button";
 
-export const dynamic = "force-dynamic";
-
 const PAGE_SIZE = 20;
 const HATENA_MY_API_URL = "https://bookmark.hatenaapis.com/rest/1/my";
 
@@ -204,11 +202,15 @@ async function BookmarkList({ page }: { page: number }) {
     <>
       <div className="space-y-2">
         {bookmarks.map((bookmark, index) => (
-          <Link
+          <div
             key={`${bookmark.url}-${index}`}
-            href={`/bookmarks/detail?url=${encodeURIComponent(bookmark.url)}`}
-            className="block w-full text-left p-3 rounded-md border hover:bg-muted/50 transition-colors"
+            className="relative w-full text-left p-3 rounded-md border hover:bg-muted/50 transition-colors"
           >
+            <Link
+              href={`/bookmarks/detail?url=${encodeURIComponent(bookmark.url)}`}
+              className="absolute inset-0"
+              aria-label={`Edit bookmark: ${bookmark.title || bookmark.url}`}
+            />
             <div className="flex items-start gap-2">
               <div className="flex-1 min-w-0">
                 <h3 className="font-medium text-sm truncate">{bookmark.title || bookmark.url}</h3>
@@ -237,12 +239,13 @@ async function BookmarkList({ page }: { page: number }) {
                 href={bookmark.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-muted-foreground hover:text-foreground flex-shrink-0"
+                onClick={(e) => e.stopPropagation()}
+                className="relative z-10 text-muted-foreground hover:text-foreground flex-shrink-0"
               >
                 <ExternalLink className="w-4 h-4" />
               </a>
             </div>
-          </Link>
+          </div>
         ))}
       </div>
 

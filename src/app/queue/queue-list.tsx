@@ -184,18 +184,20 @@ export function QueueList() {
       <div className="space-y-2">
         {Array.from({ length: 20 }).map((_, i) => (
           <div key={i} className="w-full p-3 rounded-md border">
-            <div className="flex items-start gap-3">
-              <Skeleton className="w-5 h-5 rounded-full mt-0.5" />
-              <div className="flex-1 min-w-0 space-y-2">
-                <Skeleton className="h-4 w-3/4" />
-                <Skeleton className="h-3 w-full" />
-                <Skeleton className="h-3 w-32" />
-              </div>
+            {/* Header skeleton */}
+            <div className="flex items-center gap-3">
+              <Skeleton className="w-5 h-5 rounded-full flex-shrink-0" />
+              <Skeleton className="h-4 flex-1" />
               <div className="flex items-center gap-1 flex-shrink-0">
                 <Skeleton className="h-8 w-8 rounded" />
                 <Skeleton className="h-8 w-8 rounded" />
                 <Skeleton className="h-8 w-8 rounded" />
               </div>
+            </div>
+            {/* Body skeleton */}
+            <div className="mt-1 pl-8 space-y-1">
+              <Skeleton className="h-3 w-full" />
+              <Skeleton className="h-3 w-32" />
             </div>
           </div>
         ))}
@@ -219,59 +221,12 @@ export function QueueList() {
             key={item.id || index}
             className="w-full text-left p-3 rounded-md border hover:bg-muted/50 transition-colors"
           >
-            <div className="flex items-start gap-3">
-              <div className="mt-0.5">{getStatusIcon(item.status)}</div>
-              <div className="flex-1 min-w-0">
-                <h3 className="font-medium text-sm truncate">{item.title || item.url}</h3>
-                <div className="text-xs text-muted-foreground truncate">{item.url}</div>
-                {(() => {
-                  // Parse tags and summary from generatedSummary if generatedTags is not available
-                  const hasTags = item.generatedTags && item.generatedTags.length > 0;
-                  const parsed =
-                    item.status === "done" && item.generatedSummary && !hasTags
-                      ? parseComment(item.generatedSummary)
-                      : null;
-                  const displayTags = hasTags ? item.generatedTags : parsed?.tags;
-                  const displaySummary = parsed ? parsed.text : item.generatedSummary;
-
-                  return (
-                    <>
-                      {item.status === "done" && displayTags && displayTags.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {displayTags.map((tag, i) => (
-                            <span
-                              key={i}
-                              className="px-1.5 py-0.5 bg-primary/10 text-primary rounded text-xs"
-                            >
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                      {item.status === "done" && displaySummary && (
-                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                          {displaySummary}
-                        </p>
-                      )}
-                    </>
-                  );
-                })()}
-                {item.comment && !item.generatedSummary && (
-                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{item.comment}</p>
-                )}
-                {item.lastError && (
-                  <div className="text-xs text-red-600 mt-1 p-2 bg-red-50 rounded border border-red-200">
-                    <span className="font-semibold">Error:</span> {item.lastError}
-                  </div>
-                )}
-                <p className="text-xs text-muted-foreground mt-1">
-                  {getStatusText(item.status)} • {new Date(item.createdAt).toLocaleString()}
-                  {item.retryCount > 0 && ` • Retry ${item.retryCount}`}
-                  {item.nextRetryAt && item.status === "error" && (
-                    <span> • Next retry: {new Date(item.nextRetryAt).toLocaleTimeString()}</span>
-                  )}
-                </p>
-              </div>
+            {/* Header: Status icon, Title, Action buttons */}
+            <div className="flex items-center gap-3">
+              <div className="flex-shrink-0">{getStatusIcon(item.status)}</div>
+              <h3 className="font-medium text-sm truncate flex-1 min-w-0">
+                {item.title || item.url}
+              </h3>
               <div className="flex items-center gap-1 flex-shrink-0">
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -319,6 +274,57 @@ export function QueueList() {
                   </Tooltip>
                 )}
               </div>
+            </div>
+            {/* Body: URL, Tags, Comment, Status */}
+            <div className="mt-1 pl-8">
+              <div className="text-xs text-muted-foreground truncate">{item.url}</div>
+              {(() => {
+                // Parse tags and summary from generatedSummary if generatedTags is not available
+                const hasTags = item.generatedTags && item.generatedTags.length > 0;
+                const parsed =
+                  item.status === "done" && item.generatedSummary && !hasTags
+                    ? parseComment(item.generatedSummary)
+                    : null;
+                const displayTags = hasTags ? item.generatedTags : parsed?.tags;
+                const displaySummary = parsed ? parsed.text : item.generatedSummary;
+
+                return (
+                  <>
+                    {item.status === "done" && displayTags && displayTags.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {displayTags.map((tag, i) => (
+                          <span
+                            key={i}
+                            className="px-1.5 py-0.5 bg-primary/10 text-primary rounded text-xs"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    {item.status === "done" && displaySummary && (
+                      <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                        {displaySummary}
+                      </p>
+                    )}
+                  </>
+                );
+              })()}
+              {item.comment && !item.generatedSummary && (
+                <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{item.comment}</p>
+              )}
+              {item.lastError && (
+                <div className="text-xs text-red-600 mt-1 p-2 bg-red-50 rounded border border-red-200">
+                  <span className="font-semibold">Error:</span> {item.lastError}
+                </div>
+              )}
+              <p className="text-xs text-muted-foreground mt-1">
+                {getStatusText(item.status)} • {new Date(item.createdAt).toLocaleString()}
+                {item.retryCount > 0 && ` • Retry ${item.retryCount}`}
+                {item.nextRetryAt && item.status === "error" && (
+                  <span> • Next retry: {new Date(item.nextRetryAt).toLocaleTimeString()}</span>
+                )}
+              </p>
             </div>
           </div>
         ))}

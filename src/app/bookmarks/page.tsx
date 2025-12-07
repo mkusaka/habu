@@ -168,21 +168,23 @@ function BookmarkListLoading() {
     <div className="space-y-2">
       {Array.from({ length: 20 }).map((_, i) => (
         <div key={i} className="w-full p-3 rounded-md border">
-          <div className="flex items-start gap-2">
-            <div className="flex-1 min-w-0 space-y-2">
-              <Skeleton className="h-4 w-3/4" />
-              <div className="flex gap-1">
-                <Skeleton className="h-5 w-12 rounded" />
-                <Skeleton className="h-5 w-16 rounded" />
-                <Skeleton className="h-5 w-10 rounded" />
-              </div>
-              <Skeleton className="h-3 w-full" />
-              <Skeleton className="h-3 w-24" />
-            </div>
+          {/* Header skeleton */}
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-4 flex-1" />
             <div className="flex items-center gap-1 flex-shrink-0">
-              <Skeleton className="h-8 w-8 rounded" />
-              <Skeleton className="h-8 w-8 rounded" />
+              <Skeleton className="h-6 w-6 rounded" />
+              <Skeleton className="h-6 w-6 rounded" />
             </div>
+          </div>
+          {/* Body skeleton */}
+          <div className="mt-1 space-y-1">
+            <div className="flex gap-1">
+              <Skeleton className="h-5 w-12 rounded" />
+              <Skeleton className="h-5 w-16 rounded" />
+              <Skeleton className="h-5 w-10 rounded" />
+            </div>
+            <Skeleton className="h-3 w-full" />
+            <Skeleton className="h-3 w-24" />
           </div>
         </div>
       ))}
@@ -232,41 +234,45 @@ async function BookmarkList({ page }: { page: number }) {
               className="absolute inset-0"
               aria-label={`Edit bookmark: ${bookmark.title || bookmark.url}`}
             />
-            <div className="flex items-start gap-2">
-              <div className="flex-1 min-w-0">
-                <h3 className="font-medium text-sm truncate">{bookmark.title || bookmark.url}</h3>
-                {bookmark.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mt-1">
-                    {bookmark.tags.map((tag, i) => (
-                      <span
-                        key={i}
-                        className="px-1.5 py-0.5 bg-primary/10 text-primary rounded text-xs"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                )}
-                {extractComment(bookmark.comment) && (
-                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                    {extractComment(bookmark.comment)}
-                  </p>
-                )}
-                <p className="text-xs text-muted-foreground mt-1">
-                  {formatDate(bookmark.bookmarkedAt)}
-                </p>
-              </div>
+            {/* Header: Title + Action buttons */}
+            <div className="flex items-center gap-2">
+              <h3 className="font-medium text-sm truncate flex-1 min-w-0">
+                {bookmark.title || bookmark.url}
+              </h3>
               <div className="flex items-center gap-1 flex-shrink-0">
                 <RegenerateButton url={bookmark.url} title={bookmark.title} />
                 <a
                   href={bookmark.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="relative z-10 p-1 text-muted-foreground hover:text-foreground"
+                  className="relative z-10 p-1 text-muted-foreground hover:text-foreground cursor-pointer"
                 >
                   <ExternalLink className="w-4 h-4" />
                 </a>
               </div>
+            </div>
+            {/* Body: Tags, Comment, Date */}
+            <div className="mt-1">
+              {bookmark.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {bookmark.tags.map((tag, i) => (
+                    <span
+                      key={i}
+                      className="px-1.5 py-0.5 bg-primary/10 text-primary rounded text-xs"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              )}
+              {extractComment(bookmark.comment) && (
+                <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                  {extractComment(bookmark.comment)}
+                </p>
+              )}
+              <p className="text-xs text-muted-foreground mt-1">
+                {formatDate(bookmark.bookmarkedAt)}
+              </p>
             </div>
           </div>
         ))}

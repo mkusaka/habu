@@ -48,6 +48,19 @@ export interface BookmarkResponse {
   generatedTags?: string[];
 }
 
+// Suggest API types (generate without saving)
+export interface SuggestRequest {
+  url: string;
+}
+
+export interface SuggestResponse {
+  success: boolean;
+  error?: string;
+  summary?: string;
+  tags?: string[];
+  formattedComment?: string;
+}
+
 // Hatena API types
 export interface HatenaBookmarkApiResponse {
   url: string;

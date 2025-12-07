@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Bookmark, List, Settings, Loader2, WifiOff, AlertCircle } from "lucide-react";
+import { Bookmark, List, Settings, Loader2, WifiOff, AlertCircle, Sparkles } from "lucide-react";
 import { LinkButton } from "@/components/ui/link-button";
 
 interface SaveFormProps {
@@ -92,6 +92,12 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
   const [isOnline, setIsOnline] = useState(true);
   const [isFetchingTitle, setIsFetchingTitle] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generatedResult, setGeneratedResult] = useState<{
+    summary?: string;
+    tags?: string[];
+    formattedComment?: string;
+  } | null>(null);
   const [draftRestored, setDraftRestored] = useState(false);
 
   const debouncedUrl = useDebounce(url, 500);
@@ -198,6 +204,52 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
   };
 
   const isUrlValid = url && isValidUrl(url);
+
+  const handleGenerate = async () => {
+    if (!url) {
+      toast.error("URL is required");
+      return;
+    }
+
+    if (!isValidUrl(url)) {
+      toast.error("Please enter a valid URL");
+      return;
+    }
+
+    setIsGenerating(true);
+    setGeneratedResult(null);
+
+    try {
+      const response = await fetch("/api/habu/suggest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ url }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || "Failed to generate");
+      }
+
+      setGeneratedResult({
+        summary: data.summary,
+        tags: data.tags,
+        formattedComment: data.formattedComment,
+      });
+
+      toast.success("Generated!", {
+        description: "AI-generated summary and tags are ready.",
+      });
+    } catch (error) {
+      toast.error("Generation failed", {
+        description: error instanceof Error ? error.message : "Unknown error",
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   const handleSave = async () => {
     if (!url) {
@@ -328,21 +380,74 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
           />
         </div>
 
-        <Button
-          onClick={handleSave}
-          disabled={!isUrlValid || isSaving}
-          className="w-full"
-          size="lg"
-        >
-          {isSaving ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Saving...
-            </>
-          ) : (
-            "Save Bookmark"
-          )}
-        </Button>
+        {/* Generated Result */}
+        {generatedResult && (
+          <div className="p-3 bg-muted rounded-md space-y-2 text-sm">
+            <div className="font-medium flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-primary" />
+              Generated Preview
+            </div>
+            {generatedResult.tags && generatedResult.tags.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {generatedResult.tags.map((tag, i) => (
+                  <span key={i} className="px-2 py-0.5 bg-primary/10 text-primary rounded text-xs">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            )}
+            {generatedResult.summary && (
+              <p className="text-muted-foreground">{generatedResult.summary}</p>
+            )}
+            {generatedResult.formattedComment && (
+              <div className="pt-2 border-t">
+                <p className="text-xs text-muted-foreground mb-1">Formatted comment:</p>
+                <code className="text-xs bg-background p-2 rounded block break-all">
+                  {generatedResult.formattedComment}
+                </code>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Action Buttons */}
+        <div className="flex gap-2">
+          <Button
+            onClick={handleGenerate}
+            disabled={!isUrlValid || isGenerating || !hasHatena || !isOnline}
+            variant="outline"
+            className="flex-1"
+            size="lg"
+          >
+            {isGenerating ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-4 h-4 mr-2" />
+                Generate
+              </>
+            )}
+          </Button>
+
+          <Button
+            onClick={handleSave}
+            disabled={!isUrlValid || isSaving}
+            className="flex-1"
+            size="lg"
+          >
+            {isSaving ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              "Save"
+            )}
+          </Button>
+        </div>
 
         {/* Navigation */}
         <div className="flex gap-2 pt-2">

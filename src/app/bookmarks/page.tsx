@@ -225,13 +225,7 @@ function BookmarkListLoading() {
 }
 
 async function BookmarkList({ page }: { page: number }) {
-  console.log("[BookmarkList] Fetching", { page });
   const result = await fetchBookmarks(page);
-  console.log("[BookmarkList] Result", {
-    success: result.success,
-    count: result.bookmarks?.length,
-    firstTitle: result.bookmarks?.[0]?.title?.slice(0, 30),
-  });
 
   if (!result.success) {
     return (
@@ -348,8 +342,6 @@ export default async function BookmarksPage({ searchParams }: BookmarksPageProps
   const params = await searchParams;
   const page = Math.max(1, parseInt(params.page || "1", 10));
   const hasHatena = await getHatenaStatus();
-
-  console.log("[BookmarksPage] Rendering", { params, page });
 
   return (
     <Card className="w-full">

@@ -217,17 +217,21 @@ const ContentDataSchema = z.object({
   userContext: z.string().optional(),
 });
 
-// Markdown output schema (includes url/existingTags/userContext to pass through)
+// Markdown output schema (includes url/existingTags to pass through)
 const MarkdownOutputSchema = z.object({
   url: z.string(),
   existingTags: z.array(z.string()),
   markdown: z.string(),
-  userContext: z.string().optional(),
 });
 
 // Metadata output schema
 const MetadataOutputSchema = z.object({
   metadata: MetadataSchema,
+});
+
+// User context output schema
+const UserContextOutputSchema = z.object({
+  userContext: z.string().optional(),
 });
 
 // Step 1c: Web search for additional context (reference only)
@@ -318,12 +322,34 @@ const fetchMarkdownAndModerateStep = createStep({
       url,
       existingTags: inputData.existingTags,
       markdown,
-      userContext: inputData.userContext,
     };
   },
 });
 
-// Step 1b: Fetch metadata using local HTMLRewriter (with YouTube oEmbed fallback)
+// Step 1b: Moderate user context
+const moderateUserContextStep = createStep({
+  id: "moderate-user-context",
+  inputSchema: WorkflowInputSchema,
+  outputSchema: UserContextOutputSchema,
+  execute: async ({ inputData }) => {
+    const { userContext } = inputData;
+
+    if (userContext) {
+      const moderation = await getOpenAIClient().moderations.create({
+        model: "omni-moderation-latest",
+        input: userContext.slice(0, 5000),
+      });
+
+      if (moderation.results[0].flagged) {
+        throw new Error("User context flagged by moderation");
+      }
+    }
+
+    return { userContext };
+  },
+});
+
+// Step 1c: Fetch metadata using local HTMLRewriter (with YouTube oEmbed fallback)
 const fetchMetadataStep = createStep({
   id: "fetch-metadata",
   inputSchema: WorkflowInputSchema,
@@ -402,11 +428,12 @@ const fetchMetadataStep = createStep({
   },
 });
 
-// Step 1d: Merge markdown, metadata, and web search results
+// Step 1e: Merge markdown, metadata, user context, and web search results
 const mergeContentStep = createStep({
   id: "merge-content",
   inputSchema: z.object({
     "fetch-markdown-and-moderate": MarkdownOutputSchema,
+    "moderate-user-context": UserContextOutputSchema,
     "fetch-metadata": MetadataOutputSchema,
     "web-search": WebSearchResultSchema,
   }),
@@ -418,7 +445,7 @@ const mergeContentStep = createStep({
       markdown: inputData["fetch-markdown-and-moderate"].markdown,
       metadata: inputData["fetch-metadata"].metadata,
       webContext: inputData["web-search"].webContext,
-      userContext: inputData["fetch-markdown-and-moderate"].userContext,
+      userContext: inputData["moderate-user-context"].userContext,
     };
   },
 });
@@ -667,7 +694,12 @@ export const bookmarkSuggestionWorkflow = createWorkflow({
   inputSchema: WorkflowInputSchema,
   outputSchema: WorkflowOutputSchema,
 })
-  .parallel([fetchMarkdownAndModerateStep, fetchMetadataStep, webSearchStep])
+  .parallel([
+    fetchMarkdownAndModerateStep,
+    moderateUserContextStep,
+    fetchMetadataStep,
+    webSearchStep,
+  ])
   .then(mergeContentStep)
   .parallel([generateSummaryStep, generateTagsStep])
   .then(mergeResultsStep)

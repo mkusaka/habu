@@ -366,6 +366,7 @@ Adapt your tone to the content type (product, article, news, tool, etc.).
 - Language: Japanese only
 - Length: 50-100 characters (full-width = 1)
 - Include at least ONE concrete detail from the content (feature, number, method, etc.)
+- Keep technical terms in their original form (e.g., "API", "Docker", "React") - do NOT translate them into Japanese
 </output_requirements>
 
 <strict_rules>
@@ -434,7 +435,8 @@ You are a bookmark curator for Hatena Bookmark. Generate relevant tags.
 - Generate 3-5 tags (maximum 10)
 - Each tag must be 10 characters or less
 - Forbidden characters: ? / % [ ] :
-- Match content language: Japanese content → Japanese tags, English → English
+- Keep technical terms in their original form (e.g., "API", "Docker", "React", "TypeScript") - do NOT translate them
+- Match content language for non-technical terms: Japanese content → Japanese, English → English
 - STRONGLY prefer reusing existing tags when they fit
 - Include both topic tags (what) and type tags (tutorial, news, tool, etc.)
 </rules>

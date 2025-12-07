@@ -153,10 +153,13 @@ function formatDate(dateStr: string) {
   if (!dateStr) return "";
   try {
     const date = new Date(dateStr);
-    return date.toLocaleDateString("ja-JP", {
+    return date.toLocaleString("ja-JP", {
       year: "numeric",
       month: "short",
       day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
     });
   } catch {
     return dateStr;
@@ -253,7 +256,7 @@ async function BookmarkList({ page }: { page: number }) {
       </div>
 
       {/* Pagination */}
-      <div className="flex items-center justify-between pt-2">
+      <div className="relative z-10 flex items-center justify-between pt-2">
         {page > 1 ? (
           <LinkButton href={`/bookmarks?page=${page - 1}`} variant="outline" size="sm">
             <ChevronLeft className="w-4 h-4 mr-1" />

@@ -40,7 +40,7 @@ export function RegenerateButton({ url, title }: RegenerateButtonProps) {
     <button
       onClick={handleRegenerate}
       disabled={isRegenerating}
-      className="relative z-10 p-1 text-muted-foreground hover:text-primary disabled:opacity-50 flex-shrink-0"
+      className="relative z-10 p-1 text-muted-foreground hover:text-primary disabled:opacity-50 flex-shrink-0 cursor-pointer"
       title="Regenerate"
     >
       {isRegenerating ? (

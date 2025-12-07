@@ -288,28 +288,26 @@ export default async function BookmarksPage({ searchParams }: BookmarksPageProps
   const page = Math.max(1, parseInt(params.page || "1", 10));
 
   return (
-    <main className="min-h-screen p-2 flex items-start justify-center">
-      <Card className="w-full max-w-2xl">
-        <CardHeader className="pb-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Bookmark className="w-6 h-6 text-primary" />
-              <CardTitle className="text-xl">My Bookmarks</CardTitle>
-            </div>
-            <div className="flex items-center gap-1">
-              <RefreshButton />
-              <LinkButton href="/" variant="ghost" size="icon">
-                <Home className="w-5 h-5" />
-              </LinkButton>
-            </div>
+    <Card className="w-full max-w-2xl">
+      <CardHeader className="pb-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Bookmark className="w-6 h-6 text-primary" />
+            <CardTitle className="text-xl">My Bookmarks</CardTitle>
           </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Suspense key={page} fallback={<BookmarkListLoading />}>
-            <BookmarkList page={page} />
-          </Suspense>
-        </CardContent>
-      </Card>
-    </main>
+          <div className="flex items-center gap-1">
+            <RefreshButton />
+            <LinkButton href="/" variant="ghost" size="icon">
+              <Home className="w-5 h-5" />
+            </LinkButton>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <Suspense key={page} fallback={<BookmarkListLoading />}>
+          <BookmarkList page={page} />
+        </Suspense>
+      </CardContent>
+    </Card>
   );
 }

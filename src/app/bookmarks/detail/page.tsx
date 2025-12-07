@@ -1,296 +1,231 @@
-"use client";
-
-import { useState, useEffect, useCallback, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
+import { cookies } from "next/headers";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { createAuth } from "@/lib/auth";
+import { getDb } from "@/db/client";
+import { users } from "@/db/schema";
+import { eq } from "drizzle-orm";
+import { createSignedRequest } from "@/lib/hatena-oauth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { Bookmark, ExternalLink, ArrowLeft, AlertCircle } from "lucide-react";
 import { Label } from "@/components/ui/label";
-import { toast } from "sonner";
-import {
-  Bookmark,
-  Loader2,
-  Sparkles,
-  ChevronDown,
-  ChevronUp,
-  FileText,
-  Info,
-  ArrowLeft,
-  ExternalLink,
-  AlertCircle,
-  Copy,
-} from "lucide-react";
 import { LinkButton } from "@/components/ui/link-button";
+import { BookmarkEditForm } from "./bookmark-edit-form";
 
-interface BookmarkData {
+export const dynamic = "force-dynamic";
+
+const HATENA_BOOKMARK_API_URL = "https://bookmark.hatenaapis.com/rest/1/my/bookmark";
+const PAGE_META_PROXY_URL = "https://page-meta-proxy.polyfill.workers.dev/meta";
+
+interface HatenaBookmarkGetResponse {
   url: string;
   comment: string;
   tags: string[];
   created_datetime: string;
 }
 
-interface GeneratedResult {
-  summary?: string;
-  tags?: string[];
-  formattedComment?: string;
-  markdown?: string;
-  markdownError?: string;
-  metadata?: {
-    title?: string;
-    description?: string;
-    lang?: string;
-    ogType?: string;
-    siteName?: string;
-    keywords?: string;
-    author?: string;
-  };
-  webContext?: string;
+interface PageMetaResponse {
+  title?: string;
+  og?: { title?: string };
+  twitter?: { title?: string };
 }
 
-function BookmarkDetailContent() {
-  const searchParams = useSearchParams();
-  const bookmarkUrl = searchParams.get("url") || "";
+interface FetchResult {
+  success: boolean;
+  error?: string;
+  bookmark?: HatenaBookmarkGetResponse;
+  title?: string;
+}
 
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [bookmark, setBookmark] = useState<BookmarkData | null>(null);
+async function fetchBookmarkData(bookmarkUrl: string): Promise<FetchResult> {
+  if (!bookmarkUrl) {
+    return { success: false, error: "No URL specified" };
+  }
 
-  const [title, setTitle] = useState("");
-  const [comment, setComment] = useState("");
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [isUpdating, setIsUpdating] = useState(false);
-  const [isFetchingMetadata, setIsFetchingMetadata] = useState(false);
-  const [generatedResult, setGeneratedResult] = useState<GeneratedResult | null>(null);
-  const [showRawContent, setShowRawContent] = useState(false);
+  const cookieStore = await cookies();
+  const { env } = getCloudflareContext();
+  const auth = createAuth(env.DB);
 
-  // Fetch metadata for title
-  const fetchMetadata = useCallback(async () => {
-    if (!bookmarkUrl) return;
+  const session = await auth.api.getSession({
+    headers: {
+      cookie: cookieStore.toString(),
+    },
+  });
 
-    setIsFetchingMetadata(true);
+  if (!session?.user) {
+    return { success: false, error: "Not authenticated" };
+  }
+
+  const db = getDb(env.DB);
+  const user = await db.query.users.findFirst({
+    where: eq(users.id, session.user.id),
+    with: { hatenaToken: true },
+  });
+
+  if (!user?.hatenaToken) {
+    return { success: false, error: "Hatena not connected" };
+  }
+
+  const { accessToken: hatenaAccessToken, accessTokenSecret: hatenaAccessTokenSecret } =
+    user.hatenaToken;
+
+  const consumerKey = env.HATENA_CONSUMER_KEY;
+  const consumerSecret = env.HATENA_CONSUMER_SECRET;
+
+  if (!consumerKey || !consumerSecret) {
+    return { success: false, error: "Server configuration error" };
+  }
+
+  // Fetch bookmark and metadata in parallel
+  const apiUrl = `${HATENA_BOOKMARK_API_URL}?url=${encodeURIComponent(bookmarkUrl)}`;
+  const authHeaders = createSignedRequest(
+    apiUrl,
+    "GET",
+    hatenaAccessToken,
+    hatenaAccessTokenSecret,
+    consumerKey,
+    consumerSecret,
+  );
+
+  const [bookmarkResponse, metaResponse] = await Promise.all([
+    fetch(apiUrl, { method: "GET", headers: authHeaders }),
+    fetch(`${PAGE_META_PROXY_URL}?url=${encodeURIComponent(bookmarkUrl)}`).catch(() => null),
+  ]);
+
+  // Parse title from metadata
+  let title: string | undefined;
+  if (metaResponse?.ok) {
     try {
-      const response = await fetch(
-        `https://page-meta-proxy.polyfill.workers.dev/meta?url=${encodeURIComponent(bookmarkUrl)}`,
-      );
-      if (response.ok) {
-        const meta = (await response.json()) as {
-          title?: string;
-          og?: { title?: string };
-          twitter?: { title?: string };
-        };
-        const fetchedTitle = meta?.title || meta?.og?.title || meta?.twitter?.title;
-        if (fetchedTitle) {
-          setTitle(fetchedTitle);
-        }
-      }
+      const meta = (await metaResponse.json()) as PageMetaResponse;
+      title = meta?.title || meta?.og?.title || meta?.twitter?.title;
     } catch {
-      // Ignore metadata fetch errors
-    } finally {
-      setIsFetchingMetadata(false);
+      // Ignore metadata parse errors
     }
-  }, [bookmarkUrl]);
+  }
 
-  // Fetch current bookmark data
-  useEffect(() => {
-    if (!bookmarkUrl) {
-      setError("No URL specified");
-      setIsLoading(false);
-      return;
-    }
+  // Handle bookmark response
+  if (bookmarkResponse.status === 404) {
+    // Bookmark doesn't exist yet - that's okay for new bookmarks
+    return { success: true, bookmark: undefined, title };
+  }
 
-    const fetchBookmark = async () => {
-      try {
-        const response = await fetch(`/api/habu/bookmark?url=${encodeURIComponent(bookmarkUrl)}`, {
-          credentials: "include",
-        });
+  if (!bookmarkResponse.ok) {
+    const errorText = await bookmarkResponse.text();
+    return { success: false, error: `Hatena API error: ${bookmarkResponse.status} - ${errorText}` };
+  }
 
-        if (response.status === 404) {
-          // Bookmark doesn't exist yet - that's okay for new bookmarks
-          setBookmark(null);
-          setIsLoading(false);
-          return;
-        }
+  const bookmark = (await bookmarkResponse.json()) as HatenaBookmarkGetResponse;
+  return { success: true, bookmark, title };
+}
 
-        if (!response.ok) {
-          const data = (await response.json()) as { error?: string };
-          throw new Error(data.error || "Failed to fetch bookmark");
-        }
+function BookmarkDetailLoading() {
+  return (
+    <div className="space-y-4">
+      <div className="space-y-2">
+        <div className="h-4 w-12 bg-muted rounded animate-pulse" />
+        <div className="h-10 bg-muted rounded animate-pulse" />
+      </div>
+      <div className="space-y-2">
+        <div className="h-4 w-12 bg-muted rounded animate-pulse" />
+        <div className="h-10 bg-muted rounded animate-pulse" />
+      </div>
+      <div className="space-y-2">
+        <div className="h-4 w-16 bg-muted rounded animate-pulse" />
+        <div className="h-20 bg-muted rounded animate-pulse" />
+      </div>
+      <div className="flex gap-2">
+        <div className="h-10 flex-1 bg-muted rounded animate-pulse" />
+        <div className="h-10 flex-1 bg-muted rounded animate-pulse" />
+      </div>
+    </div>
+  );
+}
 
-        const data = (await response.json()) as BookmarkData;
-        setBookmark(data);
-        // Format comment with tags: [tag1][tag2]comment
-        const tagsPart = data.tags?.length ? data.tags.map((t) => `[${t}]`).join("") : "";
-        setComment(tagsPart + (data.comment || ""));
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Unknown error");
-      } finally {
-        setIsLoading(false);
-      }
-    };
+async function BookmarkDetailContent({ bookmarkUrl }: { bookmarkUrl: string }) {
+  const result = await fetchBookmarkData(bookmarkUrl);
 
-    fetchBookmark();
-    fetchMetadata();
-  }, [bookmarkUrl, fetchMetadata]);
-
-  const handleGenerate = async () => {
-    if (!bookmarkUrl) {
-      toast.error("URL is required");
-      return;
-    }
-
-    setIsGenerating(true);
-    setGeneratedResult(null);
-
-    try {
-      const response = await fetch("/api/habu/suggest", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ url: bookmarkUrl }),
-      });
-
-      const data = (await response.json()) as {
-        success: boolean;
-        error?: string;
-        summary?: string;
-        tags?: string[];
-        formattedComment?: string;
-        markdown?: string;
-        markdownError?: string;
-        metadata?: GeneratedResult["metadata"];
-        webContext?: string;
-      };
-
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || "Failed to generate");
-      }
-
-      setGeneratedResult({
-        summary: data.summary,
-        tags: data.tags,
-        formattedComment: data.formattedComment,
-        markdown: data.markdown,
-        markdownError: data.markdownError,
-        metadata: data.metadata,
-        webContext: data.webContext,
-      });
-
-      toast.success("Generated!", {
-        description: "AI-generated summary and tags are ready.",
-      });
-    } catch (error) {
-      toast.error("Generation failed", {
-        description: error instanceof Error ? error.message : "Unknown error",
-      });
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
-  const handleApplyGenerated = () => {
-    if (generatedResult?.formattedComment) {
-      setComment(generatedResult.formattedComment);
-      toast.success("Applied generated comment");
-    }
-  };
-
-  const handleUpdate = async () => {
-    if (!bookmarkUrl) {
-      toast.error("URL is required");
-      return;
-    }
-
-    setIsUpdating(true);
-
-    try {
-      const response = await fetch("/api/habu/bookmark", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ url: bookmarkUrl, comment }),
-      });
-
-      const data = (await response.json()) as { success: boolean; error?: string };
-
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || "Failed to update bookmark");
-      }
-
-      toast.success("Bookmark updated!");
-
-      // Refresh bookmark data
-      const refreshResponse = await fetch(
-        `/api/habu/bookmark?url=${encodeURIComponent(bookmarkUrl)}`,
-        {
-          credentials: "include",
-        },
-      );
-      if (refreshResponse.ok) {
-        const refreshData = (await refreshResponse.json()) as BookmarkData;
-        setBookmark(refreshData);
-      }
-    } catch (error) {
-      toast.error("Update failed", {
-        description: error instanceof Error ? error.message : "Unknown error",
-      });
-    } finally {
-      setIsUpdating(false);
-    }
-  };
-
-  const handleCopy = async (text: string, label: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      toast.success(`${label} copied`);
-    } catch {
-      toast.error("Failed to copy");
-    }
-  };
-
-  // Parse tags from comment (e.g., "[tag1][tag2][tag3]summary text")
-  const extractTags = (commentStr: string): string[] => {
-    const tags: string[] = [];
-    const tagRegex = /^\[([^\]]+)\]/;
-    let remaining = commentStr;
-    let match;
-    while ((match = tagRegex.exec(remaining)) !== null) {
-      tags.push(match[1]);
-      remaining = remaining.slice(match[0].length);
-    }
-    return tags;
-  };
-
-  const extractCommentText = (commentStr: string): string => {
-    return commentStr.replace(/^(\[[^\]]+\])+/, "").trim();
-  };
-
-  if (isLoading) {
+  if (!result.success) {
     return (
-      <main className="min-h-screen p-4 flex items-center justify-center">
-        <Loader2 className="w-6 h-6 animate-spin" />
-      </main>
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 p-4 bg-red-50 dark:bg-red-900/20 rounded-md text-sm text-red-800 dark:text-red-200">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          <span>{result.error}</span>
+        </div>
+        <LinkButton href="/bookmarks" variant="outline" className="w-full">
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back to Bookmarks
+        </LinkButton>
+      </div>
     );
   }
 
-  if (error) {
-    return (
-      <main className="min-h-screen p-4 flex items-start justify-center">
-        <Card className="w-full max-w-md">
-          <CardContent className="pt-6">
-            <div className="text-center text-red-600">{error}</div>
-            <LinkButton href="/bookmarks" variant="outline" className="w-full mt-4">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Bookmarks
-            </LinkButton>
-          </CardContent>
-        </Card>
-      </main>
-    );
-  }
+  // Format initial comment with tags
+  const initialComment = result.bookmark
+    ? (result.bookmark.tags?.length ? result.bookmark.tags.map((t) => `[${t}]`).join("") : "") +
+      (result.bookmark.comment || "")
+    : "";
 
-  const currentTags = extractTags(comment);
-  const currentCommentText = extractCommentText(comment);
+  return (
+    <div className="space-y-4">
+      {/* URL Display (static) */}
+      <div className="space-y-2">
+        <Label>URL</Label>
+        <div className="flex items-center gap-2 p-2 bg-muted rounded-md">
+          <span className="text-sm truncate flex-1">{bookmarkUrl}</span>
+          <a
+            href={bookmarkUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-muted-foreground hover:text-foreground"
+            title="Open page"
+          >
+            <ExternalLink className="w-4 h-4" />
+          </a>
+          <a
+            href={`https://b.hatena.ne.jp/entry/${bookmarkUrl.startsWith("https://") ? "s/" + bookmarkUrl.slice(8) : bookmarkUrl}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-muted-foreground hover:text-foreground"
+            title="View on Hatena Bookmark"
+          >
+            <Bookmark className="w-4 h-4" />
+          </a>
+        </div>
+      </div>
+
+      {/* Title Display (static) */}
+      <div className="space-y-2">
+        <Label>Title</Label>
+        <div className="p-2 bg-muted rounded-md text-sm">
+          {result.title || <span className="text-muted-foreground">No title</span>}
+        </div>
+      </div>
+
+      {/* Interactive Form (client component) */}
+      <BookmarkEditForm
+        bookmarkUrl={bookmarkUrl}
+        initialComment={initialComment}
+        bookmarkedAt={result.bookmark?.created_datetime}
+      />
+
+      {/* Navigation */}
+      <div className="pt-2">
+        <LinkButton href="/bookmarks" variant="outline" className="w-full" size="sm">
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back to Bookmarks
+        </LinkButton>
+      </div>
+    </div>
+  );
+}
+
+interface BookmarkDetailPageProps {
+  searchParams: Promise<{ url?: string }>;
+}
+
+export default async function BookmarkDetailPage({ searchParams }: BookmarkDetailPageProps) {
+  const params = await searchParams;
+  const bookmarkUrl = params.url || "";
 
   return (
     <main className="min-h-screen p-4 flex items-start justify-center">
@@ -301,343 +236,12 @@ function BookmarkDetailContent() {
           </div>
           <CardTitle className="text-xl">Edit Bookmark</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          {/* URL Display */}
-          <div className="space-y-2">
-            <Label>URL</Label>
-            <div className="flex items-center gap-2 p-2 bg-muted rounded-md">
-              <span className="text-sm truncate flex-1">{bookmarkUrl}</span>
-              <a
-                href={bookmarkUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-muted-foreground hover:text-foreground"
-                title="Open page"
-              >
-                <ExternalLink className="w-4 h-4" />
-              </a>
-              <a
-                href={`https://b.hatena.ne.jp/entry/${bookmarkUrl.startsWith("https://") ? "s/" + bookmarkUrl.slice(8) : bookmarkUrl}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-muted-foreground hover:text-foreground"
-                title="View on Hatena Bookmark"
-              >
-                <Bookmark className="w-4 h-4" />
-              </a>
-            </div>
-          </div>
-
-          {/* Title */}
-          <div className="space-y-2">
-            <Label htmlFor="title">Title</Label>
-            <div className="relative">
-              <Input
-                id="title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder={isFetchingMetadata ? "Fetching..." : "Page title"}
-                disabled={isFetchingMetadata}
-              />
-              {isFetchingMetadata && (
-                <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                  <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Current Comment */}
-          <div className="space-y-2">
-            <Label htmlFor="comment">Comment</Label>
-            <Textarea
-              id="comment"
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-              placeholder="Your comment"
-              rows={3}
-            />
-            {currentTags.length > 0 && (
-              <div className="flex flex-wrap gap-1">
-                {currentTags.map((tag, i) => (
-                  <span key={i} className="px-2 py-0.5 bg-primary/10 text-primary rounded text-xs">
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            )}
-            {currentCommentText && (
-              <p className="text-xs text-muted-foreground">{currentCommentText}</p>
-            )}
-          </div>
-
-          {/* Bookmark Info */}
-          {bookmark && (
-            <div className="text-xs text-muted-foreground">
-              Bookmarked: {new Date(bookmark.created_datetime).toLocaleString("ja-JP")}
-            </div>
-          )}
-
-          {/* Generated Result */}
-          {generatedResult && (
-            <div className="p-3 bg-muted rounded-md space-y-3 text-sm">
-              {/* AI Generated Summary */}
-              <div>
-                <div className="font-medium flex items-center gap-2 mb-2">
-                  <Sparkles className="w-4 h-4 text-primary" />
-                  Generated Preview
-                </div>
-                {generatedResult.tags && generatedResult.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mb-2">
-                    {generatedResult.tags.map((tag, i) => (
-                      <span
-                        key={i}
-                        className="px-2 py-0.5 bg-primary/10 text-primary rounded text-xs"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                )}
-                {generatedResult.summary && (
-                  <p className="text-muted-foreground">{generatedResult.summary}</p>
-                )}
-                {generatedResult.formattedComment && (
-                  <div className="pt-2 border-t">
-                    <p className="text-xs text-muted-foreground mb-1">Formatted comment:</p>
-                    <code className="text-xs bg-background p-2 rounded block break-all">
-                      {generatedResult.formattedComment}
-                    </code>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleApplyGenerated}
-                      className="mt-2 w-full"
-                    >
-                      Apply to Comment
-                    </Button>
-                  </div>
-                )}
-              </div>
-
-              {/* Raw Content Toggle */}
-              {(generatedResult.markdown ||
-                generatedResult.markdownError ||
-                generatedResult.metadata ||
-                generatedResult.webContext) && (
-                <div className="border-t pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowRawContent(!showRawContent)}
-                    className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground w-full"
-                  >
-                    {showRawContent ? (
-                      <ChevronUp className="w-3 h-3" />
-                    ) : (
-                      <ChevronDown className="w-3 h-3" />
-                    )}
-                    <span>Raw content (debug)</span>
-                  </button>
-
-                  {showRawContent && (
-                    <div className="mt-2 space-y-3">
-                      {/* Metadata */}
-                      {generatedResult.metadata &&
-                        Object.keys(generatedResult.metadata).length > 0 && (
-                          <div>
-                            <div className="flex items-center justify-between text-xs font-medium mb-1">
-                              <div className="flex items-center gap-1">
-                                <Info className="w-3 h-3" />
-                                Metadata
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  handleCopy(
-                                    JSON.stringify(generatedResult.metadata, null, 2),
-                                    "Metadata",
-                                  )
-                                }
-                                className="text-muted-foreground hover:text-foreground"
-                              >
-                                <Copy className="w-3 h-3" />
-                              </button>
-                            </div>
-                            <div className="bg-background p-2 rounded text-xs space-y-1">
-                              {generatedResult.metadata.title && (
-                                <div>
-                                  <span className="text-muted-foreground">title:</span>{" "}
-                                  {generatedResult.metadata.title}
-                                </div>
-                              )}
-                              {generatedResult.metadata.description && (
-                                <div>
-                                  <span className="text-muted-foreground">description:</span>{" "}
-                                  {generatedResult.metadata.description}
-                                </div>
-                              )}
-                              {generatedResult.metadata.siteName && (
-                                <div>
-                                  <span className="text-muted-foreground">site:</span>{" "}
-                                  {generatedResult.metadata.siteName}
-                                </div>
-                              )}
-                              {generatedResult.metadata.lang && (
-                                <div>
-                                  <span className="text-muted-foreground">lang:</span>{" "}
-                                  {generatedResult.metadata.lang}
-                                </div>
-                              )}
-                              {generatedResult.metadata.ogType && (
-                                <div>
-                                  <span className="text-muted-foreground">type:</span>{" "}
-                                  {generatedResult.metadata.ogType}
-                                </div>
-                              )}
-                              {generatedResult.metadata.keywords && (
-                                <div>
-                                  <span className="text-muted-foreground">keywords:</span>{" "}
-                                  {generatedResult.metadata.keywords}
-                                </div>
-                              )}
-                              {generatedResult.metadata.author && (
-                                <div>
-                                  <span className="text-muted-foreground">author:</span>{" "}
-                                  {generatedResult.metadata.author}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        )}
-
-                      {/* Web Context */}
-                      {generatedResult.webContext && (
-                        <div>
-                          <div className="flex items-center justify-between text-xs font-medium mb-1">
-                            <div className="flex items-center gap-1">
-                              <Info className="w-3 h-3" />
-                              Web Search Context
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => handleCopy(generatedResult.webContext!, "Web Context")}
-                              className="text-muted-foreground hover:text-foreground"
-                            >
-                              <Copy className="w-3 h-3" />
-                            </button>
-                          </div>
-                          <pre className="bg-background p-2 rounded text-xs overflow-auto max-h-48 whitespace-pre-wrap break-all">
-                            {generatedResult.webContext}
-                          </pre>
-                        </div>
-                      )}
-
-                      {/* Markdown */}
-                      {generatedResult.markdown ? (
-                        <div>
-                          <div className="flex items-center justify-between text-xs font-medium mb-1">
-                            <div className="flex items-center gap-1">
-                              <FileText className="w-3 h-3" />
-                              Markdown ({generatedResult.markdown.length.toLocaleString()} chars)
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => handleCopy(generatedResult.markdown!, "Markdown")}
-                              className="text-muted-foreground hover:text-foreground"
-                            >
-                              <Copy className="w-3 h-3" />
-                            </button>
-                          </div>
-                          <pre className="bg-background p-2 rounded text-xs overflow-auto whitespace-pre-wrap break-all">
-                            {generatedResult.markdown}
-                          </pre>
-                        </div>
-                      ) : generatedResult.markdownError ? (
-                        <div>
-                          <div className="flex items-center justify-between text-xs font-medium mb-1 text-yellow-600">
-                            <div className="flex items-center gap-1">
-                              <AlertCircle className="w-3 h-3" />
-                              Markdown fetch error
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() =>
-                                handleCopy(generatedResult.markdownError!, "Markdown error")
-                              }
-                              className="text-muted-foreground hover:text-foreground"
-                            >
-                              <Copy className="w-3 h-3" />
-                            </button>
-                          </div>
-                          <pre className="bg-yellow-50 dark:bg-yellow-900/20 p-2 rounded text-xs text-yellow-800 dark:text-yellow-200 overflow-auto max-h-24 whitespace-pre-wrap break-all">
-                            {generatedResult.markdownError}
-                          </pre>
-                        </div>
-                      ) : null}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Action Buttons */}
-          <div className="flex gap-2">
-            <Button
-              onClick={handleGenerate}
-              disabled={isGenerating}
-              variant="outline"
-              className="flex-1"
-              size="lg"
-            >
-              {isGenerating ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Generating...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  Generate
-                </>
-              )}
-            </Button>
-
-            <Button onClick={handleUpdate} disabled={isUpdating} className="flex-1" size="lg">
-              {isUpdating ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Updating...
-                </>
-              ) : (
-                "Update"
-              )}
-            </Button>
-          </div>
-
-          {/* Navigation */}
-          <div className="pt-2">
-            <LinkButton href="/bookmarks" variant="outline" className="w-full" size="sm">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Bookmarks
-            </LinkButton>
-          </div>
+        <CardContent>
+          <Suspense key={bookmarkUrl} fallback={<BookmarkDetailLoading />}>
+            <BookmarkDetailContent bookmarkUrl={bookmarkUrl} />
+          </Suspense>
         </CardContent>
       </Card>
     </main>
-  );
-}
-
-export default function BookmarkDetailPage() {
-  return (
-    <Suspense
-      fallback={
-        <main className="min-h-screen p-4 flex items-center justify-center">
-          <Loader2 className="w-6 h-6 animate-spin" />
-        </main>
-      }
-    >
-      <BookmarkDetailContent />
-    </Suspense>
   );
 }

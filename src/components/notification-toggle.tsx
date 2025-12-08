@@ -7,16 +7,18 @@ import { Bell, BellOff } from "lucide-react";
 
 export function NotificationToggle() {
   const [permission, setPermission] = useState<NotificationPermission | null>(null);
+  const [isSupported, setIsSupported] = useState(false);
   const [isRequesting, setIsRequesting] = useState(false);
 
   useEffect(() => {
-    if (typeof window !== "undefined" && "Notification" in window) {
+    if ("Notification" in window) {
+      setIsSupported(true);
       setPermission(Notification.permission);
     }
   }, []);
 
   const handleToggle = async (checked: boolean) => {
-    if (!("Notification" in window)) {
+    if (!isSupported) {
       return;
     }
 
@@ -33,8 +35,8 @@ export function NotificationToggle() {
     }
   };
 
-  // Not supported
-  if (typeof window === "undefined" || !("Notification" in window)) {
+  // Not supported - wait for client-side check
+  if (!isSupported) {
     return null;
   }
 

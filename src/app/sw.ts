@@ -135,16 +135,37 @@ async function handleBookmarkRequest(event: FetchEvent): Promise<Response> {
     // Parse request body to get bookmark data
     const body = (await request.json()) as { url: string; title?: string; comment?: string };
 
-    // Save to IndexedDB first (for UI tracking)
-    const queueId = await db.bookmarks.add({
-      url: body.url,
-      title: body.title,
-      comment: body.comment,
-      status: "sending",
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      retryCount: 0,
-    });
+    // Check if URL already exists in IndexedDB
+    const existingItem = await db.bookmarks.where("url").equals(body.url).first();
+
+    let queueId: number;
+
+    if (existingItem && existingItem.id) {
+      // Reuse existing entry - update it with new data and reset status
+      queueId = existingItem.id;
+      await db.bookmarks.update(queueId, {
+        title: body.title ?? existingItem.title,
+        comment: body.comment ?? existingItem.comment,
+        status: "sending",
+        updatedAt: new Date(),
+        lastError: undefined,
+        nextRetryAt: undefined,
+        retryCount: 0,
+      });
+      console.log(`SW: Reusing existing bookmark entry ${queueId} for URL: ${body.url}`);
+    } else {
+      // Create new entry
+      queueId = await db.bookmarks.add({
+        url: body.url,
+        title: body.title,
+        comment: body.comment,
+        status: "sending",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        retryCount: 0,
+      });
+      console.log(`SW: Created new bookmark entry ${queueId} for URL: ${body.url}`);
+    }
 
     // Try to send to server if online
     if (navigator.onLine) {

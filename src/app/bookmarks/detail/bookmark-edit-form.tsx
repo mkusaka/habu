@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { WorkflowProgress } from "@/components/workflow-progress";
 import {
+  formatWorkflowStepMeta,
   initBookmarkSuggestionSteps,
   orderedBookmarkSuggestionSteps,
   readSseStream,
@@ -120,6 +121,7 @@ export function BookmarkEditForm({
                 status?: string;
                 startedAt?: number;
                 endedAt?: number;
+                meta?: { provider?: string; model?: string; api?: string };
               };
             };
 
@@ -139,6 +141,7 @@ export function BookmarkEditForm({
                     ...existing,
                     status: "running",
                     startedAt: payload.payload?.startedAt ?? existing.startedAt ?? Date.now(),
+                    detail: formatWorkflowStepMeta(payload.payload?.meta) ?? existing.detail,
                   },
                 };
               });
@@ -156,6 +159,7 @@ export function BookmarkEditForm({
                     ...existing,
                     status: "waiting",
                     startedAt: payload.payload?.startedAt ?? existing.startedAt ?? Date.now(),
+                    detail: formatWorkflowStepMeta(payload.payload?.meta) ?? existing.detail,
                   },
                 };
               });
@@ -183,6 +187,7 @@ export function BookmarkEditForm({
                     ...existing,
                     status,
                     endedAt: payload.payload?.endedAt ?? existing.endedAt ?? Date.now(),
+                    detail: formatWorkflowStepMeta(payload.payload?.meta) ?? existing.detail,
                   },
                 };
               });

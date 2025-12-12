@@ -16,6 +16,7 @@ import { RuntimeContext } from "@mastra/core/di";
 import { fetchPageMeta, isMetaExtractionResult } from "@/lib/page-meta";
 import { isTwitterStatusUrl } from "@/lib/twitter-oembed";
 import { fetchTwitterMarkdown } from "@/lib/twitter-content";
+import { BOOKMARK_SUGGESTION_STEP_META } from "@/lib/mastra-workflow-progress";
 
 const HATENA_TAGS_API_URL = "https://bookmark.hatenaapis.com/rest/1/my/tags";
 const MAX_MARKDOWN_CHARS = 800000;
@@ -366,6 +367,16 @@ export async function POST(request: NextRequest) {
               while (true) {
                 const { value, done } = await reader.read();
                 if (done) break;
+                if (value && typeof value === "object" && "payload" in value) {
+                  const payload = (value as { payload?: unknown }).payload as
+                    | { id?: string }
+                    | undefined;
+                  const meta = payload?.id ? BOOKMARK_SUGGESTION_STEP_META[payload.id] : undefined;
+                  if (meta) {
+                    send("workflow", { ...(value as object), payload: { ...payload, meta } });
+                    continue;
+                  }
+                }
                 send("workflow", value);
               }
             } finally {

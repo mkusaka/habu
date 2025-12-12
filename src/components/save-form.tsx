@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { WorkflowProgress } from "@/components/workflow-progress";
 import {
+  formatWorkflowStepMeta,
   initBookmarkSuggestionSteps,
   orderedBookmarkSuggestionSteps,
   readSseStream,
@@ -313,6 +314,7 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
                 status?: string;
                 startedAt?: number;
                 endedAt?: number;
+                meta?: { provider?: string; model?: string; api?: string };
               };
             };
 
@@ -332,6 +334,7 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
                     ...existing,
                     status: "running",
                     startedAt: payload.payload?.startedAt ?? existing.startedAt ?? Date.now(),
+                    detail: formatWorkflowStepMeta(payload.payload?.meta) ?? existing.detail,
                   },
                 };
               });
@@ -349,6 +352,7 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
                     ...existing,
                     status: "waiting",
                     startedAt: payload.payload?.startedAt ?? existing.startedAt ?? Date.now(),
+                    detail: formatWorkflowStepMeta(payload.payload?.meta) ?? existing.detail,
                   },
                 };
               });
@@ -376,6 +380,7 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
                     ...existing,
                     status,
                     endedAt: payload.payload?.endedAt ?? existing.endedAt ?? Date.now(),
+                    detail: formatWorkflowStepMeta(payload.payload?.meta) ?? existing.detail,
                   },
                 };
               });

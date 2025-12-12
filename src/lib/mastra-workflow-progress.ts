@@ -9,9 +9,41 @@ export type WorkflowStepStatus =
 export type WorkflowStepState = {
   id: string;
   label: string;
+  detail?: string;
   status: WorkflowStepStatus;
   startedAt?: number;
   endedAt?: number;
+};
+
+export type WorkflowStepMeta = {
+  provider: string;
+  model?: string;
+  api?: string;
+};
+
+export function formatWorkflowStepMeta(meta?: Partial<WorkflowStepMeta>) {
+  if (!meta) return undefined;
+  const parts = [meta.provider, meta.model, meta.api].filter((p): p is string => !!p);
+  if (!parts.length) return undefined;
+  return parts.join(" / ");
+}
+
+export const BOOKMARK_SUGGESTION_STEP_META: Record<string, WorkflowStepMeta> = {
+  "fetch-markdown-and-moderate": {
+    provider: "Cloudflare + OpenAI",
+    api: "browser-rendering/markdown + omni-moderation-latest",
+  },
+  "moderate-user-context": {
+    provider: "OpenAI",
+    model: "omni-moderation-latest",
+    api: "moderations",
+  },
+  "fetch-metadata": { provider: "Habu", api: "HTMLRewriter (local)" },
+  "web-search": { provider: "OpenAI", model: "gpt-5-mini", api: "web_search" },
+  "merge-content": { provider: "Habu", api: "merge" },
+  "generate-summary": { provider: "OpenAI", model: "gpt-5.2", api: "generate + judge" },
+  "generate-tags": { provider: "OpenAI", model: "gpt-5-mini + gpt-5.2", api: "generate + judge" },
+  "merge-results": { provider: "Habu", api: "merge" },
 };
 
 export const BOOKMARK_SUGGESTION_STEP_ORDER: Array<Pick<WorkflowStepState, "id" | "label">> = [
@@ -29,7 +61,12 @@ export function initBookmarkSuggestionSteps(): Record<string, WorkflowStepState>
   return Object.fromEntries(
     BOOKMARK_SUGGESTION_STEP_ORDER.map((s) => [
       s.id,
-      { id: s.id, label: s.label, status: "pending" as const },
+      {
+        id: s.id,
+        label: s.label,
+        detail: formatWorkflowStepMeta(BOOKMARK_SUGGESTION_STEP_META[s.id]),
+        status: "pending" as const,
+      },
     ]),
   );
 }

@@ -48,7 +48,12 @@ export function WorkflowProgress({
           return (
             <div key={step.id} className="flex items-center gap-2">
               {icon}
-              <span className="flex-1 truncate">{step.label}</span>
+              <div className="flex-1 min-w-0">
+                <div className="truncate">{step.label}</div>
+                {step.detail && (
+                  <div className="text-xs text-muted-foreground truncate">{step.detail}</div>
+                )}
+              </div>
               <span className="text-xs text-muted-foreground flex-shrink-0">
                 {step.status}
                 {step.status !== "pending" && (

@@ -4,6 +4,11 @@ import OpenAI from "openai";
 import { generateText, generateObject, NoObjectGeneratedError } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { fetchPageMeta, isMetaExtractionResult } from "@/lib/page-meta";
+import {
+  fetchTwitterOEmbed,
+  formatTwitterMarkdown,
+  isTwitterStatusUrl,
+} from "@/lib/twitter-oembed";
 
 // Lazy-initialized OpenAI client for moderation API
 let openaiClient: OpenAI | null = null;
@@ -375,9 +380,22 @@ const fetchMarkdownAndModerateStep = createStep({
 
     let markdown = "";
 
+    // X/Twitter status pages often return an interstitial error page when rendered headlessly.
+    // Prefer oEmbed as a reliable, login-free content source for tweet text.
+    if (isTwitterStatusUrl(url)) {
+      try {
+        const oembed = await fetchTwitterOEmbed(url);
+        if (oembed?.text) {
+          markdown = formatTwitterMarkdown(oembed).slice(0, MAX_MARKDOWN_CHARS);
+        }
+      } catch (error) {
+        console.warn("Failed to fetch Twitter oEmbed, falling back to rendering:", error);
+      }
+    }
+
     // Try to fetch markdown from Cloudflare Browser Rendering
     // PDFs and some other content types may fail - that's ok, we'll use metadata only
-    if (cfAccountId && cfApiToken) {
+    if (!markdown && cfAccountId && cfApiToken) {
       try {
         const response = await fetch(
           `https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/browser-rendering/markdown`,
@@ -403,6 +421,27 @@ const fetchMarkdownAndModerateStep = createStep({
         }
       } catch (error) {
         console.warn("Failed to fetch markdown, will use metadata only:", error);
+      }
+    }
+
+    // Detect known X/Twitter interstitial error page content and replace with oEmbed text.
+    if (
+      markdown &&
+      isTwitterStatusUrl(url) &&
+      (markdown.includes("Something went wrong") ||
+        (markdown.includes("Try again") && markdown.includes("x.com")) ||
+        markdown.includes("Some privacy related extensions may cause issues on x.com"))
+    ) {
+      try {
+        const oembed = await fetchTwitterOEmbed(url);
+        if (oembed?.text) {
+          markdown = formatTwitterMarkdown(oembed).slice(0, MAX_MARKDOWN_CHARS);
+        } else {
+          markdown = "";
+        }
+      } catch (error) {
+        console.warn("Failed to replace Twitter interstitial markdown:", error);
+        markdown = "";
       }
     }
 

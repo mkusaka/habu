@@ -1,113 +1,30 @@
 import { MetaCollector, HtmlHandler, TitleHandler, MetaHandler, LinkHandler } from "./collector";
 import type { MetaExtractionResult, NonHtmlResponse, PageMetaResult } from "./types";
+import { fetchTwitterOEmbed, isTwitterStatusUrl } from "../twitter-oembed";
 
 export type { MetaExtractionResult, NonHtmlResponse, PageMetaResult };
 
 const LOOP_DETECTION_HEADER = "X-Page-Meta-Request";
 
-type TwitterOEmbedResponse = {
-  url?: string;
-  author_name?: string;
-  author_url?: string;
-  html?: string;
-  provider_name?: string;
-  provider_url?: string;
-};
+async function fetchTwitterMeta(target: URL): Promise<MetaExtractionResult | null> {
+  const oembed = await fetchTwitterOEmbed(target);
+  if (!oembed) return null;
 
-function isTwitterStatusUrl(url: URL): boolean {
-  const host = url.hostname.toLowerCase();
-  if (
-    host !== "twitter.com" &&
-    host !== "x.com" &&
-    host !== "www.twitter.com" &&
-    host !== "www.x.com"
-  ) {
-    return false;
-  }
-
-  // e.g. /{user}/status/{id} (optionally with extra segments)
-  return /\/status\/\d+/.test(url.pathname);
-}
-
-function decodeHtmlEntities(text: string): string {
-  return text
-    .replace(/&#(x?)([0-9a-fA-F]+);/g, (_m, isHex, code) => {
-      const value = Number.parseInt(code, isHex ? 16 : 10);
-      if (!Number.isFinite(value)) return "";
-      try {
-        return String.fromCodePoint(value);
-      } catch {
-        return "";
-      }
-    })
-    .replace(/&nbsp;/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&mdash;/g, "—")
-    .replace(/&ndash;/g, "–");
-}
-
-function extractTweetTextFromOEmbedHtml(html: string): string | undefined {
-  const match = html.match(/<p[^>]*>([\s\S]*?)<\/p>/i);
-  if (!match?.[1]) return undefined;
-
-  const withoutBreaks = match[1].replace(/<br\s*\/?\s*>/gi, "\n");
-  const stripped = withoutBreaks.replace(/<[^>]*>/g, "");
-  const decoded = decodeHtmlEntities(stripped);
-  const normalized = decoded.replace(/\s+/g, " ").trim();
-  return normalized || undefined;
-}
-
-function extractTwitterHandle(authorUrl?: string): string | undefined {
-  if (!authorUrl) return undefined;
-  try {
-    const u = new URL(authorUrl);
-    const parts = u.pathname.split("/").filter(Boolean);
-    return parts[0] ? `@${parts[0]}` : undefined;
-  } catch {
-    return undefined;
-  }
-}
-
-async function fetchTwitterOEmbed(target: URL): Promise<MetaExtractionResult | null> {
-  const oembedUrl = new URL("https://publish.twitter.com/oembed");
-  oembedUrl.searchParams.set("url", target.toString());
-  oembedUrl.searchParams.set("omit_script", "1");
-  oembedUrl.searchParams.set("dnt", "1");
-
-  const res = await fetch(oembedUrl.toString(), {
-    redirect: "follow",
-    headers: {
-      "User-Agent": "HabuMetaFetcher/1.0",
-      Accept: "application/json",
-      [LOOP_DETECTION_HEADER]: "1",
-    },
-  });
-
-  if (!res.ok) return null;
-
-  const data = (await res.json()) as TwitterOEmbedResponse;
-  const tweetText = data.html ? extractTweetTextFromOEmbedHtml(data.html) : undefined;
-
-  const handle = extractTwitterHandle(data.author_url);
-  const titleBase = tweetText ?? target.toString();
-  const title = handle ? `${titleBase} (${handle})` : titleBase;
+  const titleBase = oembed.text ?? target.toString();
+  const title = oembed.authorHandle ? `${titleBase} (${oembed.authorHandle})` : titleBase;
 
   return {
     requestedUrl: target.toString(),
-    finalUrl: data.url ?? target.toString(),
-    status: res.status,
-    contentType: res.headers.get("content-type") ?? "application/json",
+    finalUrl: oembed.canonicalUrl ?? target.toString(),
+    status: 200,
+    contentType: "application/json",
     lang: undefined,
     title,
-    description: tweetText,
-    canonical: data.url ?? target.toString(),
+    description: oembed.text,
+    canonical: oembed.canonicalUrl ?? target.toString(),
     charset: undefined,
     themeColor: undefined,
-    author: data.author_name,
+    author: oembed.authorName,
     keywords: undefined,
     robots: undefined,
     generator: undefined,
@@ -116,14 +33,14 @@ async function fetchTwitterOEmbed(target: URL): Promise<MetaExtractionResult | n
     alternates: [],
     og: {
       title,
-      description: tweetText ?? "",
-      site_name: data.provider_name ?? "X",
+      description: oembed.text ?? "",
+      site_name: oembed.providerName ?? "X",
       type: "article",
-      url: data.url ?? target.toString(),
+      url: oembed.canonicalUrl ?? target.toString(),
     },
     twitter: {
       title,
-      description: tweetText ?? "",
+      description: oembed.text ?? "",
       card: "summary",
     },
     metaByName: {},
@@ -152,7 +69,7 @@ export async function fetchPageMeta(url: string): Promise<PageMetaResult> {
   // X/Twitter pages are JS-heavy and often don't include server-rendered meta tags.
   // Prefer the official oEmbed endpoint for tweet URLs.
   if (isTwitterStatusUrl(target)) {
-    const twitter = await fetchTwitterOEmbed(target);
+    const twitter = await fetchTwitterMeta(target);
     if (twitter) return twitter;
   }
 

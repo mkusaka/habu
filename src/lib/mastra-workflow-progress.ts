@@ -68,7 +68,12 @@ export function initBookmarkSuggestionSteps(): Record<string, WorkflowStepState>
       {
         id: s.id,
         label: s.label,
-        detail: formatWorkflowStepMeta(BOOKMARK_SUGGESTION_STEP_META[s.id]),
+        detail:
+          s.id === "fetch-markdown-and-moderate" ||
+          s.id === "moderate-user-context" ||
+          s.id === "web-search"
+            ? undefined
+            : formatWorkflowStepMeta(BOOKMARK_SUGGESTION_STEP_META[s.id]),
         status: "pending" as const,
       },
     ]),

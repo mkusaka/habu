@@ -16,7 +16,7 @@ import { RuntimeContext } from "@mastra/core/di";
 import { fetchPageMeta, isMetaExtractionResult } from "@/lib/page-meta";
 import { isTwitterStatusUrl } from "@/lib/twitter-oembed";
 import { fetchTwitterMarkdown } from "@/lib/twitter-content";
-import { BOOKMARK_SUGGESTION_STEP_META } from "@/lib/mastra-workflow-progress";
+import type { WorkflowStepMeta } from "@/lib/mastra-workflow-progress";
 
 const HATENA_TAGS_API_URL = "https://bookmark.hatenaapis.com/rest/1/my/tags";
 const MAX_MARKDOWN_CHARS = 800000;
@@ -289,6 +289,89 @@ export async function POST(request: NextRequest) {
     if (streamMode) {
       const encoder = new TextEncoder();
 
+      const grokModel = () => process.env.XAI_MODEL || "grok-4-1-fast-reasoning";
+
+      const computeStepMeta = (args: {
+        stepId: string;
+        eventType: string;
+        payload: unknown;
+        url: string;
+      }): WorkflowStepMeta | undefined => {
+        const { stepId, eventType, payload, url } = args;
+        const payloadObj = payload as Record<string, unknown> | undefined;
+
+        if (stepId === "fetch-metadata") return { provider: "Habu", api: "HTMLRewriter (local)" };
+        if (stepId === "merge-content" || stepId === "merge-results")
+          return { provider: "Habu", api: "merge" };
+
+        if (stepId === "generate-summary")
+          return { provider: "OpenAI", model: "gpt-5.2", api: "generate + judge" };
+        if (stepId === "generate-tags")
+          return { provider: "OpenAI", model: "gpt-5-mini + gpt-5.2", api: "generate + judge" };
+
+        if (stepId === "moderate-user-context" && eventType === "step-result") {
+          const output = payloadObj?.output as Record<string, unknown> | undefined;
+          const didModerate = output?.didModerate === true;
+          if (!didModerate) return undefined;
+          return { provider: "OpenAI", model: "omni-moderation-latest", api: "moderations" };
+        }
+
+        if (stepId === "web-search") {
+          if (eventType === "step-result") {
+            const output = payloadObj?.output as Record<string, unknown> | undefined;
+            const src = output?.webContextSource;
+            if (src === "grok")
+              return { provider: "xAI", model: grokModel(), api: "chat/completions" };
+            if (src === "openai-web_search")
+              return { provider: "OpenAI", model: "gpt-5-mini", api: "web_search" };
+            return undefined;
+          }
+          // If we haven't finished yet, avoid showing both possibilities.
+          return undefined;
+        }
+
+        if (stepId === "fetch-markdown-and-moderate" && eventType === "step-result") {
+          const output = payloadObj?.output as Record<string, unknown> | undefined;
+          const src = output?.markdownSource;
+          const didModerate = output?.didModerate === true;
+
+          if (src === "twitter-grok") {
+            return didModerate
+              ? {
+                  provider: "xAI + OpenAI",
+                  model: `${grokModel()} + omni-moderation-latest`,
+                  api: "chat/completions + moderations",
+                }
+              : { provider: "xAI", model: grokModel(), api: "chat/completions" };
+          }
+          if (src === "twitter-oembed") {
+            return didModerate
+              ? {
+                  provider: "X oEmbed + OpenAI",
+                  model: "omni-moderation-latest",
+                  api: "oEmbed + moderations",
+                }
+              : { provider: "X oEmbed", api: "oEmbed" };
+          }
+          if (src === "cloudflare") {
+            return didModerate
+              ? {
+                  provider: "Cloudflare + OpenAI",
+                  model: "omni-moderation-latest",
+                  api: "browser-rendering/markdown + moderations",
+                }
+              : { provider: "Cloudflare", api: "browser-rendering/markdown" };
+          }
+          if (src === "none") return undefined;
+
+          // If src absent but we can infer Twitter markdown path from URL, still avoid guessing.
+          if (isTwitterStatusUrl(url)) return undefined;
+          return undefined;
+        }
+
+        return undefined;
+      };
+
       const readable = new ReadableStream<Uint8Array>({
         start: async (controller) => {
           const send = (event: string, data: unknown) => {
@@ -367,17 +450,27 @@ export async function POST(request: NextRequest) {
               while (true) {
                 const { value, done } = await reader.read();
                 if (done) break;
-                if (value && typeof value === "object" && "payload" in value) {
-                  const payload = (value as { payload?: unknown }).payload as
-                    | { id?: string }
-                    | undefined;
-                  const meta = payload?.id ? BOOKMARK_SUGGESTION_STEP_META[payload.id] : undefined;
-                  if (meta) {
-                    send("workflow", { ...(value as object), payload: { ...payload, meta } });
-                    continue;
+                if (value && typeof value === "object") {
+                  const v = value as { type?: string; payload?: unknown };
+                  const payload = v.payload as Record<string, unknown> | undefined;
+                  const stepId =
+                    typeof payload?.id === "string" ? (payload.id as string) : undefined;
+                  const meta = stepId
+                    ? computeStepMeta({
+                        stepId,
+                        eventType: v.type ?? "",
+                        payload: payload ?? {},
+                        url,
+                      })
+                    : undefined;
+                  if (meta && payload) {
+                    send("workflow", { ...v, payload: { ...payload, meta } });
+                  } else {
+                    send("workflow", value);
                   }
+                } else {
+                  send("workflow", value);
                 }
-                send("workflow", value);
               }
             } finally {
               reader.releaseLock();

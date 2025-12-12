@@ -309,6 +309,7 @@ const MetadataSchema = z.object({
 // Web search result schema
 const WebSearchResultSchema = z.object({
   webContext: z.string().optional(),
+  webContextSource: z.enum(["grok", "openai-web_search"]).optional(),
 });
 
 // Content data schema (passed between steps)
@@ -326,6 +327,8 @@ const MarkdownOutputSchema = z.object({
   url: z.string(),
   existingTags: z.array(z.string()),
   markdown: z.string(),
+  markdownSource: z.enum(["twitter-grok", "twitter-oembed", "cloudflare", "none"]).optional(),
+  didModerate: z.boolean(),
 });
 
 // Metadata output schema
@@ -336,6 +339,7 @@ const MetadataOutputSchema = z.object({
 // User context output schema
 const UserContextOutputSchema = z.object({
   userContext: z.string().optional(),
+  didModerate: z.boolean(),
 });
 
 // Step 1c: Web search for additional context (reference only)
@@ -349,7 +353,9 @@ const webSearchStep = createStep({
     try {
       if (isTwitterStatusUrl(url)) {
         const webContext = await fetchGrokWebContext(url);
-        return { webContext };
+        return webContext
+          ? { webContext, webContextSource: "grok" as const }
+          : { webContext: undefined };
       }
 
       // Use OpenAI web search to get additional context about the URL
@@ -363,7 +369,7 @@ const webSearchStep = createStep({
         },
       });
 
-      return { webContext: text.slice(0, 1000) };
+      return { webContext: text.slice(0, 1000), webContextSource: "openai-web_search" as const };
     } catch (error) {
       console.warn("Web context fetch failed, continuing without web context:", error);
       return { webContext: undefined };
@@ -382,6 +388,8 @@ const fetchMarkdownAndModerateStep = createStep({
     const cfApiToken = process.env.BROWSER_RENDERING_API_TOKEN;
 
     let markdown = "";
+    let markdownSource: "twitter-grok" | "twitter-oembed" | "cloudflare" | "none" | undefined =
+      undefined;
 
     // X/Twitter status pages often return an interstitial error page when rendered headlessly.
     // Prefer oEmbed as a reliable, login-free content source for tweet text.
@@ -390,6 +398,7 @@ const fetchMarkdownAndModerateStep = createStep({
         const twitter = await fetchTwitterMarkdown(url);
         if (twitter?.markdown) {
           markdown = twitter.markdown.slice(0, MAX_MARKDOWN_CHARS);
+          markdownSource = twitter.source === "grok" ? "twitter-grok" : "twitter-oembed";
         }
       } catch (error) {
         console.warn("Failed to fetch Twitter content, falling back to rendering:", error);
@@ -420,6 +429,7 @@ const fetchMarkdownAndModerateStep = createStep({
           };
           if (data.success && data.result) {
             markdown = data.result.slice(0, MAX_MARKDOWN_CHARS);
+            markdownSource = "cloudflare";
           }
         }
       } catch (error) {
@@ -449,22 +459,33 @@ const fetchMarkdownAndModerateStep = createStep({
     }
 
     // Run moderation on the markdown content if we have any
+    let didModerate = false;
     if (markdown) {
       const moderationInput = markdown.slice(0, 5000);
       const moderation = await getOpenAIClient().moderations.create({
         model: "omni-moderation-latest",
         input: moderationInput,
       });
+      didModerate = true;
 
       if (moderation.results[0].flagged) {
         throw new Error("Content flagged by moderation");
       }
     }
 
+    const finalMarkdownSource:
+      | "twitter-grok"
+      | "twitter-oembed"
+      | "cloudflare"
+      | "none"
+      | undefined = markdownSource ?? (markdown ? undefined : "none");
+
     return {
       url,
       existingTags: inputData.existingTags,
       markdown,
+      markdownSource: finalMarkdownSource,
+      didModerate,
     };
   },
 });
@@ -488,7 +509,7 @@ const moderateUserContextStep = createStep({
       }
     }
 
-    return { userContext };
+    return { userContext, didModerate: !!userContext };
   },
 });
 

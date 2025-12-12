@@ -197,6 +197,10 @@ async function fetchHatenaTags(
  */
 export async function POST(request: NextRequest) {
   try {
+    const accept = request.headers.get("accept") ?? "";
+    const streamMode =
+      request.nextUrl.searchParams.get("stream") === "1" || accept.includes("text/event-stream");
+
     // CSRF protection
     const origin = request.headers.get("origin");
     const referer = request.headers.get("referer");
@@ -281,10 +285,146 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Fetch markdown, metadata, and existing tags in parallel
     const cfAccountId = env.BROWSER_RENDERING_ACCOUNT_ID ?? "";
     const cfApiToken = env.BROWSER_RENDERING_API_TOKEN ?? "";
 
+    if (streamMode) {
+      const encoder = new TextEncoder();
+
+      const readable = new ReadableStream<Uint8Array>({
+        start: async (controller) => {
+          const send = (event: string, data: unknown) => {
+            controller.enqueue(encoder.encode(`event: ${event}\n`));
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
+          };
+
+          try {
+            send("preflight", { stage: "starting" });
+
+            const markdownPromise = fetchMarkdown(url, cfAccountId, cfApiToken)
+              .then((res) => {
+                send("preflight", {
+                  stage: "fetch_markdown_done",
+                  ok: true,
+                  hasError: !!res.error,
+                });
+                return res;
+              })
+              .catch((error) => {
+                send("preflight", {
+                  stage: "fetch_markdown_done",
+                  ok: false,
+                  error: error instanceof Error ? error.message : "Unknown error",
+                });
+                return { markdown: "", error: "Markdown fetch failed" };
+              });
+
+            const metadataPromise = fetchMetadata(url)
+              .then((res) => {
+                send("preflight", { stage: "fetch_metadata_done", ok: true });
+                return res;
+              })
+              .catch((error) => {
+                send("preflight", {
+                  stage: "fetch_metadata_done",
+                  ok: false,
+                  error: error instanceof Error ? error.message : "Unknown error",
+                });
+                return {};
+              });
+
+            send("preflight", { stage: "fetch_hatena_tags" });
+            const existingTags = await fetchHatenaTags(
+              hatenaAccessToken,
+              hatenaAccessTokenSecret,
+              consumerKey,
+              consumerSecret,
+            );
+            send("preflight", {
+              stage: "fetch_hatena_tags_done",
+              ok: true,
+              count: existingTags.length,
+            });
+
+            // Run the bookmark suggestion workflow
+            const workflow = mastra.getWorkflow("bookmark-suggestion");
+            const run = await workflow.createRunAsync();
+
+            // Create RuntimeContext with metadata for tracing
+            const runtimeContext = new RuntimeContext();
+            runtimeContext.set("userId", session.user.id);
+            runtimeContext.set("hatenaId", user.hatenaId || "");
+            runtimeContext.set("url", url);
+            runtimeContext.set("gitSha", process.env.NEXT_PUBLIC_GIT_SHA || "");
+
+            send("workflow", { type: "run-created", payload: { runId: run.runId } });
+
+            const { stream, getWorkflowState } = run.streamLegacy({
+              inputData: { url, existingTags, userContext },
+              runtimeContext,
+            });
+
+            const reader = stream.getReader();
+            try {
+              while (true) {
+                const { value, done } = await reader.read();
+                if (done) break;
+                send("workflow", value);
+              }
+            } finally {
+              reader.releaseLock();
+            }
+
+            const workflowState = await getWorkflowState();
+            if (workflowState.status !== "success" || !workflowState.result) {
+              throw new Error("Workflow failed");
+            }
+
+            const { summary, tags, webContext } = workflowState.result as {
+              summary: string;
+              tags: string[];
+              webContext?: string;
+            };
+
+            const tagPart = tags.map((t) => `[${t}]`).join("");
+            const formattedComment = `${tagPart}${summary}`;
+
+            const markdownResult = await markdownPromise;
+            const metadata = await metadataPromise;
+
+            send("result", {
+              success: true,
+              summary,
+              tags,
+              formattedComment,
+              markdown: markdownResult.markdown,
+              markdownError: markdownResult.error,
+              metadata,
+              webContext,
+            } satisfies SuggestResponse);
+
+            send("done", { ok: true });
+          } catch (error) {
+            console.error("Suggest stream error:", error);
+            send("error", {
+              message: error instanceof Error ? error.message : "Internal server error",
+            });
+          } finally {
+            controller.close();
+          }
+        },
+      });
+
+      return new Response(readable, {
+        headers: {
+          "Content-Type": "text/event-stream; charset=utf-8",
+          "Cache-Control": "no-cache, no-transform",
+          Connection: "keep-alive",
+        },
+      });
+    }
+
+    // Fetch markdown, metadata, and existing tags in parallel (non-stream mode)
     const [markdownResult, metadata, existingTags] = await Promise.all([
       fetchMarkdown(url, cfAccountId, cfApiToken),
       fetchMetadata(url),

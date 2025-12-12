@@ -14,6 +14,9 @@ import {
   Info,
   AlertCircle,
   Copy,
+  CheckCircle2,
+  Circle,
+  XCircle,
 } from "lucide-react";
 
 interface GeneratedResult {
@@ -40,6 +43,82 @@ interface BookmarkEditFormProps {
   bookmarkedAt?: string;
 }
 
+type WorkflowStepStatus = "pending" | "running" | "waiting" | "success" | "failed" | "canceled";
+
+type WorkflowStepState = {
+  id: string;
+  label: string;
+  status: WorkflowStepStatus;
+  startedAt?: number;
+  endedAt?: number;
+};
+
+const WORKFLOW_STEP_ORDER: Array<Pick<WorkflowStepState, "id" | "label">> = [
+  { id: "fetch-markdown-and-moderate", label: "Fetch markdown + moderate" },
+  { id: "moderate-user-context", label: "Moderate user context" },
+  { id: "fetch-metadata", label: "Fetch metadata" },
+  { id: "web-search", label: "Web search" },
+  { id: "merge-content", label: "Merge content" },
+  { id: "generate-summary", label: "Generate summary" },
+  { id: "generate-tags", label: "Generate tags" },
+  { id: "merge-results", label: "Merge results" },
+];
+
+function initWorkflowSteps(): Record<string, WorkflowStepState> {
+  return Object.fromEntries(
+    WORKFLOW_STEP_ORDER.map((s) => [
+      s.id,
+      { id: s.id, label: s.label, status: "pending" as const },
+    ]),
+  );
+}
+
+function formatElapsedMs(startedAt?: number, endedAt?: number) {
+  if (!startedAt) return "";
+  const end = endedAt ?? Date.now();
+  const ms = Math.max(0, end - startedAt);
+  if (ms < 1000) return `${ms}ms`;
+  return `${(ms / 1000).toFixed(1)}s`;
+}
+
+async function readSseStream(
+  stream: ReadableStream<Uint8Array>,
+  onMessage: (msg: { event: string; data: string }) => void,
+) {
+  const reader = stream.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  try {
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+
+      while (true) {
+        const boundary = buffer.indexOf("\n\n");
+        if (boundary === -1) break;
+        const raw = buffer.slice(0, boundary);
+        buffer = buffer.slice(boundary + 2);
+
+        const lines = raw.split("\n");
+        let event = "message";
+        const dataLines: string[] = [];
+        for (const line of lines) {
+          if (line.startsWith("event:")) {
+            event = line.slice("event:".length).trim();
+          } else if (line.startsWith("data:")) {
+            dataLines.push(line.slice("data:".length).trim());
+          }
+        }
+        onMessage({ event, data: dataLines.join("\n") });
+      }
+    }
+  } finally {
+    reader.releaseLock();
+  }
+}
+
 export function BookmarkEditForm({
   bookmarkUrl,
   initialComment,
@@ -52,6 +131,11 @@ export function BookmarkEditForm({
   const [isUpdating, setIsUpdating] = useState(false);
   const [generatedResult, setGeneratedResult] = useState<GeneratedResult | null>(null);
   const [showRawContent, setShowRawContent] = useState(false);
+  const [workflowRunId, setWorkflowRunId] = useState<string | null>(null);
+  const [workflowStage, setWorkflowStage] = useState<string | null>(null);
+  const [workflowSteps, setWorkflowSteps] = useState<Record<string, WorkflowStepState>>(
+    initWorkflowSteps(),
+  );
 
   const handleGenerate = async () => {
     if (!bookmarkUrl) {
@@ -61,44 +145,173 @@ export function BookmarkEditForm({
 
     setIsGenerating(true);
     setGeneratedResult(null);
+    setWorkflowRunId(null);
+    setWorkflowStage("starting");
+    setWorkflowSteps(initWorkflowSteps());
 
     try {
-      const response = await fetch("/api/habu/suggest", {
+      const response = await fetch("/api/habu/suggest?stream=1", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Accept: "text/event-stream" },
         credentials: "include",
         body: JSON.stringify({ url: bookmarkUrl, userContext: context || undefined }),
       });
 
-      const data = (await response.json()) as {
-        success: boolean;
-        error?: string;
-        summary?: string;
-        tags?: string[];
-        formattedComment?: string;
-        markdown?: string;
-        markdownError?: string;
-        metadata?: GeneratedResult["metadata"];
-        webContext?: string;
-      };
-
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || "Failed to generate");
+      if (!response.ok) {
+        const text = await response.text().catch(() => "");
+        throw new Error(text || "Failed to generate");
       }
 
-      setGeneratedResult({
-        summary: data.summary,
-        tags: data.tags,
-        formattedComment: data.formattedComment,
-        markdown: data.markdown,
-        markdownError: data.markdownError,
-        metadata: data.metadata,
-        webContext: data.webContext,
+      if (!response.body) {
+        throw new Error("Streaming not supported");
+      }
+
+      let gotResult = false;
+
+      await readSseStream(response.body, ({ event, data }) => {
+        if (!data) return;
+
+        if (event === "preflight") {
+          try {
+            const payload = JSON.parse(data) as { stage?: string };
+            setWorkflowStage(payload.stage ?? null);
+          } catch {
+            // ignore
+          }
+          return;
+        }
+
+        if (event === "workflow") {
+          try {
+            const payload = JSON.parse(data) as {
+              type?: string;
+              payload?: {
+                runId?: string;
+                id?: string;
+                status?: string;
+                startedAt?: number;
+                endedAt?: number;
+              };
+            };
+
+            if (payload.type === "run-created" && payload.payload?.runId) {
+              setWorkflowRunId(payload.payload.runId);
+              return;
+            }
+
+            if (payload.type === "step-start" && payload.payload?.id) {
+              const stepId = payload.payload.id;
+              setWorkflowSteps((prev) => {
+                const existing = prev[stepId];
+                if (!existing) return prev;
+                return {
+                  ...prev,
+                  [stepId]: {
+                    ...existing,
+                    status: "running",
+                    startedAt: payload.payload?.startedAt ?? existing.startedAt ?? Date.now(),
+                  },
+                };
+              });
+              return;
+            }
+
+            if (payload.type === "step-waiting" && payload.payload?.id) {
+              const stepId = payload.payload.id;
+              setWorkflowSteps((prev) => {
+                const existing = prev[stepId];
+                if (!existing) return prev;
+                return {
+                  ...prev,
+                  [stepId]: {
+                    ...existing,
+                    status: "waiting",
+                    startedAt: payload.payload?.startedAt ?? existing.startedAt ?? Date.now(),
+                  },
+                };
+              });
+              return;
+            }
+
+            if (payload.type === "step-result" && payload.payload?.id) {
+              const stepId = payload.payload.id;
+              const statusRaw = payload.payload.status ?? "success";
+              const status: WorkflowStepStatus =
+                statusRaw === "failed"
+                  ? "failed"
+                  : statusRaw === "canceled"
+                    ? "canceled"
+                    : statusRaw === "waiting"
+                      ? "waiting"
+                      : "success";
+
+              setWorkflowSteps((prev) => {
+                const existing = prev[stepId];
+                if (!existing) return prev;
+                return {
+                  ...prev,
+                  [stepId]: {
+                    ...existing,
+                    status,
+                    endedAt: payload.payload?.endedAt ?? existing.endedAt ?? Date.now(),
+                  },
+                };
+              });
+              return;
+            }
+          } catch {
+            // ignore
+          }
+          return;
+        }
+
+        if (event === "result") {
+          try {
+            const payload = JSON.parse(data) as {
+              success: boolean;
+              error?: string;
+              summary?: string;
+              tags?: string[];
+              formattedComment?: string;
+              markdown?: string;
+              markdownError?: string;
+              metadata?: GeneratedResult["metadata"];
+              webContext?: string;
+            };
+            if (!payload.success) throw new Error(payload.error || "Failed to generate");
+            gotResult = true;
+            setGeneratedResult({
+              summary: payload.summary,
+              tags: payload.tags,
+              formattedComment: payload.formattedComment,
+              markdown: payload.markdown,
+              markdownError: payload.markdownError,
+              metadata: payload.metadata,
+              webContext: payload.webContext,
+            });
+          } catch (e) {
+            toast.error("Generation failed", {
+              description: e instanceof Error ? e.message : "Unknown error",
+            });
+          }
+          return;
+        }
+
+        if (event === "error") {
+          try {
+            const payload = JSON.parse(data) as { message?: string };
+            toast.error("Generation failed", { description: payload.message || "Unknown error" });
+          } catch {
+            toast.error("Generation failed");
+          }
+        }
       });
 
-      toast.success("Generated!", {
-        description: "AI-generated summary and tags are ready.",
-      });
+      if (!gotResult) {
+        throw new Error("Failed to generate");
+      }
+      setWorkflowStage("done");
+      toast.success("Generated!", { description: "AI-generated summary and tags are ready." });
     } catch (error) {
       toast.error("Generation failed", {
         description: error instanceof Error ? error.message : "Unknown error",
@@ -178,6 +391,58 @@ export function BookmarkEditForm({
 
   return (
     <>
+      {/* Workflow Progress */}
+      {(isGenerating || workflowStage || workflowRunId) && (
+        <div className="p-3 bg-muted rounded-md space-y-2 text-sm">
+          <div className="flex items-center justify-between gap-2">
+            <div className="font-medium flex items-center gap-2">
+              <FileText className="w-4 h-4" />
+              Workflow progress
+            </div>
+            {isGenerating && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Loader2 className="w-3 h-3 animate-spin" />
+                <span>{workflowStage ?? "running"}</span>
+              </div>
+            )}
+          </div>
+
+          {workflowRunId && (
+            <div className="text-xs text-muted-foreground">Run ID: {workflowRunId}</div>
+          )}
+
+          <div className="grid grid-cols-1 gap-1">
+            {WORKFLOW_STEP_ORDER.map(({ id }) => {
+              const step = workflowSteps[id];
+              if (!step) return null;
+              const icon =
+                step.status === "success" ? (
+                  <CheckCircle2 className="w-4 h-4 text-green-600" />
+                ) : step.status === "failed" ? (
+                  <XCircle className="w-4 h-4 text-red-600" />
+                ) : step.status === "running" || step.status === "waiting" ? (
+                  <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                ) : (
+                  <Circle className="w-4 h-4 text-muted-foreground" />
+                );
+
+              return (
+                <div key={id} className="flex items-center gap-2">
+                  {icon}
+                  <span className="flex-1 truncate">{step.label}</span>
+                  <span className="text-xs text-muted-foreground flex-shrink-0">
+                    {step.status}
+                    {step.status !== "pending" && (
+                      <span className="ml-2">{formatElapsedMs(step.startedAt, step.endedAt)}</span>
+                    )}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Comment Input */}
       <div className="space-y-2">
         <Label htmlFor="comment">Comment</Label>

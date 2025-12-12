@@ -1,14 +1,12 @@
 import { createWorkflow, createStep } from "@mastra/core/workflows";
 import { z } from "zod";
 import OpenAI from "openai";
-import { generateText, generateObject, NoObjectGeneratedError } from "ai";
+import { generateObject, NoObjectGeneratedError } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { fetchPageMeta, isMetaExtractionResult } from "@/lib/page-meta";
-import {
-  fetchTwitterOEmbed,
-  formatTwitterMarkdown,
-  isTwitterStatusUrl,
-} from "@/lib/twitter-oembed";
+import { fetchTwitterMarkdown } from "@/lib/twitter-content";
+import { isTwitterStatusUrl } from "@/lib/twitter-oembed";
+import { fetchGrokWebContext } from "@/lib/grok-context";
 
 // Lazy-initialized OpenAI client for moderation API
 let openaiClient: OpenAI | null = null;
@@ -349,20 +347,10 @@ const webSearchStep = createStep({
     const { url } = inputData;
 
     try {
-      // Use OpenAI web search to get additional context about the URL
-      const { text } = await generateText({
-        model: openai("gpt-5-mini"),
-        prompt: `Briefly describe what this URL is about and provide any relevant context (author, publication date, key topics). Keep it under 200 words. URL: ${url}`,
-        tools: {
-          web_search: openai.tools.webSearch({
-            searchContextSize: "low",
-          }),
-        },
-      });
-
-      return { webContext: text.slice(0, 1000) };
+      const webContext = await fetchGrokWebContext(url);
+      return { webContext };
     } catch (error) {
-      console.warn("Web search failed, continuing without web context:", error);
+      console.warn("Grok context fetch failed, continuing without web context:", error);
       return { webContext: undefined };
     }
   },
@@ -384,12 +372,12 @@ const fetchMarkdownAndModerateStep = createStep({
     // Prefer oEmbed as a reliable, login-free content source for tweet text.
     if (isTwitterStatusUrl(url)) {
       try {
-        const oembed = await fetchTwitterOEmbed(url);
-        if (oembed?.text) {
-          markdown = formatTwitterMarkdown(oembed).slice(0, MAX_MARKDOWN_CHARS);
+        const twitter = await fetchTwitterMarkdown(url);
+        if (twitter?.markdown) {
+          markdown = twitter.markdown.slice(0, MAX_MARKDOWN_CHARS);
         }
       } catch (error) {
-        console.warn("Failed to fetch Twitter oEmbed, falling back to rendering:", error);
+        console.warn("Failed to fetch Twitter content, falling back to rendering:", error);
       }
     }
 
@@ -433,9 +421,9 @@ const fetchMarkdownAndModerateStep = createStep({
         markdown.includes("Some privacy related extensions may cause issues on x.com"))
     ) {
       try {
-        const oembed = await fetchTwitterOEmbed(url);
-        if (oembed?.text) {
-          markdown = formatTwitterMarkdown(oembed).slice(0, MAX_MARKDOWN_CHARS);
+        const twitter = await fetchTwitterMarkdown(url);
+        if (twitter?.markdown) {
+          markdown = twitter.markdown.slice(0, MAX_MARKDOWN_CHARS);
         } else {
           markdown = "";
         }

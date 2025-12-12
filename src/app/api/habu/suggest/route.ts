@@ -14,11 +14,8 @@ import type {
 import { mastra } from "@/mastra";
 import { RuntimeContext } from "@mastra/core/di";
 import { fetchPageMeta, isMetaExtractionResult } from "@/lib/page-meta";
-import {
-  fetchTwitterOEmbed,
-  formatTwitterMarkdown,
-  isTwitterStatusUrl,
-} from "@/lib/twitter-oembed";
+import { isTwitterStatusUrl } from "@/lib/twitter-oembed";
+import { fetchTwitterMarkdown } from "@/lib/twitter-content";
 
 const HATENA_TAGS_API_URL = "https://bookmark.hatenaapis.com/rest/1/my/tags";
 const MAX_MARKDOWN_CHARS = 800000;
@@ -33,9 +30,9 @@ async function fetchMarkdown(
 ): Promise<{ markdown: string; error?: string }> {
   if (isTwitterStatusUrl(url)) {
     try {
-      const oembed = await fetchTwitterOEmbed(url);
-      if (oembed?.text) {
-        return { markdown: formatTwitterMarkdown(oembed).slice(0, MAX_MARKDOWN_CHARS) };
+      const twitter = await fetchTwitterMarkdown(url);
+      if (twitter?.markdown) {
+        return { markdown: twitter.markdown.slice(0, MAX_MARKDOWN_CHARS) };
       }
     } catch {
       // fall through to rendering
@@ -80,9 +77,9 @@ async function fetchMarkdown(
           markdown.includes("Some privacy related extensions may cause issues on x.com"))
       ) {
         try {
-          const oembed = await fetchTwitterOEmbed(url);
-          if (oembed?.text) {
-            return { markdown: formatTwitterMarkdown(oembed).slice(0, MAX_MARKDOWN_CHARS) };
+          const twitter = await fetchTwitterMarkdown(url);
+          if (twitter?.markdown) {
+            return { markdown: twitter.markdown.slice(0, MAX_MARKDOWN_CHARS) };
           }
         } catch {
           // ignore

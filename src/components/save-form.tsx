@@ -9,6 +9,14 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { WorkflowProgress } from "@/components/workflow-progress";
+import {
+  initBookmarkSuggestionSteps,
+  orderedBookmarkSuggestionSteps,
+  readSseStream,
+  type WorkflowStepState,
+  type WorkflowStepStatus,
+} from "@/lib/mastra-workflow-progress";
 import {
   Bookmark,
   List,
@@ -110,6 +118,11 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
   const [isFetchingTitle, setIsFetchingTitle] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [workflowRunId, setWorkflowRunId] = useState<string | null>(null);
+  const [workflowStage, setWorkflowStage] = useState<string | null>(null);
+  const [workflowSteps, setWorkflowSteps] = useState<Record<string, WorkflowStepState>>(
+    initBookmarkSuggestionSteps(),
+  );
   const [generatedResult, setGeneratedResult] = useState<{
     summary?: string;
     tags?: string[];
@@ -254,52 +267,182 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
 
     setIsGenerating(true);
     setGeneratedResult(null);
+    setWorkflowRunId(null);
+    setWorkflowStage("starting");
+    setWorkflowSteps(initBookmarkSuggestionSteps());
 
     try {
-      const response = await fetch("/api/habu/suggest", {
+      const response = await fetch("/api/habu/suggest?stream=1", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Accept: "text/event-stream" },
         credentials: "include",
         body: JSON.stringify({ url, userContext: context || undefined }),
       });
 
-      const data = (await response.json()) as {
-        success: boolean;
-        error?: string;
-        summary?: string;
-        tags?: string[];
-        formattedComment?: string;
-        markdown?: string;
-        markdownError?: string;
-        metadata?: {
-          title?: string;
-          description?: string;
-          lang?: string;
-          ogType?: string;
-          siteName?: string;
-          keywords?: string;
-          author?: string;
-        };
-        webContext?: string;
-      };
-
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || "Failed to generate");
+      if (!response.ok) {
+        const text = await response.text().catch(() => "");
+        throw new Error(text || "Failed to generate");
       }
 
-      setGeneratedResult({
-        summary: data.summary,
-        tags: data.tags,
-        formattedComment: data.formattedComment,
-        markdown: data.markdown,
-        markdownError: data.markdownError,
-        metadata: data.metadata,
-        webContext: data.webContext,
+      if (!response.body) {
+        throw new Error("Streaming not supported");
+      }
+
+      let gotResult = false;
+
+      await readSseStream(response.body, ({ event, data }) => {
+        if (!data) return;
+
+        if (event === "preflight") {
+          try {
+            const payload = JSON.parse(data) as { stage?: string };
+            setWorkflowStage(payload.stage ?? null);
+          } catch {
+            // ignore
+          }
+          return;
+        }
+
+        if (event === "workflow") {
+          try {
+            const payload = JSON.parse(data) as {
+              type?: string;
+              payload?: {
+                runId?: string;
+                id?: string;
+                status?: string;
+                startedAt?: number;
+                endedAt?: number;
+              };
+            };
+
+            if (payload.type === "run-created" && payload.payload?.runId) {
+              setWorkflowRunId(payload.payload.runId);
+              return;
+            }
+
+            if (payload.type === "step-start" && payload.payload?.id) {
+              const stepId = payload.payload.id;
+              setWorkflowSteps((prev) => {
+                const existing = prev[stepId];
+                if (!existing) return prev;
+                return {
+                  ...prev,
+                  [stepId]: {
+                    ...existing,
+                    status: "running",
+                    startedAt: payload.payload?.startedAt ?? existing.startedAt ?? Date.now(),
+                  },
+                };
+              });
+              return;
+            }
+
+            if (payload.type === "step-waiting" && payload.payload?.id) {
+              const stepId = payload.payload.id;
+              setWorkflowSteps((prev) => {
+                const existing = prev[stepId];
+                if (!existing) return prev;
+                return {
+                  ...prev,
+                  [stepId]: {
+                    ...existing,
+                    status: "waiting",
+                    startedAt: payload.payload?.startedAt ?? existing.startedAt ?? Date.now(),
+                  },
+                };
+              });
+              return;
+            }
+
+            if (payload.type === "step-result" && payload.payload?.id) {
+              const stepId = payload.payload.id;
+              const statusRaw = payload.payload.status ?? "success";
+              const status: WorkflowStepStatus =
+                statusRaw === "failed"
+                  ? "failed"
+                  : statusRaw === "canceled"
+                    ? "canceled"
+                    : statusRaw === "waiting"
+                      ? "waiting"
+                      : "success";
+
+              setWorkflowSteps((prev) => {
+                const existing = prev[stepId];
+                if (!existing) return prev;
+                return {
+                  ...prev,
+                  [stepId]: {
+                    ...existing,
+                    status,
+                    endedAt: payload.payload?.endedAt ?? existing.endedAt ?? Date.now(),
+                  },
+                };
+              });
+            }
+          } catch {
+            // ignore
+          }
+          return;
+        }
+
+        if (event === "result") {
+          try {
+            const payload = JSON.parse(data) as {
+              success: boolean;
+              error?: string;
+              summary?: string;
+              tags?: string[];
+              formattedComment?: string;
+              markdown?: string;
+              markdownError?: string;
+              metadata?: {
+                title?: string;
+                description?: string;
+                lang?: string;
+                ogType?: string;
+                siteName?: string;
+                keywords?: string;
+                author?: string;
+              };
+              webContext?: string;
+            };
+            if (!payload.success) throw new Error(payload.error || "Failed to generate");
+
+            gotResult = true;
+            setGeneratedResult({
+              summary: payload.summary,
+              tags: payload.tags,
+              formattedComment: payload.formattedComment,
+              markdown: payload.markdown,
+              markdownError: payload.markdownError,
+              metadata: payload.metadata,
+              webContext: payload.webContext,
+            });
+          } catch (e) {
+            toast.error("Generation failed", {
+              description: e instanceof Error ? e.message : "Unknown error",
+            });
+          }
+          return;
+        }
+
+        if (event === "error") {
+          try {
+            const payload = JSON.parse(data) as { message?: string };
+            toast.error("Generation failed", { description: payload.message || "Unknown error" });
+          } catch {
+            toast.error("Generation failed");
+          }
+        }
       });
 
-      toast.success("Generated!", {
-        description: "AI-generated summary and tags are ready.",
-      });
+      if (!gotResult) {
+        throw new Error("Failed to generate");
+      }
+
+      setWorkflowStage("done");
+      toast.success("Generated!", { description: "AI-generated summary and tags are ready." });
     } catch (error) {
       toast.error("Generation failed", {
         description: error instanceof Error ? error.message : "Unknown error",
@@ -486,6 +629,15 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
             </div>
           )}
         </div>
+
+        {(isGenerating || workflowStage || workflowRunId) && (
+          <WorkflowProgress
+            isRunning={isGenerating}
+            stage={workflowStage}
+            runId={workflowRunId}
+            steps={orderedBookmarkSuggestionSteps(workflowSteps)}
+          />
+        )}
 
         {/* Generated Result */}
         {generatedResult && (

@@ -14,10 +14,15 @@ import {
   Info,
   AlertCircle,
   Copy,
-  CheckCircle2,
-  Circle,
-  XCircle,
 } from "lucide-react";
+import { WorkflowProgress } from "@/components/workflow-progress";
+import {
+  initBookmarkSuggestionSteps,
+  orderedBookmarkSuggestionSteps,
+  readSseStream,
+  type WorkflowStepState,
+  type WorkflowStepStatus,
+} from "@/lib/mastra-workflow-progress";
 
 interface GeneratedResult {
   summary?: string;
@@ -43,82 +48,6 @@ interface BookmarkEditFormProps {
   bookmarkedAt?: string;
 }
 
-type WorkflowStepStatus = "pending" | "running" | "waiting" | "success" | "failed" | "canceled";
-
-type WorkflowStepState = {
-  id: string;
-  label: string;
-  status: WorkflowStepStatus;
-  startedAt?: number;
-  endedAt?: number;
-};
-
-const WORKFLOW_STEP_ORDER: Array<Pick<WorkflowStepState, "id" | "label">> = [
-  { id: "fetch-markdown-and-moderate", label: "Fetch markdown + moderate" },
-  { id: "moderate-user-context", label: "Moderate user context" },
-  { id: "fetch-metadata", label: "Fetch metadata" },
-  { id: "web-search", label: "Web search" },
-  { id: "merge-content", label: "Merge content" },
-  { id: "generate-summary", label: "Generate summary" },
-  { id: "generate-tags", label: "Generate tags" },
-  { id: "merge-results", label: "Merge results" },
-];
-
-function initWorkflowSteps(): Record<string, WorkflowStepState> {
-  return Object.fromEntries(
-    WORKFLOW_STEP_ORDER.map((s) => [
-      s.id,
-      { id: s.id, label: s.label, status: "pending" as const },
-    ]),
-  );
-}
-
-function formatElapsedMs(startedAt?: number, endedAt?: number) {
-  if (!startedAt) return "";
-  const end = endedAt ?? Date.now();
-  const ms = Math.max(0, end - startedAt);
-  if (ms < 1000) return `${ms}ms`;
-  return `${(ms / 1000).toFixed(1)}s`;
-}
-
-async function readSseStream(
-  stream: ReadableStream<Uint8Array>,
-  onMessage: (msg: { event: string; data: string }) => void,
-) {
-  const reader = stream.getReader();
-  const decoder = new TextDecoder();
-  let buffer = "";
-
-  try {
-    while (true) {
-      const { value, done } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(value, { stream: true });
-
-      while (true) {
-        const boundary = buffer.indexOf("\n\n");
-        if (boundary === -1) break;
-        const raw = buffer.slice(0, boundary);
-        buffer = buffer.slice(boundary + 2);
-
-        const lines = raw.split("\n");
-        let event = "message";
-        const dataLines: string[] = [];
-        for (const line of lines) {
-          if (line.startsWith("event:")) {
-            event = line.slice("event:".length).trim();
-          } else if (line.startsWith("data:")) {
-            dataLines.push(line.slice("data:".length).trim());
-          }
-        }
-        onMessage({ event, data: dataLines.join("\n") });
-      }
-    }
-  } finally {
-    reader.releaseLock();
-  }
-}
-
 export function BookmarkEditForm({
   bookmarkUrl,
   initialComment,
@@ -134,7 +63,7 @@ export function BookmarkEditForm({
   const [workflowRunId, setWorkflowRunId] = useState<string | null>(null);
   const [workflowStage, setWorkflowStage] = useState<string | null>(null);
   const [workflowSteps, setWorkflowSteps] = useState<Record<string, WorkflowStepState>>(
-    initWorkflowSteps(),
+    initBookmarkSuggestionSteps(),
   );
 
   const handleGenerate = async () => {
@@ -147,7 +76,7 @@ export function BookmarkEditForm({
     setGeneratedResult(null);
     setWorkflowRunId(null);
     setWorkflowStage("starting");
-    setWorkflowSteps(initWorkflowSteps());
+    setWorkflowSteps(initBookmarkSuggestionSteps());
 
     try {
       const response = await fetch("/api/habu/suggest?stream=1", {
@@ -393,54 +322,12 @@ export function BookmarkEditForm({
     <>
       {/* Workflow Progress */}
       {(isGenerating || workflowStage || workflowRunId) && (
-        <div className="p-3 bg-muted rounded-md space-y-2 text-sm">
-          <div className="flex items-center justify-between gap-2">
-            <div className="font-medium flex items-center gap-2">
-              <FileText className="w-4 h-4" />
-              Workflow progress
-            </div>
-            {isGenerating && (
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <Loader2 className="w-3 h-3 animate-spin" />
-                <span>{workflowStage ?? "running"}</span>
-              </div>
-            )}
-          </div>
-
-          {workflowRunId && (
-            <div className="text-xs text-muted-foreground">Run ID: {workflowRunId}</div>
-          )}
-
-          <div className="grid grid-cols-1 gap-1">
-            {WORKFLOW_STEP_ORDER.map(({ id }) => {
-              const step = workflowSteps[id];
-              if (!step) return null;
-              const icon =
-                step.status === "success" ? (
-                  <CheckCircle2 className="w-4 h-4 text-green-600" />
-                ) : step.status === "failed" ? (
-                  <XCircle className="w-4 h-4 text-red-600" />
-                ) : step.status === "running" || step.status === "waiting" ? (
-                  <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-                ) : (
-                  <Circle className="w-4 h-4 text-muted-foreground" />
-                );
-
-              return (
-                <div key={id} className="flex items-center gap-2">
-                  {icon}
-                  <span className="flex-1 truncate">{step.label}</span>
-                  <span className="text-xs text-muted-foreground flex-shrink-0">
-                    {step.status}
-                    {step.status !== "pending" && (
-                      <span className="ml-2">{formatElapsedMs(step.startedAt, step.endedAt)}</span>
-                    )}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+        <WorkflowProgress
+          isRunning={isGenerating}
+          stage={workflowStage}
+          runId={workflowRunId}
+          steps={orderedBookmarkSuggestionSteps(workflowSteps)}
+        />
       )}
 
       {/* Comment Input */}

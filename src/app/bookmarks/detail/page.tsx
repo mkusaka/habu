@@ -7,7 +7,7 @@ import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { createSignedRequest } from "@/lib/hatena-oauth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Bookmark, ExternalLink, ArrowLeft, AlertCircle } from "lucide-react";
+import { Bookmark, ExternalLink, ArrowLeft, AlertCircle, Home } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { LinkButton } from "@/components/ui/link-button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -219,11 +219,16 @@ export default async function BookmarkDetailPage({ searchParams }: BookmarkDetai
 
   return (
     <Card className="w-full">
-      <CardHeader className="text-center pb-4">
-        <div className="flex justify-center mb-3">
-          <Bookmark className="w-12 h-12 text-primary" />
+      <CardHeader className="pb-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Bookmark className="w-6 h-6 text-primary" />
+            <CardTitle className="text-xl">Edit Bookmark</CardTitle>
+          </div>
+          <LinkButton href="/" variant="ghost" size="icon" aria-label="Go Home">
+            <Home className="w-5 h-5" />
+          </LinkButton>
         </div>
-        <CardTitle className="text-xl">Edit Bookmark</CardTitle>
       </CardHeader>
       <CardContent>
         <Suspense key={bookmarkUrl} fallback={<BookmarkDetailLoading />}>

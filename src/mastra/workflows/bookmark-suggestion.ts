@@ -84,7 +84,7 @@ async function judgeSummary(
   const summaryLength = summary.length;
 
   const result = await generateObjectWithRetry({
-    model: openai("gpt-5.1"),
+    model: openai("gpt-5.2"),
     schema: JudgeResultSchema,
     system: `<role>
 You are a quality evaluator for Hatena Bookmark summaries.
@@ -169,7 +169,7 @@ async function judgeTags(
   const allTagsValid = invalidTags.length === 0;
 
   const result = await generateObjectWithRetry({
-    model: openai("gpt-5.1"),
+    model: openai("gpt-5.2"),
     schema: JudgeResultSchema,
     system: `<role>
 You are a quality evaluator for Hatena Bookmark tags.
@@ -648,7 +648,7 @@ ${markdown}
       : basePrompt;
 
     const result = await generateObjectWithRetry({
-      model: openai("gpt-5.1"),
+      model: openai("gpt-5.2"),
       schema: SummaryOutputSchema,
       system: baseSystemPrompt,
       prompt,

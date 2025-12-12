@@ -30,8 +30,8 @@ export function formatWorkflowStepMeta(meta?: Partial<WorkflowStepMeta>) {
 
 export const BOOKMARK_SUGGESTION_STEP_META: Record<string, WorkflowStepMeta> = {
   "fetch-markdown-and-moderate": {
-    provider: "Cloudflare + xAI + OpenAI",
-    api: "browser-rendering/markdown + Grok (X/Twitter) + omni-moderation-latest",
+    provider: "Cloudflare + OpenAI (+ xAI for X/Twitter when configured)",
+    api: "browser-rendering/markdown + (X/Twitter: Grok→oEmbed) + omni-moderation-latest",
   },
   "moderate-user-context": {
     provider: "OpenAI",
@@ -39,7 +39,11 @@ export const BOOKMARK_SUGGESTION_STEP_META: Record<string, WorkflowStepMeta> = {
     api: "moderations",
   },
   "fetch-metadata": { provider: "Habu", api: "HTMLRewriter (local)" },
-  "web-search": { provider: "xAI", model: "grok-* (XAI_MODEL)", api: "chat/completions" },
+  "web-search": {
+    provider: "xAI (optional)",
+    model: "grok-* (XAI_MODEL)",
+    api: "chat/completions",
+  },
   "merge-content": { provider: "Habu", api: "merge" },
   "generate-summary": { provider: "OpenAI", model: "gpt-5.2", api: "generate + judge" },
   "generate-tags": { provider: "OpenAI", model: "gpt-5-mini + gpt-5.2", api: "generate + judge" },

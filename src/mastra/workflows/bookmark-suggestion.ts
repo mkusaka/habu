@@ -1,7 +1,7 @@
 import { createWorkflow, createStep } from "@mastra/core/workflows";
 import { z } from "zod";
 import OpenAI from "openai";
-import { generateText, Output, NoObjectGeneratedError } from "ai";
+import { generateText, generateObject, NoObjectGeneratedError } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { fetchPageMeta, isMetaExtractionResult } from "@/lib/page-meta";
 
@@ -20,18 +20,28 @@ const MAX_JUDGE_ATTEMPTS = 3;
 const PARALLEL_GENERATION_COUNT = 3;
 const MAX_SCHEMA_RETRIES = 2;
 
-// Helper: Retry wrapper for experimental_output schema errors
-async function generateWithRetry<T>(
-  params: Omit<Parameters<typeof generateText>[0], "experimental_output"> & {
-    experimental_output: ReturnType<typeof Output.object>;
+// Helper: Retry wrapper for generateObject schema errors
+async function generateObjectWithRetry<T extends z.ZodType>(
+  params: {
+    model: Parameters<typeof generateObject>[0]["model"];
+    schema: T;
+    system?: string;
+    prompt: string;
+    abortSignal?: AbortSignal;
   },
   maxRetries = MAX_SCHEMA_RETRIES,
-): Promise<T | undefined> {
+): Promise<z.infer<T>> {
   let lastError: unknown;
   for (let retry = 0; retry <= maxRetries; retry++) {
     try {
-      const result = await generateText(params as Parameters<typeof generateText>[0]);
-      return result.experimental_output as T | undefined;
+      const result = await generateObject({
+        model: params.model,
+        schema: params.schema,
+        system: params.system,
+        prompt: params.prompt,
+        abortSignal: params.abortSignal,
+      });
+      return result.object as z.infer<T>;
     } catch (error) {
       lastError = error;
       if (error instanceof NoObjectGeneratedError) {
@@ -73,8 +83,9 @@ async function judgeSummary(
   // Pre-calculate character count since LLMs are bad at counting
   const summaryLength = summary.length;
 
-  const result = await generateWithRetry<z.infer<typeof JudgeResultSchema>>({
+  const result = await generateObjectWithRetry({
     model: openai("gpt-5.1"),
+    schema: JudgeResultSchema,
     system: `<role>
 You are a quality evaluator for Hatena Bookmark summaries.
 </role>
@@ -126,13 +137,11 @@ Length OK: ${summaryLength >= 50 && summaryLength <= 100 ? "YES (within 50-100)"
 </character_count>
 
 Evaluate this summary against the criteria.`,
-    experimental_output: Output.object({ schema: JudgeResultSchema }),
-    providerOptions: { openai: { structuredOutputs: true } },
   });
 
   return {
-    passed: result?.passed ?? true,
-    reason: result?.reason ?? "",
+    passed: result.passed,
+    reason: result.reason,
   };
 }
 
@@ -159,8 +168,9 @@ async function judgeTags(
   const invalidTags = tagLengthInfo.filter((t) => !t.valid);
   const allTagsValid = invalidTags.length === 0;
 
-  const result = await generateWithRetry<z.infer<typeof JudgeResultSchema>>({
+  const result = await generateObjectWithRetry({
     model: openai("gpt-5.1"),
+    schema: JudgeResultSchema,
     system: `<role>
 You are a quality evaluator for Hatena Bookmark tags.
 </role>
@@ -222,13 +232,11 @@ All tags within 10 chars: ${allTagsValid ? "YES" : `NO - these tags are too long
 </tag_length_analysis>
 
 Evaluate these tags against the criteria.`,
-    experimental_output: Output.object({ schema: JudgeResultSchema }),
-    providerOptions: { openai: { structuredOutputs: true } },
   });
 
   return {
-    passed: result?.passed ?? true,
-    reason: result?.reason ?? "",
+    passed: result.passed,
+    reason: result.reason,
   };
 }
 
@@ -639,20 +647,15 @@ ${markdown}
       ? `${basePrompt}\n\n<previous_feedback>\nYour previous summary was rejected: ${feedback}\nPlease generate an improved summary addressing this feedback.\n</previous_feedback>`
       : basePrompt;
 
-    const result = await generateWithRetry<z.infer<typeof SummaryOutputSchema>>({
+    const result = await generateObjectWithRetry({
       model: openai("gpt-5.1"),
+      schema: SummaryOutputSchema,
       system: baseSystemPrompt,
       prompt,
-      experimental_output: Output.object({
-        schema: SummaryOutputSchema,
-      }),
-      providerOptions: {
-        openai: { structuredOutputs: true },
-      },
       abortSignal: signal,
     });
 
-    lastSummary = result?.summary ?? "";
+    lastSummary = result.summary;
 
     // Skip judge on last attempt - just return what we have
     if (attempt === MAX_JUDGE_ATTEMPTS - 1) break;
@@ -788,21 +791,16 @@ ${markdown.slice(0, 10000)}
       ? `${basePrompt}\n\n<previous_feedback>\nYour previous tags were rejected: ${feedback}\nPlease generate improved tags addressing this feedback.\n</previous_feedback>`
       : basePrompt;
 
-    const result = await generateWithRetry<z.infer<typeof TagsOutputSchema>>({
+    const result = await generateObjectWithRetry({
       model: openai("gpt-5-mini"),
+      schema: TagsOutputSchema,
       system: baseSystemPrompt,
       prompt,
-      experimental_output: Output.object({
-        schema: TagsOutputSchema,
-      }),
-      providerOptions: {
-        openai: { structuredOutputs: true },
-      },
       abortSignal: signal,
     });
 
     // Sanitize tags (remove forbidden characters)
-    lastTags = (result?.tags ?? [])
+    lastTags = result.tags
       .map((t) => t.replace(/[?/%[\]:]/g, ""))
       .filter((t) => t.length > 0 && t !== "AI要約");
 

@@ -4,7 +4,11 @@ export default defineWorkersConfig({
   test: {
     poolOptions: {
       workers: {
-        wrangler: { configPath: "./wrangler.jsonc" },
+        // Avoid depending on `.open-next/*` build outputs during unit tests.
+        miniflare: {
+          compatibilityDate: "2025-11-23",
+          compatibilityFlags: ["nodejs_compat"],
+        },
       },
     },
   },

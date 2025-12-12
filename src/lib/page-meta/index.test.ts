@@ -50,6 +50,34 @@ describe("fetchPageMeta", () => {
     }
   });
 
+  it("extracts tweet text via Twitter oEmbed for x.com status URLs", async () => {
+    fetchMock
+      .get("https://publish.twitter.com")
+      .intercept({ path: /\/oembed/ })
+      .reply(
+        200,
+        JSON.stringify({
+          url: "https://twitter.com/someone/status/1234567890",
+          author_name: "Someone",
+          author_url: "https://twitter.com/someone",
+          provider_name: "X",
+          provider_url: "https://twitter.com",
+          html: '<blockquote class="twitter-tweet"><p lang="en" dir="ltr">Hello &amp; welcome <a href="https://t.co/abc">https://t.co/abc</a></p>&mdash; Someone (@someone) <a href="https://twitter.com/someone/status/1234567890">Date</a></blockquote>',
+        }),
+        { headers: { "content-type": "application/json; charset=utf-8" } },
+      );
+
+    const result = await fetchPageMeta("https://x.com/someone/status/1234567890");
+
+    expect(isMetaExtractionResult(result)).toBe(true);
+    if (isMetaExtractionResult(result)) {
+      expect(result.description).toBe("Hello & welcome https://t.co/abc");
+      expect(result.author).toBe("Someone");
+      expect(result.og.site_name).toBe("X");
+      expect(result.og.type).toBe("article");
+    }
+  });
+
   it("extracts OG and Twitter meta tags", async () => {
     fetchMock
       .get("https://example.com")

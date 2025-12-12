@@ -1,7 +1,7 @@
 import { createWorkflow, createStep } from "@mastra/core/workflows";
 import { z } from "zod";
 import OpenAI from "openai";
-import { generateObject, NoObjectGeneratedError } from "ai";
+import { generateText, generateObject, NoObjectGeneratedError } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { fetchPageMeta, isMetaExtractionResult } from "@/lib/page-meta";
 import { fetchTwitterMarkdown } from "@/lib/twitter-content";
@@ -347,10 +347,25 @@ const webSearchStep = createStep({
     const { url } = inputData;
 
     try {
-      const webContext = await fetchGrokWebContext(url);
-      return { webContext };
+      if (isTwitterStatusUrl(url)) {
+        const webContext = await fetchGrokWebContext(url);
+        return { webContext };
+      }
+
+      // Use OpenAI web search to get additional context about the URL
+      const { text } = await generateText({
+        model: openai("gpt-5-mini"),
+        prompt: `Briefly describe what this URL is about and provide any relevant context (author, publication date, key topics). Keep it under 200 words. URL: ${url}`,
+        tools: {
+          web_search: openai.tools.webSearch({
+            searchContextSize: "low",
+          }),
+        },
+      });
+
+      return { webContext: text.slice(0, 1000) };
     } catch (error) {
-      console.warn("Grok context fetch failed, continuing without web context:", error);
+      console.warn("Web context fetch failed, continuing without web context:", error);
       return { webContext: undefined };
     }
   },

@@ -78,6 +78,7 @@ async function judgeSummary(
     webContext?: string;
     userContext?: string;
   },
+  abortSignal?: AbortSignal,
 ): Promise<{ passed: boolean; reason: string }> {
   // Determine primary content source: userContext takes priority over markdown
   const hasUserContext = !!context.userContext;
@@ -140,6 +141,7 @@ Length OK: ${summaryLength >= 50 && summaryLength <= 100 ? "YES (within 50-100)"
 </character_count>
 
 Evaluate this summary against the criteria.`,
+    abortSignal,
   });
 
   return {
@@ -157,6 +159,7 @@ async function judgeTags(
     markdown: string;
     userContext?: string;
   },
+  abortSignal?: AbortSignal,
 ): Promise<{ passed: boolean; reason: string }> {
   // Determine primary content source: userContext takes priority over markdown
   const hasUserContext = !!context.userContext;
@@ -235,6 +238,7 @@ All tags within 10 chars: ${allTagsValid ? "YES" : `NO - these tags are too long
 </tag_length_analysis>
 
 Evaluate these tags against the criteria.`,
+    abortSignal,
   });
 
   return {
@@ -729,13 +733,17 @@ ${markdown}
     }
 
     // Judge the summary
-    const judgeResult = await judgeSummary(lastSummary, {
-      title: metadata.title,
-      description: metadata.description,
-      markdown,
-      webContext,
-      userContext,
-    });
+    const judgeResult = await judgeSummary(
+      lastSummary,
+      {
+        title: metadata.title,
+        description: metadata.description,
+        markdown,
+        webContext,
+        userContext,
+      },
+      signal,
+    );
 
     if (judgeResult.passed) {
       console.log(`[Summary] Runner ${runnerId} passed on attempt ${attempt + 1}`);
@@ -783,6 +791,24 @@ const generateSummaryStep = createStep({
     }
   },
 });
+
+function sanitizeGeneratedTags(tags: string[]): string[] {
+  const cleaned = tags
+    .map((t) => t.trim().replace(/[?/%[\]:]/g, ""))
+    .filter((t) => t.length > 0 && t !== "AI要約")
+    .filter((t) => t.length <= 10);
+
+  const deduped: string[] = [];
+  const seen = new Set<string>();
+  for (const tag of cleaned) {
+    const key = tag.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    deduped.push(tag);
+  }
+
+  return deduped;
+}
 
 // Helper: Run a single tags generation attempt with judge loop
 async function runTagsGenerationWithJudge(
@@ -850,46 +876,80 @@ ${markdown.slice(0, 10000)}
       throw new DOMException("Aborted", "AbortError");
     }
 
-    const prompt = feedback
+    const attemptAbortController = new AbortController();
+    const onOuterAbort = () => attemptAbortController.abort();
+    if (signal.aborted) {
+      attemptAbortController.abort();
+    } else {
+      signal.addEventListener("abort", onOuterAbort, { once: true });
+    }
+
+    const attemptSignal = attemptAbortController.signal;
+    const promptBase = feedback
       ? `${basePrompt}\n\n<previous_feedback>\nYour previous tags were rejected: ${feedback}\nPlease generate improved tags addressing this feedback.\n</previous_feedback>`
       : basePrompt;
 
-    const result = await generateObjectWithRetry({
-      model: openai("gpt-5-mini"),
-      schema: TagsOutputSchema,
-      system: baseSystemPrompt,
-      prompt,
-      abortSignal: signal,
+    const isLastAttempt = attempt === MAX_JUDGE_ATTEMPTS - 1;
+    const candidates = Array.from({ length: PARALLEL_GENERATION_COUNT }, (_, i) => {
+      const candidateId = i + 1;
+      return (async () => {
+        if (attemptSignal.aborted) throw new DOMException("Aborted", "AbortError");
+
+        const prompt = `${promptBase}\n\n<candidate>\nrunner=${runnerId} candidate=${candidateId}\n</candidate>`;
+        const result = await generateObjectWithRetry({
+          model: openai("gpt-5-mini"),
+          schema: TagsOutputSchema,
+          system: baseSystemPrompt,
+          prompt,
+          abortSignal: attemptSignal,
+        });
+
+        const tags = sanitizeGeneratedTags(result.tags);
+        if (isLastAttempt) return tags;
+
+        if (attemptSignal.aborted) throw new DOMException("Aborted", "AbortError");
+
+        const judgeResult = await judgeTags(
+          tags,
+          {
+            title: metadata.title,
+            keywords: metadata.keywords,
+            markdown,
+            userContext,
+          },
+          attemptSignal,
+        );
+
+        if (!judgeResult.passed) {
+          throw new Error(judgeResult.reason);
+        }
+
+        return tags;
+      })();
     });
 
-    // Sanitize tags (remove forbidden characters)
-    lastTags = result.tags
-      .map((t) => t.replace(/[?/%[\]:]/g, ""))
-      .filter((t) => t.length > 0 && t !== "AI要約");
-
-    // Skip judge on last attempt - just return what we have
-    if (attempt === MAX_JUDGE_ATTEMPTS - 1) break;
-
-    // Check if aborted before judge
-    if (signal.aborted) {
-      throw new DOMException("Aborted", "AbortError");
-    }
-
-    // Judge the tags
-    const judgeResult = await judgeTags(lastTags, {
-      title: metadata.title,
-      keywords: metadata.keywords,
-      markdown,
-      userContext,
-    });
-
-    if (judgeResult.passed) {
-      console.log(`[Tags] Runner ${runnerId} passed on attempt ${attempt + 1}`);
+    try {
+      // First candidate to pass judge wins (within this attempt)
+      lastTags = await Promise.any(candidates);
+      console.log(
+        `[Tags] Runner ${runnerId} passed on attempt ${attempt + 1} (parallel candidates)`,
+      );
+      attemptAbortController.abort();
       break;
+    } catch (error) {
+      attemptAbortController.abort();
+      if (error instanceof AggregateError) {
+        const reasons = (error.errors as unknown[])
+          .map((e) => (e instanceof Error ? e.message : String(e)))
+          .filter(Boolean);
+        feedback = reasons.slice(0, 3).join("\n").slice(0, 600);
+        console.log(`[Tags] Runner ${runnerId} attempt ${attempt + 1} rejected: ${feedback}`);
+        continue;
+      }
+      throw error;
+    } finally {
+      signal.removeEventListener("abort", onOuterAbort);
     }
-
-    feedback = judgeResult.reason;
-    console.log(`[Tags] Runner ${runnerId} attempt ${attempt + 1} rejected: ${feedback}`);
   }
 
   return { tags: ["AI要約", ...lastTags] };
@@ -904,27 +964,22 @@ const generateTagsStep = createStep({
     const { url, existingTags, markdown, metadata, userContext } = inputData;
     const abortController = new AbortController();
 
-    // Create race promises for parallel runners
-    const runners = Array.from({ length: PARALLEL_GENERATION_COUNT }, (_, i) =>
-      runTagsGenerationWithJudge(
-        i + 1,
+    try {
+      // Tags are often rejected more than summaries; parallelize candidates per attempt instead.
+      return await runTagsGenerationWithJudge(
+        1,
         { url, existingTags, markdown, metadata, userContext },
         abortController.signal,
-      ),
-    );
-
-    try {
-      // Race: first runner to pass judge wins
-      const result = await Promise.any(runners);
-      abortController.abort(); // Cancel other runners
-      return result;
+      );
     } catch (error) {
-      // If all runners failed (AggregateError), return fallback
+      // If all candidates failed (AggregateError), return fallback
       if (error instanceof AggregateError) {
-        console.warn("[Tags] All parallel runners failed, using fallback");
+        console.warn("[Tags] All parallel candidates failed, using fallback");
         return { tags: ["AI要約"] };
       }
       throw error;
+    } finally {
+      abortController.abort();
     }
   },
 });

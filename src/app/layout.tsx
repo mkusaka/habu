@@ -68,7 +68,7 @@ export default function RootLayout({
         <script
           dangerouslySetInnerHTML={{
             __html:
-              '(function(){try{var t=localStorage.getItem("habu-theme");var m=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches;var r=(t==="dark"||t==="light")?t:(m?"dark":"light");var el=document.documentElement;el.classList.toggle("dark",r==="dark");el.style.colorScheme=r;var meta=document.querySelector(\'meta[name="theme-color"]\');if(meta) meta.content=(r==="dark")?"#111111":"#ffffff";}catch(e){}})();',
+              '(function(){try{if(!globalThis.__name){var d=Object.defineProperty;globalThis.__name=function(t,v){return d(t,"name",{value:v,configurable:true});};}var t=localStorage.getItem("habu-theme");var m=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches;var r=(t==="dark"||t==="light")?t:(m?"dark":"light");var el=document.documentElement;el.classList.toggle("dark",r==="dark");el.style.colorScheme=r;var meta=document.querySelector(\'meta[name="theme-color"]\');if(meta) meta.content=(r==="dark")?"#111111":"#ffffff";}catch(e){}})();',
           }}
         />
         <link rel="manifest" href={`/manifest.json?v=${manifestVersion}`} />

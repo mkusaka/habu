@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -65,6 +66,13 @@ export default function RootLayout({
   return (
     <html lang="ja" className="h-dvh overflow-hidden" suppressHydrationWarning>
       <head>
+        <Script
+          id="habu-theme-init"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem("habu-theme");var m=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches;var r=(t==="dark"||t==="light")?t:(m?"dark":"light");var el=document.documentElement;el.classList.toggle("dark",r==="dark");el.style.colorScheme=r;var meta=document.querySelector('meta[name="theme-color"]');if(meta) meta.content=(r==="dark")?"#111111":"#ffffff";}catch(e){}})();`,
+          }}
+        />
         <link rel="manifest" href={`/manifest.json?v=${manifestVersion}`} />
         <link
           rel="manifest"

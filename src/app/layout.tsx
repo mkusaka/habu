@@ -21,7 +21,6 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "habu - Hatena Bookmark Utility",
   description: "Quick bookmark saving to Hatena Bookmark",
-  manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
@@ -44,6 +43,8 @@ export default function RootLayout({
   return (
     <html lang="ja" className="h-dvh overflow-hidden" suppressHydrationWarning>
       <head>
+        <link rel="manifest" href="/manifest.json" />
+        <link rel="manifest" href="/manifest-dark.json" media="(prefers-color-scheme: dark)" />
         <link rel="icon" href="/favicon.svg" type="image/svg+xml"></link>
       </head>
       <body

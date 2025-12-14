@@ -40,6 +40,7 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const manifestVersion = process.env.NEXT_PUBLIC_GIT_SHA ?? "dev";
   const appleSplashScreens = [
     // iPhone
     { w: 430, h: 932, pr: 3, file: "1290x2796" },
@@ -64,8 +65,12 @@ export default function RootLayout({
   return (
     <html lang="ja" className="h-dvh overflow-hidden" suppressHydrationWarning>
       <head>
-        <link rel="manifest" href="/manifest.json" />
-        <link rel="manifest" href="/manifest-dark.json" media="(prefers-color-scheme: dark)" />
+        <link rel="manifest" href={`/manifest.json?v=${manifestVersion}`} />
+        <link
+          rel="manifest"
+          href={`/manifest-dark.json?v=${manifestVersion}`}
+          media="(prefers-color-scheme: dark)"
+        />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         {appleSplashScreens.map(({ w, h, pr, file }) => (
           <link

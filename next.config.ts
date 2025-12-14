@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 import { execSync } from "child_process";
 import withSerwistInit from "@serwist/next";
+import path from "path";
 
 const withSerwist = withSerwistInit({
 	swSrc: "src/app/sw.ts",
@@ -39,6 +40,23 @@ const nextConfig: NextConfig = {
 	// Expose git SHA as environment variable
 	env: {
 		NEXT_PUBLIC_GIT_SHA: gitSha,
+	},
+	webpack: (config, { isServer }) => {
+		if (!isServer) {
+			const polyfillsPath = path.resolve(__dirname, "src/polyfills.ts");
+			const originalEntry = config.entry;
+			config.entry = async () => {
+				const entries =
+					typeof originalEntry === "function" ? await originalEntry() : originalEntry;
+				for (const [key, value] of Object.entries(entries)) {
+					if (Array.isArray(value) && !value.includes(polyfillsPath)) {
+						entries[key] = [polyfillsPath, ...value];
+					}
+				}
+				return entries;
+			};
+		}
+		return config;
 	},
 };
 

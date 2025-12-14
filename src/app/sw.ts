@@ -66,6 +66,7 @@ const serwist = new Serwist({
   skipWaiting: true,
   clientsClaim: true,
   navigationPreload: true,
+  cacheId: process.env.NEXT_PUBLIC_GIT_SHA ?? "habu",
   runtimeCaching: [
     {
       matcher: ({ sameOrigin, url }) =>

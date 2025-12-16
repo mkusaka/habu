@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { cleanUrl } from "@/lib/url-cleaner";
 
 export async function POST(request: NextRequest) {
   try {
@@ -18,6 +19,11 @@ export async function POST(request: NextRequest) {
       } catch {
         // text is not a URL, keep it as is
       }
+    }
+
+    // Clean tracking parameters from URL
+    if (url) {
+      url = cleanUrl(url);
     }
 
     // Redirect to the root page with query params

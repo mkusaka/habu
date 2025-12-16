@@ -1,6 +1,7 @@
 "use client";
 
 import type { BookmarkRequest, BookmarkResponse } from "@/types/habu";
+import { cleanUrl } from "@/lib/url-cleaner";
 
 /**
  * Save a bookmark via fetch.
@@ -21,6 +22,7 @@ export async function saveBookmark(
   title?: string,
   comment?: string,
 ): Promise<BookmarkResponse & { queued?: boolean }> {
+  const cleanedUrl = cleanUrl(url);
   const response = await fetch("/api/habu/bookmark", {
     method: "POST",
     headers: {
@@ -28,7 +30,7 @@ export async function saveBookmark(
     },
     credentials: "include",
     body: JSON.stringify({
-      url,
+      url: cleanedUrl,
       title,
       comment,
     } as BookmarkRequest),
@@ -50,6 +52,7 @@ export async function saveBookmark(
  * @param comment - Optional comment
  */
 export function queueBookmark(url: string, title?: string, comment?: string): void {
+  const cleanedUrl = cleanUrl(url);
   fetch("/api/habu/bookmark", {
     method: "POST",
     headers: {
@@ -57,7 +60,7 @@ export function queueBookmark(url: string, title?: string, comment?: string): vo
     },
     credentials: "include",
     body: JSON.stringify({
-      url,
+      url: cleanedUrl,
       title,
       comment,
     } as BookmarkRequest),

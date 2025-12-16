@@ -278,7 +278,8 @@ export async function POST(request: NextRequest) {
 
     // Parse request body
     const body: BookmarkRequest = await request.json();
-    const { url, comment, userContext } = body;
+    let { url } = body;
+    const { comment, userContext } = body;
 
     if (!url) {
       return NextResponse.json({ success: false, error: "URL is required" } as BookmarkResponse, {
@@ -339,7 +340,12 @@ export async function POST(request: NextRequest) {
           throw new Error("Workflow failed");
         }
 
-        const { summary, tags } = result.result;
+        const { summary, tags, canonicalUrl } = result.result;
+
+        // Use canonical URL if available (cleaner, tracking-free URL)
+        if (canonicalUrl) {
+          url = canonicalUrl;
+        }
 
         // Store generated content
         generatedSummary = summary;

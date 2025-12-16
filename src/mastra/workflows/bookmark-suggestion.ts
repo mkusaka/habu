@@ -7,6 +7,7 @@ import { fetchPageMeta, isMetaExtractionResult } from "@/lib/page-meta";
 import { fetchTwitterMarkdown } from "@/lib/twitter-content";
 import { isTwitterStatusUrl } from "@/lib/twitter-oembed";
 import { fetchGrokWebContext } from "@/lib/grok-context";
+import { resolveCanonicalUrl } from "@/lib/url-cleaner";
 
 // Lazy-initialized OpenAI client for moderation API
 let openaiClient: OpenAI | null = null;
@@ -297,6 +298,7 @@ const WorkflowOutputSchema = z.object({
   summary: z.string(),
   tags: z.array(z.string()),
   webContext: z.string().optional(),
+  canonicalUrl: z.string().optional(),
 });
 
 // Metadata schema
@@ -308,6 +310,7 @@ const MetadataSchema = z.object({
   siteName: z.string().optional(),
   keywords: z.string().optional(),
   author: z.string().optional(),
+  canonicalUrl: z.string().optional(),
 });
 
 // Web search result schema
@@ -324,6 +327,7 @@ const ContentDataSchema = z.object({
   metadata: MetadataSchema,
   webContext: z.string().optional(),
   userContext: z.string().optional(),
+  canonicalUrl: z.string().optional(),
 });
 
 // Markdown output schema (includes url/existingTags to pass through)
@@ -565,6 +569,9 @@ const fetchMetadataStep = createStep({
         }
       }
 
+      // Resolve canonical URL (prefer canonical, validate against original)
+      const canonicalUrl = resolveCanonicalUrl(url, result.canonical);
+
       return {
         metadata: {
           title: result.title || result.og?.title || result.twitter?.title,
@@ -574,6 +581,7 @@ const fetchMetadataStep = createStep({
           siteName: result.og?.site_name,
           keywords: result.keywords,
           author: result.author,
+          canonicalUrl: canonicalUrl !== url ? canonicalUrl : undefined,
         },
       };
     } catch {
@@ -614,6 +622,7 @@ const mergeContentStep = createStep({
       metadata: inputData["fetch-metadata"].metadata,
       webContext: inputData["web-search"].webContext,
       userContext: inputData["moderate-user-context"].userContext,
+      canonicalUrl: inputData["fetch-metadata"].metadata.canonicalUrl,
     };
   },
 });
@@ -622,6 +631,7 @@ const mergeContentStep = createStep({
 const SummaryOutputSchema = z.object({
   summary: z.string().max(100).describe("Concise summary in Japanese, ideally 70-100 characters"),
   webContext: z.string().optional(),
+  canonicalUrl: z.string().optional(),
 });
 
 // Tags output schema
@@ -763,7 +773,7 @@ const generateSummaryStep = createStep({
   inputSchema: ContentDataSchema,
   outputSchema: SummaryOutputSchema,
   execute: async ({ inputData }) => {
-    const { url, markdown, metadata, webContext, userContext } = inputData;
+    const { url, markdown, metadata, webContext, userContext, canonicalUrl } = inputData;
     const abortController = new AbortController();
 
     // Create race promises for parallel runners
@@ -779,13 +789,13 @@ const generateSummaryStep = createStep({
       // Race: first runner to pass judge wins
       const result = await Promise.any(runners);
       abortController.abort(); // Cancel other runners
-      return result;
+      return { ...result, canonicalUrl };
     } catch (error) {
       // If all runners failed (AggregateError), return the first error's result or rethrow
       if (error instanceof AggregateError) {
         console.warn("[Summary] All parallel runners failed, using fallback");
         // Return empty summary as fallback (workflow can handle this)
-        return { summary: "", webContext };
+        return { summary: "", webContext, canonicalUrl };
       }
       throw error;
     }
@@ -997,6 +1007,7 @@ const mergeResultsStep = createStep({
       summary: inputData["generate-summary"].summary,
       tags: inputData["generate-tags"].tags,
       webContext: inputData["generate-summary"].webContext,
+      canonicalUrl: inputData["generate-summary"].canonicalUrl,
     };
   },
 });

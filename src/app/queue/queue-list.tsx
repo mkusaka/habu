@@ -16,7 +16,17 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { CheckCircle2, Clock, AlertCircle, Loader2, Sparkles, Trash2, Copy } from "lucide-react";
+import {
+  CheckCircle2,
+  Clock,
+  AlertCircle,
+  Loader2,
+  Sparkles,
+  Trash2,
+  Copy,
+  ExternalLink,
+} from "lucide-react";
+import Link from "next/link";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
@@ -224,10 +234,34 @@ export function QueueList() {
             {/* Header: Status icon, Title, Action buttons */}
             <div className="flex items-center gap-3">
               <div className="flex-shrink-0">{getStatusIcon(item.status)}</div>
-              <h3 className="font-medium text-sm truncate flex-1 min-w-0">
-                {item.title || item.url}
-              </h3>
+              {item.status === "done" ? (
+                <Link
+                  href={`/bookmarks/detail?url=${encodeURIComponent(item.url)}`}
+                  className="font-medium text-sm truncate flex-1 min-w-0 hover:underline"
+                >
+                  {item.title || item.url}
+                </Link>
+              ) : (
+                <h3 className="font-medium text-sm truncate flex-1 min-w-0">
+                  {item.title || item.url}
+                </h3>
+              )}
               <div className="flex items-center gap-1 flex-shrink-0">
+                {item.status === "done" && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <a
+                        href={item.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center justify-center h-9 w-9 rounded-md hover:bg-accent hover:text-accent-foreground"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                      </a>
+                    </TooltipTrigger>
+                    <TooltipContent>Open URL</TooltipContent>
+                  </Tooltip>
+                )}
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button

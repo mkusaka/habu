@@ -7,6 +7,7 @@ import { Sparkles, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { db } from "@/lib/queue-db";
 import { saveBookmark } from "@/lib/bookmark-client";
+import { cleanUrl } from "@/lib/url-cleaner";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { BookmarksResponse } from "@/app/api/habu/bookmarks/route";
@@ -31,7 +32,8 @@ export function BulkRegenerateButton({ page }: BulkRegenerateButtonProps) {
         if (response.ok) {
           const data = (await response.json()) as BookmarksResponse;
           if (data.success && data.bookmarks) {
-            setBookmarkUrls(data.bookmarks.map((b) => b.url));
+            // Use cleaned URLs to match what SW stores in IndexedDB
+            setBookmarkUrls(data.bookmarks.map((b) => cleanUrl(b.url)));
           }
         }
       } catch {

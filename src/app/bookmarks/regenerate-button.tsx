@@ -6,6 +6,7 @@ import { Sparkles, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { db } from "@/lib/queue-db";
 import { saveBookmark } from "@/lib/bookmark-client";
+import { cleanUrl } from "@/lib/url-cleaner";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -16,9 +17,13 @@ interface RegenerateButtonProps {
 
 export function RegenerateButton({ url, title }: RegenerateButtonProps) {
   const router = useRouter();
+  const cleanedUrl = cleanUrl(url);
 
-  // Watch IndexedDB for this URL's queue status
-  const queueItem = useLiveQuery(() => db.bookmarks.where("url").equals(url).first(), [url]);
+  // Watch IndexedDB for this URL's queue status (use cleaned URL to match SW's storage)
+  const queueItem = useLiveQuery(
+    () => db.bookmarks.where("url").equals(cleanedUrl).first(),
+    [cleanedUrl],
+  );
 
   // Loading if queued or sending
   const isLoading = queueItem?.status === "queued" || queueItem?.status === "sending";

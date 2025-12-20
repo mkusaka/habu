@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { Sparkles, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -9,20 +9,42 @@ import { db } from "@/lib/queue-db";
 import { saveBookmark } from "@/lib/bookmark-client";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import type { BookmarksResponse } from "@/app/api/habu/bookmarks/route";
+
+const PAGE_SIZE = 20;
 
 interface BulkRegenerateButtonProps {
-  bookmarks: Array<{ url: string; title: string }>;
+  page: number;
 }
 
-export function BulkRegenerateButton({ bookmarks }: BulkRegenerateButtonProps) {
+export function BulkRegenerateButton({ page }: BulkRegenerateButtonProps) {
   const router = useRouter();
   const [isRegenerating, setIsRegenerating] = useState(false);
+  const [bookmarkUrls, setBookmarkUrls] = useState<string[]>([]);
+
+  // Fetch bookmark URLs for this page to track queue status
+  useEffect(() => {
+    const fetchUrls = async () => {
+      try {
+        const offset = (page - 1) * PAGE_SIZE;
+        const response = await fetch(`/api/habu/bookmarks?limit=${PAGE_SIZE}&offset=${offset}`);
+        if (response.ok) {
+          const data = (await response.json()) as BookmarksResponse;
+          if (data.success && data.bookmarks) {
+            setBookmarkUrls(data.bookmarks.map((b) => b.url));
+          }
+        }
+      } catch {
+        // Ignore errors for URL tracking
+      }
+    };
+    fetchUrls();
+  }, [page]);
 
   // Watch IndexedDB for queue status of all URLs on this page
-  const urls = bookmarks.map((b) => b.url);
   const queueItems = useLiveQuery(
-    () => db.bookmarks.where("url").anyOf(urls).toArray(),
-    [urls.join(",")],
+    () => (bookmarkUrls.length > 0 ? db.bookmarks.where("url").anyOf(bookmarkUrls).toArray() : []),
+    [bookmarkUrls.join(",")],
   );
 
   // Check if any bookmark is currently being processed
@@ -33,14 +55,28 @@ export function BulkRegenerateButton({ bookmarks }: BulkRegenerateButtonProps) {
   const isLoading = isRegenerating || hasActiveItems;
 
   const handleBulkRegenerate = async () => {
-    if (bookmarks.length === 0) return;
-
     setIsRegenerating(true);
 
     try {
+      // Fetch bookmarks for this page
+      const offset = (page - 1) * PAGE_SIZE;
+      const response = await fetch(`/api/habu/bookmarks?limit=${PAGE_SIZE}&offset=${offset}`);
+
+      if (!response.ok) {
+        toast.error("Failed to fetch bookmarks");
+        return;
+      }
+
+      const data = (await response.json()) as BookmarksResponse;
+
+      if (!data.success || !data.bookmarks || data.bookmarks.length === 0) {
+        toast.error(data.error || "No bookmarks found");
+        return;
+      }
+
       // Parallel regeneration using Promise.all
       const results = await Promise.all(
-        bookmarks.map((bookmark) => saveBookmark(bookmark.url, bookmark.title, "")),
+        data.bookmarks.map((bookmark) => saveBookmark(bookmark.url, bookmark.title, "")),
       );
 
       const successCount = results.filter((r) => r.success).length;
@@ -64,23 +100,15 @@ export function BulkRegenerateButton({ bookmarks }: BulkRegenerateButtonProps) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleBulkRegenerate}
-          disabled={isLoading || bookmarks.length === 0}
-        >
+        <Button variant="ghost" size="icon" onClick={handleBulkRegenerate} disabled={isLoading}>
           {isLoading ? (
-            <Loader2 className="w-4 h-4 animate-spin mr-1" />
+            <Loader2 className="w-5 h-5 animate-spin" />
           ) : (
-            <Sparkles className="w-4 h-4 mr-1" />
+            <Sparkles className="w-5 h-5" />
           )}
-          Regenerate All
         </Button>
       </TooltipTrigger>
-      <TooltipContent>
-        Regenerate AI summary/tags for all {bookmarks.length} bookmarks
-      </TooltipContent>
+      <TooltipContent>Regenerate all bookmarks on this page</TooltipContent>
     </Tooltip>
   );
 }

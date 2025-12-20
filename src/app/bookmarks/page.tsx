@@ -22,6 +22,7 @@ import { LinkButton } from "@/components/ui/link-button";
 import { RefreshButton } from "./refresh-button";
 import { RegenerateButton } from "./regenerate-button";
 import { BulkRegenerateButton } from "./bulk-regenerate-button";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 async function getHatenaStatus(): Promise<boolean> {
   const cookieStore = await cookies();
@@ -248,16 +249,8 @@ async function BookmarkList({ page }: { page: number }) {
     );
   }
 
-  // Prepare data for bulk regenerate button
-  const bulkBookmarks = bookmarks.map((b) => ({ url: b.url, title: b.title }));
-
   return (
     <>
-      {/* Bulk regenerate toolbar */}
-      <div className="flex justify-end mb-2">
-        <BulkRegenerateButton bookmarks={bulkBookmarks} />
-      </div>
-
       <div className="space-y-2">
         {bookmarks.map((bookmark, index) => (
           <div
@@ -361,6 +354,9 @@ export default async function BookmarksPage({ searchParams }: BookmarksPageProps
             <CardTitle className="text-xl">My Bookmarks</CardTitle>
           </div>
           <div className="flex items-center gap-1">
+            <TooltipProvider>
+              <BulkRegenerateButton page={page} />
+            </TooltipProvider>
             <RefreshButton />
             <LinkButton href="/" variant="ghost" size="icon">
               <Home className="w-5 h-5" />

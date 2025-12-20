@@ -71,7 +71,8 @@ Required in `.dev.vars` (local) and Cloudflare secrets (production):
 For AI-powered suggestions (`/api/habu/suggest`):
 - `BROWSER_RENDERING_ACCOUNT_ID`: Your Cloudflare account ID (note: `CF_*` and `CLOUDFLARE_*` prefixes are reserved by Wrangler)
 - `BROWSER_RENDERING_API_TOKEN`: API token with Browser Rendering permissions
-- `OPENAI_API_KEY`: OpenAI API key for GPT
+- `GOOGLE_GENERATIVE_AI_API_KEY`: Google AI API key for Gemini (from https://aistudio.google.com/apikey)
+- `OPENAI_API_KEY`: OpenAI API key for moderation
 - `MASTRA_CLOUD_ACCESS_TOKEN`: Mastra Cloud access token for AI tracing
 
 Set production secrets with:
@@ -81,6 +82,7 @@ wrangler secret put HATENA_CONSUMER_KEY
 wrangler secret put HATENA_CONSUMER_SECRET
 wrangler secret put BROWSER_RENDERING_ACCOUNT_ID
 wrangler secret put BROWSER_RENDERING_API_TOKEN
+wrangler secret put GOOGLE_GENERATIVE_AI_API_KEY
 wrangler secret put OPENAI_API_KEY
 wrangler secret put MASTRA_CLOUD_ACCESS_TOKEN
 ```
@@ -116,10 +118,10 @@ wrangler secret put MASTRA_CLOUD_ACCESS_TOKEN
 When `/api/habu/bookmark` is called without a comment:
 1. Cloudflare Browser Rendering fetches page content as Markdown
 2. Hatena API fetches user's existing tags
-3. OpenAI GPT generates summary (Japanese, max 100 chars) and tags (page language, max 10)
+3. Google Gemini 3 Flash generates summary (Japanese, max 100 chars) and tags (page language, max 10)
 4. Formatted as `[tag1][tag2]summary` and sent to Hatena
 
-Requires environment variables: `BROWSER_RENDERING_ACCOUNT_ID`, `BROWSER_RENDERING_API_TOKEN`, `OPENAI_API_KEY`, `MASTRA_CLOUD_ACCESS_TOKEN`
+Requires environment variables: `BROWSER_RENDERING_ACCOUNT_ID`, `BROWSER_RENDERING_API_TOKEN`, `GOOGLE_GENERATIVE_AI_API_KEY`, `OPENAI_API_KEY` (for moderation), `MASTRA_CLOUD_ACCESS_TOKEN`
 
 ## Testing Hatena OAuth Locally
 

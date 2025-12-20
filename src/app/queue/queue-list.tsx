@@ -229,24 +229,23 @@ export function QueueList() {
         {items.map((item, index) => (
           <div
             key={item.id || index}
-            className="w-full text-left p-3 rounded-md border hover:bg-muted/50 transition-colors"
+            className="relative w-full text-left p-3 rounded-md border hover:bg-muted/50 transition-colors"
           >
+            {/* Full card link for completed items */}
+            {item.status === "done" && (
+              <Link
+                href={`/bookmarks/detail?url=${encodeURIComponent(item.url)}`}
+                className="absolute inset-0"
+                aria-label={`Edit bookmark: ${item.title || item.url}`}
+              />
+            )}
             {/* Header: Status icon, Title, Action buttons */}
             <div className="flex items-center gap-3">
               <div className="flex-shrink-0">{getStatusIcon(item.status)}</div>
-              {item.status === "done" ? (
-                <Link
-                  href={`/bookmarks/detail?url=${encodeURIComponent(item.url)}`}
-                  className="font-medium text-sm truncate flex-1 min-w-0 hover:underline"
-                >
-                  {item.title || item.url}
-                </Link>
-              ) : (
-                <h3 className="font-medium text-sm truncate flex-1 min-w-0">
-                  {item.title || item.url}
-                </h3>
-              )}
-              <div className="flex items-center gap-1 flex-shrink-0">
+              <h3 className="font-medium text-sm truncate flex-1 min-w-0">
+                {item.title || item.url}
+              </h3>
+              <div className="relative z-10 flex items-center gap-1 flex-shrink-0">
                 {item.status === "done" && (
                   <Tooltip>
                     <TooltipTrigger asChild>

@@ -21,6 +21,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { LinkButton } from "@/components/ui/link-button";
 import { RefreshButton } from "./refresh-button";
 import { RegenerateButton } from "./regenerate-button";
+import { BulkRegenerateButton } from "./bulk-regenerate-button";
 
 async function getHatenaStatus(): Promise<boolean> {
   const cookieStore = await cookies();
@@ -247,8 +248,16 @@ async function BookmarkList({ page }: { page: number }) {
     );
   }
 
+  // Prepare data for bulk regenerate button
+  const bulkBookmarks = bookmarks.map((b) => ({ url: b.url, title: b.title }));
+
   return (
     <>
+      {/* Bulk regenerate toolbar */}
+      <div className="flex justify-end mb-2">
+        <BulkRegenerateButton bookmarks={bulkBookmarks} />
+      </div>
+
       <div className="space-y-2">
         {bookmarks.map((bookmark, index) => (
           <div

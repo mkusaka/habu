@@ -27,6 +27,13 @@ const MAX_JUDGE_ATTEMPTS = 3;
 const PARALLEL_GENERATION_COUNT = 2;
 const MAX_SCHEMA_RETRIES = 2;
 
+// Groq provider options for flex processing (10x rate limits)
+const GROQ_FLEX_PROVIDER_OPTIONS = {
+  groq: {
+    serviceTier: "flex" as const,
+  },
+};
+
 // Helper: Retry wrapper for generateObject schema errors
 async function generateObjectWithRetry<T extends z.ZodType>(
   params: {
@@ -47,6 +54,7 @@ async function generateObjectWithRetry<T extends z.ZodType>(
         system: params.system,
         prompt: params.prompt,
         abortSignal: params.abortSignal,
+        providerOptions: GROQ_FLEX_PROVIDER_OPTIONS,
       });
       return result.object as z.infer<T>;
     } catch (error) {
@@ -377,6 +385,7 @@ const webSearchStep = createStep({
           browser_search: groq.tools.browserSearch({}),
         },
         toolChoice: "required",
+        providerOptions: GROQ_FLEX_PROVIDER_OPTIONS,
       });
 
       return { webContext: text.slice(0, 1000), webContextSource: "groq-browser_search" as const };

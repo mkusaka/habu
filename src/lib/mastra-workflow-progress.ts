@@ -40,13 +40,13 @@ export const BOOKMARK_SUGGESTION_STEP_META: Record<string, WorkflowStepMeta> = {
   },
   "fetch-metadata": { provider: "Habu", api: "HTMLRewriter (local)" },
   "web-search": {
-    provider: "xAI (X/Twitter) / OpenAI (others)",
-    model: "grok-* (XAI_MODEL) / gpt-5-mini",
-    api: "chat/completions / web_search",
+    provider: "xAI (X/Twitter) / Groq (others)",
+    model: "grok-* (XAI_MODEL) / gpt-oss-120b",
+    api: "chat/completions / browser_search",
   },
   "merge-content": { provider: "Habu", api: "merge" },
-  "generate-summary": { provider: "OpenAI", model: "gpt-5.2", api: "generate + judge" },
-  "generate-tags": { provider: "OpenAI", model: "gpt-5-mini + gpt-5.2", api: "generate + judge" },
+  "generate-summary": { provider: "Groq", model: "gpt-oss-120b", api: "generate + judge" },
+  "generate-tags": { provider: "Groq", model: "gpt-oss-120b", api: "generate + judge" },
   "merge-results": { provider: "Habu", api: "merge" },
 };
 

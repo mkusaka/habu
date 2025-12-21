@@ -342,6 +342,11 @@ export async function POST(request: NextRequest) {
 
         const { summary, tags, canonicalUrl } = result.result;
 
+        // Fail if summary generation failed (empty or too short)
+        if (!summary || summary.length < 10) {
+          throw new Error("Failed to generate summary");
+        }
+
         // Use canonical URL if available (cleaner, tracking-free URL)
         if (canonicalUrl) {
           url = canonicalUrl;

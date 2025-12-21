@@ -59,13 +59,23 @@ async function generateObjectWithRetry<T extends z.ZodType>(
       return result.object as z.infer<T>;
     } catch (error) {
       lastError = error;
+      // Retry on schema generation errors (includes validation failures)
       if (error instanceof NoObjectGeneratedError) {
-        console.warn(
-          `[Schema Error] Attempt ${retry + 1}/${maxRetries + 1} failed:`,
-          error.cause,
-          "Raw text:",
-          error.text?.slice(0, 200),
-        );
+        const cause = error.cause;
+        // Check if the cause is a Zod validation error
+        if (cause instanceof z.ZodError) {
+          console.warn(
+            `[Validation Error] Attempt ${retry + 1}/${maxRetries + 1} failed:`,
+            cause.issues.map((e) => `${e.path.join(".")}: ${e.message}`).join(", "),
+          );
+        } else {
+          console.warn(
+            `[Schema Error] Attempt ${retry + 1}/${maxRetries + 1} failed:`,
+            cause,
+            "Raw text:",
+            error.text?.slice(0, 200),
+          );
+        }
         if (retry < maxRetries) continue;
       }
       throw error;
@@ -640,7 +650,11 @@ const mergeContentStep = createStep({
 
 // Summary output schema
 const SummaryOutputSchema = z.object({
-  summary: z.string().max(100).describe("Concise summary in Japanese, ideally 70-100 characters"),
+  summary: z
+    .string()
+    .min(10)
+    .max(100)
+    .describe("Concise summary in Japanese, 10-100 characters (ideally 70-100)"),
   webContext: z.string().optional(),
   canonicalUrl: z.string().optional(),
 });
@@ -695,7 +709,7 @@ Adapt your tone to the content type (product, article, news, tool, etc.).
 
 <output_requirements>
 - Language: Japanese only
-- Length: Aim for 70-100 characters (full-width = 1), must not exceed 100
+- Length: 10-100 characters (aim for 70-100, full-width = 1)
 - Include at least ONE concrete detail from the content (feature, number, method, etc.)
 - Keep technical terms in their original form (e.g., "API", "Docker", "React") - do NOT translate them into Japanese
 </output_requirements>

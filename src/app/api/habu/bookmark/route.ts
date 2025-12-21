@@ -347,6 +347,12 @@ export async function POST(request: NextRequest) {
           throw new Error("Failed to generate summary");
         }
 
+        // Fail if no meaningful tags generated (excluding "AI要約")
+        const meaningfulTags = tags.filter((t) => t !== "AI要約");
+        if (meaningfulTags.length === 0) {
+          throw new Error("Failed to generate tags");
+        }
+
         // Use canonical URL if available (cleaner, tracking-free URL)
         if (canonicalUrl) {
           url = canonicalUrl;

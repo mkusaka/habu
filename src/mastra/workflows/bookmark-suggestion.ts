@@ -669,7 +669,6 @@ async function runSummaryGenerationWithJudge(
 
   const now = new Date();
   const date = now.toISOString().split("T")[0];
-  const time = now.toTimeString().split(" ")[0];
 
   const metadataContext = [
     metadata.title && `Title: ${metadata.title}`,
@@ -682,7 +681,7 @@ async function runSummaryGenerationWithJudge(
     .join("\n");
 
   const baseSystemPrompt = `<context>
-Current date and time: ${date} ${time} (JST)
+Current date: ${date} (JST)
 </context>
 
 <role>

@@ -25,7 +25,7 @@ const groq = createGroq();
 const MAX_MARKDOWN_CHARS = 800000;
 const MAX_JUDGE_ATTEMPTS = 3;
 const PARALLEL_GENERATION_COUNT = 2;
-const MAX_SCHEMA_RETRIES = 2;
+const MAX_SCHEMA_RETRIES = 5;
 
 // Groq provider options for flex processing (10x rate limits)
 const GROQ_FLEX_PROVIDER_OPTIONS = {

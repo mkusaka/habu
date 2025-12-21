@@ -2,7 +2,7 @@ import { createWorkflow, createStep } from "@mastra/core/workflows";
 import { z } from "zod";
 import OpenAI from "openai";
 import { generateText, generateObject, NoObjectGeneratedError } from "ai";
-import { google } from "@ai-sdk/google";
+import { openai } from "@ai-sdk/openai";
 import { fetchPageMeta, isMetaExtractionResult } from "@/lib/page-meta";
 import { fetchTwitterMarkdown } from "@/lib/twitter-content";
 import { isTwitterStatusUrl } from "@/lib/twitter-oembed";
@@ -89,7 +89,7 @@ async function judgeSummary(
   const summaryLength = summary.length;
 
   const result = await generateObjectWithRetry({
-    model: google("gemini-3-flash-preview"),
+    model: openai("gpt-5.2"),
     schema: JudgeResultSchema,
     system: `<role>
 You are a quality evaluator for Hatena Bookmark summaries.
@@ -176,7 +176,7 @@ async function judgeTags(
   const allTagsValid = invalidTags.length === 0;
 
   const result = await generateObjectWithRetry({
-    model: google("gemini-3-flash-preview"),
+    model: openai("gpt-5.2"),
     schema: JudgeResultSchema,
     system: `<role>
 You are a quality evaluator for Hatena Bookmark tags.
@@ -316,7 +316,7 @@ const MetadataSchema = z.object({
 // Web search result schema
 const WebSearchResultSchema = z.object({
   webContext: z.string().optional(),
-  webContextSource: z.enum(["grok", "gemini-google_search"]).optional(),
+  webContextSource: z.enum(["grok", "openai-web_search"]).optional(),
 });
 
 // Content data schema (passed between steps)
@@ -366,16 +366,18 @@ const webSearchStep = createStep({
           : { webContext: undefined };
       }
 
-      // Use Gemini with Google Search Grounding to get additional context about the URL
+      // Use OpenAI web search to get additional context about the URL
       const { text } = await generateText({
-        model: google("gemini-3-flash-preview"),
+        model: openai("gpt-5-mini"),
         prompt: `Briefly describe what this URL is about and provide any relevant context (author, publication date, key topics). Keep it under 200 words. URL: ${url}`,
         tools: {
-          google_search: google.tools.googleSearch({}),
+          web_search: openai.tools.webSearch({
+            searchContextSize: "low",
+          }),
         },
       });
 
-      return { webContext: text.slice(0, 1000), webContextSource: "gemini-google_search" as const };
+      return { webContext: text.slice(0, 1000), webContextSource: "openai-web_search" as const };
     } catch (error) {
       console.warn("Web context fetch failed, continuing without web context:", error);
       return { webContext: undefined };
@@ -723,7 +725,7 @@ ${markdown}
       : basePrompt;
 
     const result = await generateObjectWithRetry({
-      model: google("gemini-3-flash-preview"),
+      model: openai("gpt-5.2"),
       schema: SummaryOutputSchema,
       system: baseSystemPrompt,
       prompt,
@@ -905,7 +907,7 @@ ${markdown.slice(0, 10000)}
 
         const prompt = `${promptBase}\n\n<candidate>\nrunner=${runnerId} candidate=${candidateId}\n</candidate>`;
         const result = await generateObjectWithRetry({
-          model: google("gemini-3-flash-preview"),
+          model: openai("gpt-5-mini"),
           schema: TagsOutputSchema,
           system: baseSystemPrompt,
           prompt,

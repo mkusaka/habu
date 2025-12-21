@@ -2,7 +2,7 @@ import { createWorkflow, createStep } from "@mastra/core/workflows";
 import { z } from "zod";
 import OpenAI from "openai";
 import { generateText, generateObject, NoObjectGeneratedError } from "ai";
-import { openai } from "@ai-sdk/openai";
+import { createGroq } from "@ai-sdk/groq";
 import { fetchPageMeta, isMetaExtractionResult } from "@/lib/page-meta";
 import { fetchTwitterMarkdown } from "@/lib/twitter-content";
 import { isTwitterStatusUrl } from "@/lib/twitter-oembed";
@@ -17,6 +17,9 @@ function getOpenAIClient(): OpenAI {
   }
   return openaiClient;
 }
+
+// Groq client for AI generation
+const groq = createGroq();
 
 // Constants
 const MAX_MARKDOWN_CHARS = 800000;
@@ -89,7 +92,7 @@ async function judgeSummary(
   const summaryLength = summary.length;
 
   const result = await generateObjectWithRetry({
-    model: openai("gpt-5.2"),
+    model: groq("openai/gpt-oss-120b"),
     schema: JudgeResultSchema,
     system: `<role>
 You are a quality evaluator for Hatena Bookmark summaries.
@@ -176,7 +179,7 @@ async function judgeTags(
   const allTagsValid = invalidTags.length === 0;
 
   const result = await generateObjectWithRetry({
-    model: openai("gpt-5.2"),
+    model: groq("openai/gpt-oss-120b"),
     schema: JudgeResultSchema,
     system: `<role>
 You are a quality evaluator for Hatena Bookmark tags.
@@ -316,7 +319,7 @@ const MetadataSchema = z.object({
 // Web search result schema
 const WebSearchResultSchema = z.object({
   webContext: z.string().optional(),
-  webContextSource: z.enum(["grok", "openai-web_search"]).optional(),
+  webContextSource: z.enum(["grok", "groq-browser_search"]).optional(),
 });
 
 // Content data schema (passed between steps)
@@ -366,18 +369,17 @@ const webSearchStep = createStep({
           : { webContext: undefined };
       }
 
-      // Use OpenAI web search to get additional context about the URL
+      // Use Groq browser search to get additional context about the URL
       const { text } = await generateText({
-        model: openai("gpt-5-mini"),
+        model: groq("openai/gpt-oss-120b"),
         prompt: `Briefly describe what this URL is about and provide any relevant context (author, publication date, key topics). Keep it under 200 words. URL: ${url}`,
         tools: {
-          web_search: openai.tools.webSearch({
-            searchContextSize: "low",
-          }),
+          browser_search: groq.tools.browserSearch({}),
         },
+        toolChoice: "required",
       });
 
-      return { webContext: text.slice(0, 1000), webContextSource: "openai-web_search" as const };
+      return { webContext: text.slice(0, 1000), webContextSource: "groq-browser_search" as const };
     } catch (error) {
       console.warn("Web context fetch failed, continuing without web context:", error);
       return { webContext: undefined };
@@ -725,7 +727,7 @@ ${markdown}
       : basePrompt;
 
     const result = await generateObjectWithRetry({
-      model: openai("gpt-5.2"),
+      model: groq("openai/gpt-oss-120b"),
       schema: SummaryOutputSchema,
       system: baseSystemPrompt,
       prompt,
@@ -907,7 +909,7 @@ ${markdown.slice(0, 10000)}
 
         const prompt = `${promptBase}\n\n<candidate>\nrunner=${runnerId} candidate=${candidateId}\n</candidate>`;
         const result = await generateObjectWithRetry({
-          model: openai("gpt-5-mini"),
+          model: groq("openai/gpt-oss-120b"),
           schema: TagsOutputSchema,
           system: baseSystemPrompt,
           prompt,

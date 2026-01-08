@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ListTodo, Home, Settings } from "lucide-react";
 import { LinkButton } from "@/components/ui/link-button";
 import { SyncButton } from "./sync-button";
-import { QueueStats, QueueList, ClearCompletedButton } from "./queue-list";
+import { QueueStats, QueueList, ClearCompletedButton, CopyAllUrlsButton } from "./queue-list";
 
 async function getHatenaStatus(): Promise<boolean> {
   const cookieStore = await cookies();
@@ -67,8 +67,11 @@ export default async function QueuePage() {
         {/* Queue items */}
         <QueueList />
 
-        {/* Clear completed button */}
-        <ClearCompletedButton />
+        {/* Action buttons */}
+        <div className="flex gap-2 flex-wrap">
+          <CopyAllUrlsButton />
+          <ClearCompletedButton />
+        </div>
       </CardContent>
     </Card>
   );

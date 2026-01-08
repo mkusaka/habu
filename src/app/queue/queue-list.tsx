@@ -114,6 +114,32 @@ export function ClearCompletedButton() {
   );
 }
 
+export function CopyAllUrlsButton() {
+  const items = useLiveQuery(() => db.bookmarks.orderBy("createdAt").reverse().toArray(), []);
+
+  const handleCopyAllUrls = async () => {
+    if (!items || items.length === 0) return;
+
+    try {
+      const urls = items.map((item) => item.url).join("\n");
+      await navigator.clipboard.writeText(urls);
+      toast.success(`${items.length} URLs copied to clipboard`);
+    } catch (error) {
+      console.error("Copy failed:", error);
+      toast.error("Failed to copy URLs");
+    }
+  };
+
+  if (!items || items.length === 0) return null;
+
+  return (
+    <Button variant="outline" onClick={handleCopyAllUrls}>
+      <Copy className="w-4 h-4 mr-2" />
+      Copy All URLs
+    </Button>
+  );
+}
+
 // Estimated height for each queue item (used for virtualization)
 const ITEM_HEIGHT_ESTIMATE = 120;
 

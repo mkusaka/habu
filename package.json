@@ -28,7 +28,6 @@
 		"db:migrate:remote": "wrangler d1 migrations apply habu_db --remote"
 	},
 	"dependencies": {
-		"@ai-sdk/groq": "^2.0.33",
 		"@ai-sdk/openai": "^2.0.75",
 		"@cloudflare/workers-types": "^4.20251121.0",
 		"@mastra/core": "^0.24.6",

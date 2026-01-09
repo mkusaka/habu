@@ -2,7 +2,7 @@ import { createWorkflow, createStep } from "@mastra/core/workflows";
 import { z } from "zod";
 import OpenAI from "openai";
 import { generateText, generateObject, NoObjectGeneratedError } from "ai";
-import { createGroq } from "@ai-sdk/groq";
+import { createOpenAI } from "@ai-sdk/openai";
 import { fetchPageMeta, isMetaExtractionResult } from "@/lib/page-meta";
 import { fetchTwitterMarkdown } from "@/lib/twitter-content";
 import { isTwitterStatusUrl } from "@/lib/twitter-oembed";
@@ -18,21 +18,14 @@ function getOpenAIClient(): OpenAI {
   return openaiClient;
 }
 
-// Groq client for AI generation
-const groq = createGroq();
+// OpenAI client for AI generation
+const openai = createOpenAI();
 
 // Constants
 const MAX_MARKDOWN_CHARS = 800000;
 const MAX_JUDGE_ATTEMPTS = 3;
 const PARALLEL_GENERATION_COUNT = 2;
 const MAX_SCHEMA_RETRIES = 5;
-
-// Groq provider options for flex processing (10x rate limits)
-const GROQ_FLEX_PROVIDER_OPTIONS = {
-  groq: {
-    serviceTier: "flex" as const,
-  },
-};
 
 // Helper: Retry wrapper for generateObject schema errors
 async function generateObjectWithRetry<T extends z.ZodType>(
@@ -54,7 +47,6 @@ async function generateObjectWithRetry<T extends z.ZodType>(
         system: params.system,
         prompt: params.prompt,
         abortSignal: params.abortSignal,
-        providerOptions: GROQ_FLEX_PROVIDER_OPTIONS,
       });
       return result.object as z.infer<T>;
     } catch (error) {
@@ -110,7 +102,7 @@ async function judgeSummary(
   const summaryLength = summary.length;
 
   const result = await generateObjectWithRetry({
-    model: groq("openai/gpt-oss-120b"),
+    model: openai("gpt-5-mini"),
     schema: JudgeResultSchema,
     system: `<role>
 You are a quality evaluator for Hatena Bookmark summaries.
@@ -197,7 +189,7 @@ async function judgeTags(
   const allTagsValid = invalidTags.length === 0;
 
   const result = await generateObjectWithRetry({
-    model: groq("openai/gpt-oss-120b"),
+    model: openai("gpt-5-mini"),
     schema: JudgeResultSchema,
     system: `<role>
 You are a quality evaluator for Hatena Bookmark tags.
@@ -337,7 +329,7 @@ const MetadataSchema = z.object({
 // Web search result schema
 const WebSearchResultSchema = z.object({
   webContext: z.string().optional(),
-  webContextSource: z.enum(["grok", "groq-browser_search"]).optional(),
+  webContextSource: z.enum(["grok", "openai-web_search"]).optional(),
 });
 
 // Content data schema (passed between steps)
@@ -387,18 +379,17 @@ const webSearchStep = createStep({
           : { webContext: undefined };
       }
 
-      // Use Groq browser search to get additional context about the URL
+      // Use OpenAI web search to get additional context about the URL
       const { text } = await generateText({
-        model: groq("openai/gpt-oss-120b"),
+        model: openai("gpt-5-mini"),
         prompt: `Briefly describe what this URL is about and provide any relevant context (author, publication date, key topics). Keep it under 200 words. URL: ${url}`,
         tools: {
-          browser_search: groq.tools.browserSearch({}),
+          web_search: openai.tools.webSearch({}),
         },
         toolChoice: "required",
-        providerOptions: GROQ_FLEX_PROVIDER_OPTIONS,
       });
 
-      return { webContext: text.slice(0, 1000), webContextSource: "groq-browser_search" as const };
+      return { webContext: text.slice(0, 1000), webContextSource: "openai-web_search" as const };
     } catch (error) {
       console.warn("Web context fetch failed, continuing without web context:", error);
       return { webContext: undefined };
@@ -749,7 +740,7 @@ ${markdown}
       : basePrompt;
 
     const result = await generateObjectWithRetry({
-      model: groq("openai/gpt-oss-120b"),
+      model: openai("gpt-5-mini"),
       schema: SummaryOutputSchema,
       system: baseSystemPrompt,
       prompt,
@@ -931,7 +922,7 @@ ${markdown.slice(0, 10000)}
 
         const prompt = `${promptBase}\n\n<candidate>\nrunner=${runnerId} candidate=${candidateId}\n</candidate>`;
         const result = await generateObjectWithRetry({
-          model: groq("openai/gpt-oss-120b"),
+          model: openai("gpt-5-mini"),
           schema: TagsOutputSchema,
           system: baseSystemPrompt,
           prompt,

@@ -10,7 +10,6 @@ declare global {
     BROWSER_RENDERING_ACCOUNT_ID: string;
     BROWSER_RENDERING_API_TOKEN: string;
     OPENAI_API_KEY: string;
-    GROQ_API_KEY: string;
     XAI_API_KEY?: string;
     XAI_BASE_URL?: string;
     XAI_MODEL?: string;

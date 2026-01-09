@@ -305,9 +305,9 @@ export async function POST(request: NextRequest) {
           return { provider: "Habu", api: "merge" };
 
         if (stepId === "generate-summary")
-          return { provider: "OpenAI", model: "gpt-5.2", api: "generate + judge" };
+          return { provider: "OpenAI", model: "gpt-5-mini", api: "generate + judge" };
         if (stepId === "generate-tags")
-          return { provider: "OpenAI", model: "gpt-5-mini + gpt-5.2", api: "generate + judge" };
+          return { provider: "OpenAI", model: "gpt-5-mini", api: "generate + judge" };
 
         if (stepId === "moderate-user-context" && eventType === "step-result") {
           const output = payloadObj?.output as Record<string, unknown> | undefined;

@@ -1003,9 +1003,8 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
             <AlertDialogCancel>Add new anyway</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
-                if (existingBookmark) {
-                  router.push(`/bookmarks/detail?url=${encodeURIComponent(existingBookmark.url)}`);
-                }
+                // Use the input URL directly, as API response may not include url field
+                router.push(`/bookmarks/detail?url=${encodeURIComponent(url)}`);
               }}
             >
               Edit existing

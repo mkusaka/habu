@@ -31,7 +31,18 @@ import {
   FileText,
   Info,
   Copy,
+  Pencil,
 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { LinkButton } from "@/components/ui/link-button";
 
 interface SaveFormProps {
@@ -143,6 +154,13 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
   } | null>(null);
   const [showRawContent, setShowRawContent] = useState(false);
   const [draftRestored, setDraftRestored] = useState(false);
+  const [isCheckingBookmark, setIsCheckingBookmark] = useState(false);
+  const [existingBookmark, setExistingBookmark] = useState<{
+    url: string;
+    comment: string;
+    tags: string[];
+  } | null>(null);
+  const [showExistingDialog, setShowExistingDialog] = useState(false);
 
   const debouncedUrl = useDebounce(url, 500);
 
@@ -236,6 +254,42 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
       fetchTitle(debouncedUrl);
     }
   }, [debouncedUrl, fetchTitle, initialTitle]);
+
+  // Check if bookmark already exists (debounced)
+  const checkExistingBookmark = useCallback(
+    async (targetUrl: string) => {
+      if (!isValidUrl(targetUrl) || !isOnline || !hasHatena) return;
+
+      setIsCheckingBookmark(true);
+      setExistingBookmark(null);
+      try {
+        const response = await fetch(`/api/habu/bookmark?url=${encodeURIComponent(targetUrl)}`, {
+          credentials: "include",
+        });
+        if (response.ok) {
+          const data = (await response.json()) as {
+            url: string;
+            comment: string;
+            tags: string[];
+          };
+          setExistingBookmark(data);
+          setShowExistingDialog(true);
+        }
+        // 404 means bookmark doesn't exist - that's fine
+      } catch {
+        // Ignore errors - existence check is optional
+      } finally {
+        setIsCheckingBookmark(false);
+      }
+    },
+    [isOnline, hasHatena],
+  );
+
+  useEffect(() => {
+    if (debouncedUrl && isValidUrl(debouncedUrl)) {
+      checkExistingBookmark(debouncedUrl);
+    }
+  }, [debouncedUrl, checkExistingBookmark]);
 
   // Validate URL on change
   const handleUrlChange = (value: string) => {
@@ -567,7 +621,10 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
 
         {/* Form */}
         <div className="space-y-2">
-          <Label htmlFor="url">URL</Label>
+          <Label htmlFor="url" className="flex items-center gap-2">
+            URL
+            {isCheckingBookmark && <Loader2 className="w-3 h-3 animate-spin" />}
+          </Label>
           <Input
             id="url"
             type="url"
@@ -905,6 +962,57 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
           </LinkButton>
         </div>
       </CardContent>
+
+      {/* Existing Bookmark Dialog */}
+      <AlertDialog open={showExistingDialog} onOpenChange={setShowExistingDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Pencil className="w-5 h-5" />
+              Bookmark already exists
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2">
+                <p>This URL is already bookmarked. Would you like to edit it?</p>
+                {existingBookmark && (
+                  <div className="mt-3 p-3 bg-muted rounded-md text-sm">
+                    {existingBookmark.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mb-2">
+                        {existingBookmark.tags.map((tag, i) => (
+                          <span
+                            key={i}
+                            className="px-2 py-0.5 bg-primary/10 text-primary rounded text-xs"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    {existingBookmark.comment && (
+                      <p className="text-muted-foreground break-all">
+                        {existingBookmark.comment.replace(/\[[^\]]+\]/g, "").trim() ||
+                          "(tags only)"}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Add new anyway</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (existingBookmark) {
+                  router.push(`/bookmarks/detail?url=${encodeURIComponent(existingBookmark.url)}`);
+                }
+              }}
+            >
+              Edit existing
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }

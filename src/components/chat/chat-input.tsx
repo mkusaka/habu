@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, type KeyboardEvent, type ChangeEvent, type FormEvent } from "react";
+import { useRef, useState, type KeyboardEvent, type ChangeEvent, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Send, Loader2 } from "lucide-react";
@@ -15,9 +15,11 @@ interface ChatInputProps {
 
 export function ChatInput({ input, onChange, onSubmit, disabled, isLoading }: ChatInputProps) {
   const formRef = useRef<HTMLFormElement>(null);
+  const [isComposing, setIsComposing] = useState(false);
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+    // Ignore Enter during IME composition
+    if (e.key === "Enter" && !e.shiftKey && !isComposing) {
       e.preventDefault();
       if (input.trim() && !disabled) {
         formRef.current?.requestSubmit();
@@ -31,6 +33,8 @@ export function ChatInput({ input, onChange, onSubmit, disabled, isLoading }: Ch
         value={input}
         onChange={onChange}
         onKeyDown={handleKeyDown}
+        onCompositionStart={() => setIsComposing(true)}
+        onCompositionEnd={() => setIsComposing(false)}
         placeholder="Ask about this page..."
         disabled={disabled}
         rows={2}

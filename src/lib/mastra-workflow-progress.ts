@@ -61,6 +61,9 @@ export const BOOKMARK_SUGGESTION_STEP_ORDER: Array<Pick<WorkflowStepState, "id" 
   { id: "merge-results", label: "Merge results" },
 ];
 
+/** Internal steps that should be hidden from UI */
+export const INTERNAL_STEP_IDS = new Set(["merge-content", "merge-results"]);
+
 export function initBookmarkSuggestionSteps(): Record<string, WorkflowStepState> {
   return Object.fromEntries(
     BOOKMARK_SUGGESTION_STEP_ORDER.map((s) => [
@@ -80,10 +83,45 @@ export function initBookmarkSuggestionSteps(): Record<string, WorkflowStepState>
   );
 }
 
+export interface FilterStepsOptions {
+  /** Hide internal steps like merge-content, merge-results */
+  hideInternalSteps?: boolean;
+  /** Hide moderate-user-context if no user context was provided */
+  hasUserContext?: boolean;
+}
+
 export function orderedBookmarkSuggestionSteps(
   steps: Record<string, WorkflowStepState>,
+  options?: FilterStepsOptions,
 ): WorkflowStepState[] {
-  return BOOKMARK_SUGGESTION_STEP_ORDER.map(({ id }) => steps[id]).filter(Boolean);
+  const { hideInternalSteps = false, hasUserContext = true } = options ?? {};
+
+  return BOOKMARK_SUGGESTION_STEP_ORDER.map(({ id }) => steps[id])
+    .filter(Boolean)
+    .filter((step) => {
+      // Filter out internal steps if requested
+      if (hideInternalSteps && INTERNAL_STEP_IDS.has(step.id)) {
+        return false;
+      }
+      // Filter out moderate-user-context if no user context
+      if (!hasUserContext && step.id === "moderate-user-context") {
+        return false;
+      }
+      return true;
+    });
+}
+
+/**
+ * Get labels of currently running steps (status === "running" or "waiting")
+ * Returns comma-separated list if multiple steps are running in parallel
+ */
+export function getRunningStepLabels(steps: WorkflowStepState[]): string | null {
+  const runningSteps = steps.filter(
+    (step) =>
+      (step.status === "running" || step.status === "waiting") && !INTERNAL_STEP_IDS.has(step.id),
+  );
+  if (runningSteps.length === 0) return null;
+  return runningSteps.map((step) => step.label).join(", ");
 }
 
 export function formatElapsedMs(startedAt?: number, endedAt?: number) {

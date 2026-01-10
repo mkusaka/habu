@@ -62,7 +62,6 @@ export function BookmarkEditForm({
   const [generatedResult, setGeneratedResult] = useState<GeneratedResult | null>(null);
   const [showRawContent, setShowRawContent] = useState(false);
   const [workflowRunId, setWorkflowRunId] = useState<string | null>(null);
-  const [workflowStage, setWorkflowStage] = useState<string | null>(null);
   const [workflowSteps, setWorkflowSteps] = useState<Record<string, WorkflowStepState>>(
     initBookmarkSuggestionSteps(),
   );
@@ -76,7 +75,6 @@ export function BookmarkEditForm({
     setIsGenerating(true);
     setGeneratedResult(null);
     setWorkflowRunId(null);
-    setWorkflowStage("starting");
     setWorkflowSteps(initBookmarkSuggestionSteps());
 
     try {
@@ -102,12 +100,7 @@ export function BookmarkEditForm({
         if (!data) return;
 
         if (event === "preflight") {
-          try {
-            const payload = JSON.parse(data) as { stage?: string };
-            setWorkflowStage(payload.stage ?? null);
-          } catch {
-            // ignore
-          }
+          // Preflight events are internal progress - no UI action needed
           return;
         }
 
@@ -244,7 +237,6 @@ export function BookmarkEditForm({
       if (!gotResult) {
         throw new Error("Failed to generate");
       }
-      setWorkflowStage("done");
       toast.success("Generated!", { description: "AI-generated summary and tags are ready." });
     } catch (error) {
       toast.error("Generation failed", {
@@ -357,12 +349,14 @@ export function BookmarkEditForm({
   return (
     <>
       {/* Workflow Progress */}
-      {(isGenerating || workflowStage || workflowRunId) && (
+      {(isGenerating || workflowRunId) && (
         <WorkflowProgress
           isRunning={isGenerating}
-          stage={workflowStage}
           runId={workflowRunId}
-          steps={orderedBookmarkSuggestionSteps(workflowSteps)}
+          steps={orderedBookmarkSuggestionSteps(workflowSteps, {
+            hideInternalSteps: true,
+            hasUserContext: !!context,
+          })}
         />
       )}
 

@@ -14,7 +14,10 @@ import {
   Info,
   AlertCircle,
   Copy,
+  MessageCircle,
 } from "lucide-react";
+import { ChatPanel } from "@/components/chat/chat-panel";
+import type { ChatContext, PageMetadata } from "@/lib/chat-context";
 import { WorkflowProgress } from "@/components/workflow-progress";
 import {
   formatWorkflowStepMeta,
@@ -47,14 +50,17 @@ interface BookmarkEditFormProps {
   bookmarkUrl: string;
   initialComment: string;
   bookmarkedAt?: string;
+  pageMetadata?: PageMetadata;
 }
 
 export function BookmarkEditForm({
   bookmarkUrl,
   initialComment,
   bookmarkedAt,
+  pageMetadata,
 }: BookmarkEditFormProps) {
   const [comment, setComment] = useState(initialComment);
+  const [isChatOpen, setIsChatOpen] = useState(false);
   const [context, setContext] = useState("");
   const [showContext, setShowContext] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -663,6 +669,26 @@ export function BookmarkEditForm({
           )}
         </Button>
       </div>
+
+      {/* Chat Button */}
+      <Button onClick={() => setIsChatOpen(true)} variant="outline" className="w-full" size="lg">
+        <MessageCircle className="w-4 h-4 mr-2" />
+        Chat about this page
+      </Button>
+
+      {/* Chat Panel */}
+      <ChatPanel
+        isOpen={isChatOpen}
+        onClose={() => setIsChatOpen(false)}
+        context={
+          {
+            url: bookmarkUrl,
+            metadata: pageMetadata,
+            existingComment: comment,
+            existingTags: currentTags,
+          } satisfies ChatContext
+        }
+      />
     </>
   );
 }

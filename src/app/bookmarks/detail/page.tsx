@@ -25,11 +25,19 @@ interface HatenaBookmarkGetResponse {
   created_datetime: string;
 }
 
+interface PageMetadata {
+  title?: string;
+  description?: string;
+  siteName?: string;
+  lang?: string;
+}
+
 interface FetchResult {
   success: boolean;
   error?: string;
   bookmark?: HatenaBookmarkGetResponse;
   title?: string;
+  metadata?: PageMetadata;
 }
 
 async function fetchBookmarkData(bookmarkUrl: string): Promise<FetchResult> {
@@ -87,16 +95,23 @@ async function fetchBookmarkData(bookmarkUrl: string): Promise<FetchResult> {
     fetchPageMeta(bookmarkUrl).catch(() => null),
   ]);
 
-  // Parse title from metadata
+  // Parse title and metadata
   let title: string | undefined;
+  let metadata: PageMetadata | undefined;
   if (metaResult && isMetaExtractionResult(metaResult)) {
     title = metaResult.title || metaResult.og?.title || metaResult.twitter?.title;
+    metadata = {
+      title,
+      description: metaResult.description || metaResult.og?.description,
+      siteName: metaResult.og?.siteName,
+      lang: metaResult.lang,
+    };
   }
 
   // Handle bookmark response
   if (bookmarkResponse.status === 404) {
     // Bookmark doesn't exist yet - that's okay for new bookmarks
-    return { success: true, bookmark: undefined, title };
+    return { success: true, bookmark: undefined, title, metadata };
   }
 
   if (!bookmarkResponse.ok) {
@@ -105,7 +120,7 @@ async function fetchBookmarkData(bookmarkUrl: string): Promise<FetchResult> {
   }
 
   const bookmark = (await bookmarkResponse.json()) as HatenaBookmarkGetResponse;
-  return { success: true, bookmark, title };
+  return { success: true, bookmark, title, metadata };
 }
 
 function BookmarkDetailLoading() {
@@ -196,6 +211,7 @@ async function BookmarkDetailContent({ bookmarkUrl }: { bookmarkUrl: string }) {
         bookmarkUrl={bookmarkUrl}
         initialComment={initialComment}
         bookmarkedAt={result.bookmark?.created_datetime}
+        pageMetadata={result.metadata}
       />
 
       {/* Navigation */}

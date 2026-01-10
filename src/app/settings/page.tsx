@@ -14,6 +14,7 @@ import { AutoSaveToggle } from "@/components/auto-save-toggle";
 import { AiGenerateToggle } from "@/components/ai-generate-toggle";
 import { NotificationToggle } from "@/components/notification-toggle";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { McpServersSettings } from "@/components/mcp-servers-settings";
 import { ToastHandler } from "./toast-handler";
 import { disconnectHatena } from "./actions";
 
@@ -114,6 +115,17 @@ async function SettingsContent({ searchParams }: SettingsContentProps) {
               <AiGenerateToggle />
               <NotificationToggle />
             </div>
+          </div>
+
+          <Separator />
+
+          {/* MCP Servers */}
+          <div>
+            <h3 className="text-sm font-medium mb-2">MCP Servers</h3>
+            <p className="text-sm text-muted-foreground mb-3">
+              Add MCP server URLs to enable additional tools in chat.
+            </p>
+            <McpServersSettings />
           </div>
 
           <Separator />

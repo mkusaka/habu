@@ -533,8 +533,12 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
 
     setIsSaving(true);
 
+    // Check AI generation setting (default: false = skip AI generation)
+    const aiGenerateEnabled = localStorage.getItem("habu-ai-generate") === "true";
+    const skipAiGeneration = !aiGenerateEnabled;
+
     // Fire-and-forget: queue the bookmark
-    queueBookmark(url, title, comment);
+    queueBookmark(url, title, comment, skipAiGeneration);
 
     toast.success("Bookmark saved!", {
       description:
@@ -563,8 +567,12 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
   useEffect(() => {
     const autoSave = localStorage.getItem("habu-auto-save") === "true";
     if (autoSave && initialUrl && isValidUrl(initialUrl)) {
+      // Check AI generation setting (default: false = skip AI generation)
+      const aiGenerateEnabled = localStorage.getItem("habu-ai-generate") === "true";
+      const skipAiGeneration = !aiGenerateEnabled;
+
       // Fire-and-forget: queue the bookmark
-      queueBookmark(initialUrl, initialTitle, initialComment);
+      queueBookmark(initialUrl, initialTitle, initialComment, skipAiGeneration);
 
       // Clear form fields and draft since we're auto-saving
       setUrl("");

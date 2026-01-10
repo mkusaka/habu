@@ -11,6 +11,7 @@ import { LinkButton } from "@/components/ui/link-button";
 import { OAuthButton } from "@/components/ui/oauth-button";
 import { ActionButton } from "@/components/ui/action-button";
 import { AutoSaveToggle } from "@/components/auto-save-toggle";
+import { AiGenerateToggle } from "@/components/ai-generate-toggle";
 import { NotificationToggle } from "@/components/notification-toggle";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { ToastHandler } from "./toast-handler";
@@ -110,6 +111,7 @@ async function SettingsContent({ searchParams }: SettingsContentProps) {
             <div className="space-y-4">
               <ThemeToggle />
               <AutoSaveToggle />
+              <AiGenerateToggle />
               <NotificationToggle />
             </div>
           </div>

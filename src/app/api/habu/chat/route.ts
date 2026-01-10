@@ -5,14 +5,6 @@ import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { createAuth } from "@/lib/auth";
 import { buildChatSystemPrompt, type ChatContext, type PageMetadata } from "@/lib/chat-context";
 
-// Maximum number of messages to prevent excessive token usage
-const MAX_MESSAGES = 50;
-// Maximum total character length for all messages
-const MAX_TOTAL_LENGTH = 100000;
-// Maximum length for context fields
-const MAX_MARKDOWN_LENGTH = 50000;
-const MAX_COMMENT_LENGTH = 500;
-
 interface ChatRequestBody {
   messages: UIMessage[];
   context: {
@@ -26,54 +18,6 @@ interface ChatRequestBody {
     url: string;
     name?: string;
   }>;
-}
-
-// Part types that are allowed from user messages (strict)
-const USER_ALLOWED_PART_TYPES = new Set(["text"]);
-
-function validateMessages(messages: unknown): messages is UIMessage[] {
-  if (!Array.isArray(messages)) return false;
-  if (messages.length === 0) return false;
-  if (messages.length > MAX_MESSAGES) return false;
-
-  let totalLength = 0;
-  for (const msg of messages) {
-    if (typeof msg !== "object" || msg === null) return false;
-    // Validate role and id are strings
-    if (!("role" in msg) || typeof msg.role !== "string") return false;
-    if (!("id" in msg) || typeof msg.id !== "string") return false;
-    // Only allow user and assistant roles (not system)
-    if (msg.role !== "user" && msg.role !== "assistant") return false;
-
-    // UIMessage requires parts array
-    if (!("parts" in msg) || !Array.isArray(msg.parts)) return false;
-
-    for (const part of msg.parts) {
-      // Validate each part is a valid object with type
-      if (typeof part !== "object" || part === null) return false;
-      if (!("type" in part) || typeof part.type !== "string") return false;
-
-      // For user messages, only allow text parts
-      // For assistant messages, allow any part type (AI SDK adds various types like source, step-start, etc.)
-      if (msg.role === "user" && !USER_ALLOWED_PART_TYPES.has(part.type)) return false;
-
-      if (part.type === "text") {
-        // text parts must have a text string
-        if (!("text" in part) || typeof part.text !== "string") return false;
-        totalLength += part.text.length;
-      }
-    }
-
-    if (totalLength > MAX_TOTAL_LENGTH) return false;
-  }
-
-  return true;
-}
-
-function truncateString(str: string | undefined, maxLength: number): string | undefined {
-  if (!str) return str;
-  if (str.length <= maxLength) return str;
-  return str.slice(0, maxLength) + "... (truncated)";
 }
 
 export async function POST(request: NextRequest) {
@@ -96,8 +40,8 @@ export async function POST(request: NextRequest) {
     const body = (await request.json()) as ChatRequestBody;
     const { messages, context } = body;
 
-    if (!validateMessages(messages)) {
-      return new Response(JSON.stringify({ error: "Invalid or too many messages" }), {
+    if (!Array.isArray(messages) || messages.length === 0) {
+      return new Response(JSON.stringify({ error: "Messages are required" }), {
         status: 400,
         headers: { "Content-Type": "application/json" },
       });
@@ -122,13 +66,12 @@ export async function POST(request: NextRequest) {
       apiKey: openaiApiKey,
     });
 
-    // Build chat context with size limits applied
     const chatContext: ChatContext = {
       url: context.url,
-      markdown: truncateString(context.markdown, MAX_MARKDOWN_LENGTH),
+      markdown: context.markdown,
       metadata: context.metadata,
-      existingComment: truncateString(context.existingComment, MAX_COMMENT_LENGTH),
-      existingTags: context.existingTags?.slice(0, 50), // Max 50 tags
+      existingComment: context.existingComment,
+      existingTags: context.existingTags,
     };
 
     const systemPrompt = buildChatSystemPrompt(chatContext);

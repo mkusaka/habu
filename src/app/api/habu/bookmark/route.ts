@@ -450,3 +450,126 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+/**
+ * Delete a bookmark by URL
+ * DELETE /api/habu/bookmark?url=...
+ */
+export async function DELETE(request: NextRequest) {
+  try {
+    // CSRF protection: verify Origin/Referer
+    const origin = request.headers.get("origin");
+    const referer = request.headers.get("referer");
+    const requestUrl = new URL(request.url);
+    const expectedOrigin = requestUrl.origin;
+
+    // Check that the request comes from our own origin
+    if (origin && origin !== expectedOrigin) {
+      return NextResponse.json({ success: false, error: "Invalid origin" }, { status: 403 });
+    }
+
+    // Fallback to referer check if origin is not present
+    if (!origin && referer) {
+      const refererUrl = new URL(referer);
+      if (refererUrl.origin !== expectedOrigin) {
+        return NextResponse.json({ success: false, error: "Invalid referer" }, { status: 403 });
+      }
+    }
+
+    const { searchParams } = new URL(request.url);
+    const url = searchParams.get("url");
+
+    if (!url) {
+      return NextResponse.json({ success: false, error: "URL is required" }, { status: 400 });
+    }
+
+    // Validate URL format
+    try {
+      new URL(url);
+    } catch {
+      return NextResponse.json({ success: false, error: "Invalid URL format" }, { status: 400 });
+    }
+
+    // Get DB connection for auth
+    const { env } = getCloudflareContext();
+    const auth = createAuth(env.DB);
+
+    // Get current user session
+    const session = await auth.api.getSession({
+      headers: request.headers,
+    });
+
+    if (!session?.user) {
+      return NextResponse.json({ success: false, error: "Not authenticated" }, { status: 401 });
+    }
+
+    // Get user with hatenaToken relation
+    const db = getDb(env.DB);
+
+    const user = await db.query.users.findFirst({
+      where: eq(users.id, session.user.id),
+      with: { hatenaToken: true },
+    });
+
+    if (!user?.hatenaToken) {
+      return NextResponse.json({ success: false, error: "Hatena not connected" }, { status: 400 });
+    }
+
+    const { accessToken: hatenaAccessToken, accessTokenSecret: hatenaAccessTokenSecret } =
+      user.hatenaToken;
+
+    // Get consumer credentials from env
+    const consumerKey = env.HATENA_CONSUMER_KEY;
+    const consumerSecret = env.HATENA_CONSUMER_SECRET;
+
+    if (!consumerKey || !consumerSecret) {
+      return NextResponse.json(
+        { success: false, error: "Server configuration error" },
+        { status: 500 },
+      );
+    }
+
+    // Build the API URL with the bookmark URL as query param
+    const apiUrl = `${HATENA_BOOKMARK_API_URL}?url=${encodeURIComponent(url)}`;
+
+    // Create OAuth signed request
+    const authHeaders = createSignedRequest(
+      apiUrl,
+      "DELETE",
+      hatenaAccessToken,
+      hatenaAccessTokenSecret,
+      consumerKey,
+      consumerSecret,
+    );
+
+    const response = await fetch(apiUrl, {
+      method: "DELETE",
+      headers: authHeaders,
+    });
+
+    // 204 No Content means success
+    if (response.status === 204) {
+      return NextResponse.json({ success: true });
+    }
+
+    if (response.status === 404) {
+      return NextResponse.json({ success: false, error: "Bookmark not found" }, { status: 404 });
+    }
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      return NextResponse.json(
+        { success: false, error: `Hatena API error: ${response.status} - ${errorText}` },
+        { status: response.status },
+      );
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Delete bookmark API error:", error);
+    return NextResponse.json(
+      { success: false, error: error instanceof Error ? error.message : "Internal server error" },
+      { status: 500 },
+    );
+  }
+}

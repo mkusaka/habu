@@ -2,19 +2,20 @@
 
 import { CheckCircle2, Circle, FileText, Loader2, XCircle } from "lucide-react";
 import type { WorkflowStepState } from "@/lib/mastra-workflow-progress";
-import { formatElapsedMs } from "@/lib/mastra-workflow-progress";
+import { formatElapsedMs, getRunningStepLabels } from "@/lib/mastra-workflow-progress";
 
 export function WorkflowProgress({
   isRunning,
-  stage,
   runId,
   steps,
 }: {
   isRunning: boolean;
-  stage: string | null;
   runId: string | null;
   steps: WorkflowStepState[];
 }) {
+  // Show currently running steps instead of completed stage
+  const runningLabel = getRunningStepLabels(steps);
+
   return (
     <div className="p-3 bg-muted rounded-md space-y-2 text-sm">
       <div className="flex items-center justify-between gap-2">
@@ -25,7 +26,7 @@ export function WorkflowProgress({
         {isRunning && (
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <Loader2 className="w-3 h-3 animate-spin" />
-            <span>{stage ?? "running"}</span>
+            <span>{runningLabel ?? "running"}</span>
           </div>
         )}
       </div>

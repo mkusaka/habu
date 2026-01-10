@@ -18,8 +18,12 @@ const MCP_SERVERS_KEY = "habu-mcp-servers";
 
 // Custom store for MCP servers with subscribe capability
 let listeners: Array<() => void> = [];
+let cachedServers: McpServerConfig[] = [];
+let cachedJson = "";
 
 function emitChange() {
+  // Invalidate cache
+  cachedJson = "";
   for (const listener of listeners) {
     listener();
   }
@@ -33,17 +37,24 @@ function subscribe(listener: () => void) {
 }
 
 function getSnapshot(): McpServerConfig[] {
-  if (typeof window === "undefined") return [];
+  if (typeof window === "undefined") return cachedServers;
   try {
-    const stored = localStorage.getItem(MCP_SERVERS_KEY);
-    return stored ? (JSON.parse(stored) as McpServerConfig[]) : [];
+    const stored = localStorage.getItem(MCP_SERVERS_KEY) ?? "";
+    // Return cached value if JSON hasn't changed
+    if (stored === cachedJson) {
+      return cachedServers;
+    }
+    cachedJson = stored;
+    cachedServers = stored ? (JSON.parse(stored) as McpServerConfig[]) : [];
+    return cachedServers;
   } catch {
-    return [];
+    return cachedServers;
   }
 }
 
+const emptyServers: McpServerConfig[] = [];
 function getServerSnapshot(): McpServerConfig[] {
-  return [];
+  return emptyServers;
 }
 
 export function McpServersSettings() {

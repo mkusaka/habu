@@ -12,12 +12,14 @@ import {
 } from "@/components/ui/sheet";
 import { ChatMessages } from "./chat-messages";
 import { ChatInput } from "./chat-input";
-import { getEnabledMcpServers, type McpServerConfig } from "@/lib/mcp-config";
+import type { McpServerConfig } from "@/lib/mcp-config";
 import type { ChatContext } from "@/lib/chat-context";
 
 // Subscribe to localStorage changes for MCP servers
 const MCP_SERVERS_KEY = "habu-mcp-servers";
 let mcpListeners: Array<() => void> = [];
+let mcpCachedServers: McpServerConfig[] = [];
+let mcpCachedJson = "";
 
 function subscribeMcp(listener: () => void) {
   mcpListeners = [...mcpListeners, listener];
@@ -27,18 +29,33 @@ function subscribeMcp(listener: () => void) {
 }
 
 function getMcpSnapshot(): McpServerConfig[] {
-  if (typeof window === "undefined") return [];
-  return getEnabledMcpServers();
+  if (typeof window === "undefined") return mcpCachedServers;
+  try {
+    const stored = localStorage.getItem(MCP_SERVERS_KEY) ?? "";
+    // Return cached value if JSON hasn't changed
+    if (stored === mcpCachedJson) {
+      return mcpCachedServers;
+    }
+    mcpCachedJson = stored;
+    const all = stored ? (JSON.parse(stored) as McpServerConfig[]) : [];
+    mcpCachedServers = all.filter((s) => s.enabled);
+    return mcpCachedServers;
+  } catch {
+    return mcpCachedServers;
+  }
 }
 
+const emptyMcpServers: McpServerConfig[] = [];
 function getMcpServerSnapshot(): McpServerConfig[] {
-  return [];
+  return emptyMcpServers;
 }
 
 // Listen for storage events to update when MCP servers change
 if (typeof window !== "undefined") {
   window.addEventListener("storage", (e) => {
     if (e.key === MCP_SERVERS_KEY) {
+      // Invalidate cache
+      mcpCachedJson = "";
       for (const listener of mcpListeners) {
         listener();
       }

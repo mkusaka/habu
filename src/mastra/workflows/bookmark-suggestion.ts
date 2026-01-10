@@ -639,17 +639,24 @@ const mergeContentStep = createStep({
   },
 });
 
-// Summary output schema
-// Note: Use .nullable() instead of .optional() for OpenAI structured output compatibility
-// OpenAI requires all properties to be in 'required' array; nullable emulates optional
+// Schema for AI generation (only summary - webContext/canonicalUrl are passed through, not generated)
+const SummaryGenerationSchema = z.object({
+  summary: z
+    .string()
+    .min(10)
+    .max(100)
+    .describe("Concise summary in Japanese, 10-100 characters (ideally 70-100)"),
+});
+
+// Summary step output schema (includes passthrough fields)
 const SummaryOutputSchema = z.object({
   summary: z
     .string()
     .min(10)
     .max(100)
     .describe("Concise summary in Japanese, 10-100 characters (ideally 70-100)"),
-  webContext: z.string().nullable(),
-  canonicalUrl: z.string().nullable(),
+  webContext: z.string().optional(),
+  canonicalUrl: z.string().optional(),
 });
 
 // Tags output schema
@@ -743,7 +750,7 @@ ${markdown}
 
     const result = await generateObjectWithRetry({
       model: openai("gpt-5-mini"),
-      schema: SummaryOutputSchema,
+      schema: SummaryGenerationSchema,
       system: baseSystemPrompt,
       prompt,
       abortSignal: signal,

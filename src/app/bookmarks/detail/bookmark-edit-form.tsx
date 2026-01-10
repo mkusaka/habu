@@ -262,6 +262,37 @@ export function BookmarkEditForm({
     }
   };
 
+  const handleApplyAndSave = async () => {
+    if (!generatedResult?.formattedComment) return;
+
+    const newComment = generatedResult.formattedComment;
+    setComment(newComment);
+
+    setIsUpdating(true);
+    try {
+      const response = await fetch("/api/habu/bookmark", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ url: bookmarkUrl, comment: newComment }),
+      });
+
+      const data = (await response.json()) as { success: boolean; error?: string };
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || "Failed to update bookmark");
+      }
+
+      toast.success("Applied and saved!");
+    } catch (error) {
+      toast.error("Update failed", {
+        description: error instanceof Error ? error.message : "Unknown error",
+      });
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   const handleUpdate = async () => {
     if (!bookmarkUrl) {
       toast.error("URL is required");
@@ -423,14 +454,24 @@ export function BookmarkEditForm({
                 <code className="text-xs bg-background p-2 rounded block break-all">
                   {generatedResult.formattedComment}
                 </code>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleApplyGenerated}
-                  className="mt-2 w-full"
-                >
-                  Apply to Comment
-                </Button>
+                <div className="flex gap-2 mt-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleApplyGenerated}
+                    className="flex-1"
+                  >
+                    Apply
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={handleApplyAndSave}
+                    disabled={isUpdating}
+                    className="flex-1"
+                  >
+                    {isUpdating ? "Saving..." : "Apply & Save"}
+                  </Button>
+                </div>
               </div>
             )}
           </div>

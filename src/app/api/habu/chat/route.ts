@@ -3,7 +3,12 @@ import { streamText, convertToModelMessages, tool, stepCountIs, type UIMessage }
 import { createOpenAI } from "@ai-sdk/openai";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { createAuth } from "@/lib/auth";
-import { buildChatSystemPrompt, type ChatContext, type PageMetadata } from "@/lib/chat-context";
+import {
+  buildChatSystemPrompt,
+  buildChatUserContext,
+  type ChatContext,
+  type PageMetadata,
+} from "@/lib/chat-context";
 import { z } from "zod";
 
 // Validate URL is safe to fetch (http/https only, no private IPs/localhost)
@@ -134,10 +139,28 @@ export async function POST(request: NextRequest) {
       existingTags: context.existingTags,
     };
 
-    const systemPrompt = buildChatSystemPrompt(chatContext);
+    // Build system prompt (AI instructions only, no user content)
+    const systemPrompt = buildChatSystemPrompt();
+
+    // Build user context message (page content as data)
+    const userContextMessage = buildChatUserContext(chatContext);
 
     // Convert UIMessage format to ModelMessage format for streamText
     const modelMessages = await convertToModelMessages(messages);
+
+    // Prepend the context as the first user message if this is the first interaction
+    // (i.e., messages only contain the current user message)
+    const messagesWithContext =
+      messages.length === 1
+        ? [
+            { role: "user" as const, content: userContextMessage },
+            {
+              role: "assistant" as const,
+              content: "I understand the page context. How can I help you?",
+            },
+            ...modelMessages,
+          ]
+        : modelMessages;
 
     // Create tools
     const cfAccountId = env.BROWSER_RENDERING_ACCOUNT_ID;
@@ -205,13 +228,14 @@ export async function POST(request: NextRequest) {
     const result = streamText({
       model: openai("gpt-4o-mini"),
       system: systemPrompt,
-      messages: modelMessages,
+      messages: messagesWithContext,
       tools,
       maxOutputTokens: 2048,
       stopWhen: stepCountIs(5), // Limit tool call loops to prevent abuse
     });
 
-    return result.toTextStreamResponse();
+    // Use toUIMessageStreamResponse to include tool call information in the stream
+    return result.toUIMessageStreamResponse();
   } catch (error) {
     console.error("Chat API error:", error);
     return new Response(

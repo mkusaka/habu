@@ -1,8 +1,14 @@
 "use client";
 
 import { useRef, useEffect } from "react";
-import type { UIMessage } from "ai";
-import { User, Bot, Loader2 } from "lucide-react";
+import {
+  getToolName,
+  isToolUIPart,
+  type UIMessage,
+  type ToolUIPart,
+  type DynamicToolUIPart,
+} from "ai";
+import { User, Bot, Loader2, Search, FileText, CheckCircle2, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ChatMessagesProps {
@@ -63,6 +69,9 @@ function ChatMessage({ message }: ChatMessageProps) {
       .map((part) => part.text)
       .join("") || "";
 
+  // Extract tool invocations from parts
+  const toolParts = message.parts?.filter(isToolUIPart) || [];
+
   return (
     <div className={cn("flex items-start gap-3", isUser && "flex-row-reverse")}>
       <div
@@ -74,6 +83,14 @@ function ChatMessage({ message }: ChatMessageProps) {
         {isUser ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4 text-primary" />}
       </div>
       <div className={cn("flex-1 space-y-2 overflow-hidden", isUser && "text-right")}>
+        {/* Show tool invocations */}
+        {toolParts.length > 0 && (
+          <div className="space-y-1">
+            {toolParts.map((toolPart) => (
+              <ToolInvocationDisplay key={toolPart.toolCallId} toolPart={toolPart} />
+            ))}
+          </div>
+        )}
         {textContent && (
           <div
             className={cn(
@@ -85,6 +102,52 @@ function ChatMessage({ message }: ChatMessageProps) {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+// Type for tool parts returned by isToolUIPart filter
+type ToolPart = ToolUIPart | DynamicToolUIPart;
+
+function ToolInvocationDisplay({ toolPart }: { toolPart: ToolPart }) {
+  // Use AI SDK helper to extract tool name from the part's type field
+  const toolName = getToolName(toolPart);
+  const state = toolPart.state;
+
+  // Get appropriate icon for the tool
+  const ToolIcon = toolName === "web_search" ? Search : FileText;
+
+  // Get display name for the tool
+  const displayName = toolName === "web_search" ? "Web Search" : "Fetch Page";
+
+  // Determine loading state (input streaming or executing)
+  const isLoading =
+    state === "input-streaming" ||
+    state === "input-available" ||
+    state === "approval-requested" ||
+    state === "approval-responded";
+
+  // Determine error state
+  const hasError =
+    state === "output-error" ||
+    state === "output-denied" ||
+    (state === "output-available" &&
+      "output" in toolPart &&
+      typeof toolPart.output === "object" &&
+      toolPart.output !== null &&
+      "error" in toolPart.output);
+
+  return (
+    <div className="inline-flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 rounded px-2 py-1">
+      <ToolIcon className="w-3 h-3" />
+      <span>{displayName}</span>
+      {isLoading ? (
+        <Loader2 className="w-3 h-3 animate-spin" />
+      ) : hasError ? (
+        <XCircle className="w-3 h-3 text-destructive" />
+      ) : (
+        <CheckCircle2 className="w-3 h-3 text-green-500" />
+      )}
     </div>
   );
 }

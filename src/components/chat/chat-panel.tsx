@@ -2,7 +2,7 @@
 
 import { useState, useMemo, type FormEvent, type ChangeEvent } from "react";
 import { useChat } from "@ai-sdk/react";
-import { TextStreamChatTransport } from "ai";
+import { DefaultChatTransport } from "ai";
 import {
   Sheet,
   SheetContent,
@@ -27,7 +27,7 @@ function ChatPanelContent({ context }: { context: ChatContext }) {
 
   const transport = useMemo(
     () =>
-      new TextStreamChatTransport({
+      new DefaultChatTransport({
         api: "/api/habu/chat",
         body: { context },
       }),

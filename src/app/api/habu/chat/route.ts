@@ -14,10 +14,6 @@ interface ChatRequestBody {
     existingComment?: string;
     existingTags?: string[];
   };
-  mcpServers?: Array<{
-    url: string;
-    name?: string;
-  }>;
 }
 
 export async function POST(request: NextRequest) {

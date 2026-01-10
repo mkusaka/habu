@@ -731,17 +731,30 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
                   <code className="text-xs bg-background p-2 rounded block break-all">
                     {generatedResult.formattedComment}
                   </code>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setComment(generatedResult.formattedComment!);
-                      toast.success("Applied generated comment");
-                    }}
-                    className="mt-2 w-full"
-                  >
-                    Apply to Comment
-                  </Button>
+                  <div className="flex gap-2 mt-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setComment(generatedResult.formattedComment!);
+                        toast.success("Applied generated comment");
+                      }}
+                      className="flex-1"
+                    >
+                      Apply
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        setComment(generatedResult.formattedComment!);
+                        handleSave();
+                      }}
+                      disabled={isSaving}
+                      className="flex-1"
+                    >
+                      {isSaving ? "Saving..." : "Apply & Save"}
+                    </Button>
+                  </div>
                 </div>
               )}
             </div>

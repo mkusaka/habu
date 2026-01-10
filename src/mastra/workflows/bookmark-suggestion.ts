@@ -808,7 +808,10 @@ const generateSummaryStep = createStep({
     } catch (error) {
       // If all runners failed (AggregateError), return the first error's result or rethrow
       if (error instanceof AggregateError) {
-        console.warn("[Summary] All parallel runners failed, using fallback");
+        const errorMessages = error.errors.map((e, i) =>
+          `Runner ${i + 1}: ${e instanceof Error ? e.message : String(e)}`
+        );
+        console.warn("[Summary] All parallel runners failed:", errorMessages.join(" | "));
         // Return empty summary as fallback (workflow can handle this)
         return { summary: "", webContext, canonicalUrl };
       }

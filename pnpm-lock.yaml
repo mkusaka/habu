@@ -142,7 +142,7 @@ importers:
         specifier: 0.23.0
         version: 0.23.0
       oxlint:
-        specifier: ^1.38.0
+        specifier: 1.38.0
         version: 1.38.0
       sharp:
         specifier: 0.34.5

@@ -15,9 +15,23 @@ import {
   AlertCircle,
   Copy,
   MessageCircle,
+  Trash2,
 } from "lucide-react";
 import { ChatPanel } from "@/components/chat/chat-panel";
 import type { ChatContext, PageMetadata } from "@/lib/chat-context";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { deleteBookmark } from "@/lib/bookmark-client";
+import { useRouter } from "next/navigation";
 import { WorkflowProgress } from "@/components/workflow-progress";
 import {
   formatWorkflowStepMeta,
@@ -59,12 +73,14 @@ export function BookmarkEditForm({
   bookmarkedAt,
   pageMetadata,
 }: BookmarkEditFormProps) {
+  const router = useRouter();
   const [comment, setComment] = useState(initialComment);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [context, setContext] = useState("");
   const [showContext, setShowContext] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [generatedResult, setGeneratedResult] = useState<GeneratedResult | null>(null);
   const [showRawContent, setShowRawContent] = useState(false);
   const [workflowRunId, setWorkflowRunId] = useState<string | null>(null);
@@ -320,6 +336,32 @@ export function BookmarkEditForm({
       });
     } finally {
       setIsUpdating(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!bookmarkUrl) {
+      toast.error("URL is required");
+      return;
+    }
+
+    setIsDeleting(true);
+
+    try {
+      const data = await deleteBookmark(bookmarkUrl);
+
+      if (!data.success) {
+        throw new Error(data.error || "Failed to delete bookmark");
+      }
+
+      toast.success("Bookmark deleted!");
+      router.push("/bookmarks");
+    } catch (error) {
+      toast.error("Delete failed", {
+        description: error instanceof Error ? error.message : "Unknown error",
+      });
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -675,6 +717,37 @@ export function BookmarkEditForm({
         <MessageCircle className="w-4 h-4 mr-2" />
         Chat about this page
       </Button>
+
+      {/* Delete Button */}
+      <AlertDialog>
+        <AlertDialogTrigger asChild>
+          <Button variant="destructive" size="lg" className="w-full" disabled={isDeleting}>
+            {isDeleting ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Deleting...
+              </>
+            ) : (
+              <>
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete Bookmark
+              </>
+            )}
+          </Button>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Bookmark</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this bookmark? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Chat Panel */}
       <ChatPanel

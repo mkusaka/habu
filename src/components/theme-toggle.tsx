@@ -21,10 +21,7 @@ export function ThemeToggle() {
 
   return (
     <div className="flex items-center justify-between">
-      <div className="space-y-0.5">
-        <Label>Theme</Label>
-        <p className="text-sm text-muted-foreground">System / Light / Dark</p>
-      </div>
+      <Label>Theme</Label>
       <div className="flex items-center gap-2">
         <Button
           type="button"

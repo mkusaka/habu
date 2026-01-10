@@ -24,7 +24,7 @@ const openai = createOpenAI();
 // Constants
 const MAX_MARKDOWN_CHARS = 800000;
 const MAX_JUDGE_ATTEMPTS = 3;
-const PARALLEL_GENERATION_COUNT = 2;
+const PARALLEL_GENERATION_COUNT = 3;
 const MAX_SCHEMA_RETRIES = 5;
 
 // Helper: Retry wrapper for generateObject schema errors

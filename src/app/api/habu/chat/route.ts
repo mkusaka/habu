@@ -28,8 +28,8 @@ interface ChatRequestBody {
   }>;
 }
 
-// Supported part types for chat messages
-const ALLOWED_PART_TYPES = new Set(["text"]);
+// Part types that are allowed from user messages (strict)
+const USER_ALLOWED_PART_TYPES = new Set(["text"]);
 
 function validateMessages(messages: unknown): messages is UIMessage[] {
   if (!Array.isArray(messages)) return false;
@@ -53,8 +53,9 @@ function validateMessages(messages: unknown): messages is UIMessage[] {
       if (typeof part !== "object" || part === null) return false;
       if (!("type" in part) || typeof part.type !== "string") return false;
 
-      // Only allow supported part types
-      if (!ALLOWED_PART_TYPES.has(part.type)) return false;
+      // For user messages, only allow text parts
+      // For assistant messages, allow any part type (AI SDK adds various types like source, step-start, etc.)
+      if (msg.role === "user" && !USER_ALLOWED_PART_TYPES.has(part.type)) return false;
 
       if (part.type === "text") {
         // text parts must have a text string

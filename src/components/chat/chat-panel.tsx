@@ -38,11 +38,12 @@ function ChatPanelContent({ context }: { context: ChatContext }) {
     [context],
   );
 
-  const { messages, sendMessage, setMessages, status, error } = useChat({
+  const { messages, sendMessage, setMessages, stop, status, error } = useChat({
     transport,
   });
 
   const isLoading = status === "streaming" || status === "submitted";
+  const isStreaming = status === "streaming";
 
   const handleInputChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
     setInput(e.target.value);
@@ -153,6 +154,8 @@ function ChatPanelContent({ context }: { context: ChatContext }) {
         onSubmit={handleSubmit}
         disabled={isLoading}
         isLoading={isLoading}
+        isStreaming={isStreaming}
+        onStop={stop}
         isEditing={!!editingMessageId}
         onCancelEdit={handleCancelEdit}
       />

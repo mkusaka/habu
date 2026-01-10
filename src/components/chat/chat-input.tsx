@@ -3,7 +3,7 @@
 import { useRef, useState, type KeyboardEvent, type ChangeEvent, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, Loader2, X } from "lucide-react";
+import { Send, Loader2, X, Square } from "lucide-react";
 
 interface ChatInputProps {
   input: string;
@@ -11,6 +11,8 @@ interface ChatInputProps {
   onSubmit: (e: FormEvent<HTMLFormElement>) => void;
   disabled?: boolean;
   isLoading?: boolean;
+  isStreaming?: boolean;
+  onStop?: () => void;
   isEditing?: boolean;
   onCancelEdit?: () => void;
 }
@@ -21,6 +23,8 @@ export function ChatInput({
   onSubmit,
   disabled,
   isLoading,
+  isStreaming,
+  onStop,
   isEditing,
   onCancelEdit,
 }: ChatInputProps) {
@@ -72,14 +76,31 @@ export function ChatInput({
           rows={2}
           className="resize-none flex-1"
         />
-        <Button
-          type="submit"
-          size="icon"
-          disabled={disabled || !input.trim()}
-          className="shrink-0 h-auto"
-        >
-          {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-        </Button>
+        {isStreaming && onStop ? (
+          <Button
+            type="button"
+            size="icon"
+            variant="destructive"
+            onClick={onStop}
+            className="shrink-0 h-auto"
+            title="Stop generating"
+          >
+            <Square className="w-4 h-4" />
+          </Button>
+        ) : (
+          <Button
+            type="submit"
+            size="icon"
+            disabled={disabled || !input.trim()}
+            className="shrink-0 h-auto"
+          >
+            {isLoading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Send className="w-4 h-4" />
+            )}
+          </Button>
+        )}
       </form>
     </div>
   );

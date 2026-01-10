@@ -11,6 +11,56 @@ import {
 } from "@/lib/chat-context";
 import { z } from "zod";
 
+// Fetch with timeout using AbortController
+async function fetchWithTimeout(
+  url: string,
+  options: RequestInit,
+  timeoutMs: number,
+): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+    return response;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+// Fetch with retry logic
+async function fetchWithRetry(
+  url: string,
+  options: RequestInit,
+  { timeoutMs = 15000, maxRetries = 2 }: { timeoutMs?: number; maxRetries?: number } = {},
+): Promise<Response> {
+  let lastError: Error | null = null;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fetchWithTimeout(url, options, timeoutMs);
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+
+      // Don't retry if it's not a timeout/network error
+      if (lastError.name !== "AbortError" && !lastError.message.includes("fetch")) {
+        throw lastError;
+      }
+
+      // Don't wait after the last attempt
+      if (attempt < maxRetries) {
+        // Wait before retry (exponential backoff: 1s, 2s)
+        await new Promise((resolve) => setTimeout(resolve, 1000 * (attempt + 1)));
+      }
+    }
+  }
+
+  throw lastError ?? new Error("Fetch failed after retries");
+}
+
 // Validate URL is safe to fetch (http/https only, no private IPs/localhost)
 function isUrlSafeToFetch(urlString: string): { valid: boolean; error?: string } {
   try {
@@ -189,7 +239,7 @@ export async function POST(request: NextRequest) {
           }
 
           try {
-            const response = await fetch(
+            const response = await fetchWithRetry(
               `https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/browser-rendering/markdown`,
               {
                 method: "POST",
@@ -199,6 +249,7 @@ export async function POST(request: NextRequest) {
                 },
                 body: JSON.stringify({ url }),
               },
+              { timeoutMs: 15000, maxRetries: 2 },
             );
 
             if (!response.ok) {
@@ -219,6 +270,10 @@ export async function POST(request: NextRequest) {
 
             return { error: "Failed to extract markdown from page" };
           } catch (error) {
+            // Provide more specific error messages
+            if (error instanceof Error && error.name === "AbortError") {
+              return { error: "Request timed out after retries. The page may be slow to respond." };
+            }
             return { error: error instanceof Error ? error.message : "Unknown error" };
           }
         },

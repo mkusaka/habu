@@ -104,7 +104,7 @@ const markdownComponents = {
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="text-primary underline hover:no-underline"
+      className="underline hover:no-underline"
     >
       {children}
     </a>

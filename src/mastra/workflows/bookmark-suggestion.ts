@@ -639,7 +639,16 @@ const mergeContentStep = createStep({
   },
 });
 
-// Summary output schema
+// Schema for AI generation (only summary - webContext/canonicalUrl are passed through, not generated)
+const SummaryGenerationSchema = z.object({
+  summary: z
+    .string()
+    .min(10)
+    .max(100)
+    .describe("Concise summary in Japanese, 10-100 characters (ideally 70-100)"),
+});
+
+// Summary step output schema (includes passthrough fields)
 const SummaryOutputSchema = z.object({
   summary: z
     .string()
@@ -741,7 +750,7 @@ ${markdown}
 
     const result = await generateObjectWithRetry({
       model: openai("gpt-5-mini"),
-      schema: SummaryOutputSchema,
+      schema: SummaryGenerationSchema,
       system: baseSystemPrompt,
       prompt,
       abortSignal: signal,

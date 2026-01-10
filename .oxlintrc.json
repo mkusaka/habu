@@ -1,0 +1,19 @@
+{
+	"$schema": "./node_modules/oxlint/configuration_schema.json",
+	"plugins": ["nextjs", "react", "react-hooks", "typescript"],
+	"rules": {
+		"nextjs/no-html-link-for-pages": "off"
+	},
+	"ignorePatterns": [
+		".next/**",
+		".open-next/**",
+		".mastra/**",
+		"out/**",
+		"build/**",
+		"next-env.d.ts",
+		"node_modules/**",
+		"public/**",
+		"**/worker-configuration.d.ts",
+		"**/cloudflare-env.d.ts"
+	]
+}

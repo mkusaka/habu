@@ -31,6 +31,8 @@ export interface BookmarkQueue {
   generatedComment?: string;
   generatedSummary?: string;
   generatedTags?: string[];
+  // Skip AI generation even when no comment is provided
+  skipAiGeneration?: boolean;
 }
 
 // API types
@@ -39,6 +41,8 @@ export interface BookmarkRequest {
   comment?: string;
   /** User-provided context for AI generation (e.g., page content, supplementary info) */
   userContext?: string;
+  /** Skip AI generation even when no comment is provided */
+  skipAiGeneration?: boolean;
 }
 
 export interface BookmarkResponse {

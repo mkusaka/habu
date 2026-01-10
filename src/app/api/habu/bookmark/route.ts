@@ -279,7 +279,7 @@ export async function POST(request: NextRequest) {
     // Parse request body
     const body: BookmarkRequest = await request.json();
     let { url } = body;
-    const { comment, userContext } = body;
+    const { comment, userContext, skipAiGeneration } = body;
 
     if (!url) {
       return NextResponse.json({ success: false, error: "URL is required" } as BookmarkResponse, {
@@ -305,8 +305,8 @@ export async function POST(request: NextRequest) {
     // Determine comment to use
     let finalComment = comment;
 
-    // If no comment provided, generate AI suggestions using Mastra workflow
-    if (!comment) {
+    // If no comment provided and AI generation is not skipped, generate AI suggestions using Mastra workflow
+    if (!comment && !skipAiGeneration) {
       try {
         // Fetch user's existing Hatena tags
         const existingTags = await fetchHatenaTags(

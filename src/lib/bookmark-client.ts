@@ -79,6 +79,21 @@ export function queueBookmark(
 }
 
 /**
+ * Delete a bookmark via fetch.
+ *
+ * @param url - The URL of the bookmark to delete
+ * @returns The API response
+ */
+export async function deleteBookmark(url: string): Promise<{ success: boolean; error?: string }> {
+  const response = await fetch(`/api/habu/bookmark?url=${encodeURIComponent(url)}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+
+  return response.json();
+}
+
+/**
  * Trigger manual sync of queued bookmarks.
  *
  * Always uses postMessage for immediate sync, plus registers Background Sync

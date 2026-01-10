@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useMemo, type FormEvent, type ChangeEvent } from "react";
+import { useState, useMemo, useCallback, type FormEvent, type ChangeEvent } from "react";
 import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport } from "ai";
+import { DefaultChatTransport, type UIMessage } from "ai";
 import {
   Sheet,
   SheetContent,
@@ -10,6 +10,9 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
+import { Copy, Check } from "lucide-react";
+import { toast } from "sonner";
 import { ChatMessages } from "./chat-messages";
 import { ChatInput } from "./chat-input";
 import type { ChatContext } from "@/lib/chat-context";
@@ -24,6 +27,7 @@ interface ChatPanelProps {
 // This allows us to remount it when context changes
 function ChatPanelContent({ context }: { context: ChatContext }) {
   const [input, setInput] = useState("");
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
 
   const transport = useMemo(
     () =>
@@ -34,7 +38,7 @@ function ChatPanelContent({ context }: { context: ChatContext }) {
     [context],
   );
 
-  const { messages, sendMessage, status, error } = useChat({
+  const { messages, sendMessage, setMessages, status, error } = useChat({
     transport,
   });
 
@@ -47,13 +51,95 @@ function ChatPanelContent({ context }: { context: ChatContext }) {
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
+
+    // If editing a message, update it and remove subsequent messages
+    if (editingMessageId) {
+      const messageIndex = messages.findIndex((m) => m.id === editingMessageId);
+      if (messageIndex !== -1) {
+        // Keep messages before the edited one, update the edited message
+        const newMessages = messages.slice(0, messageIndex);
+        setMessages(newMessages);
+        setEditingMessageId(null);
+        // Send the new message
+        sendMessage({ text: input });
+        setInput("");
+        return;
+      }
+    }
+
     sendMessage({ text: input });
     setInput("");
   };
 
+  const handleEditMessage = useCallback(
+    (messageId: string, text: string) => {
+      if (isLoading) return;
+      setEditingMessageId(messageId);
+      setInput(text);
+    },
+    [isLoading],
+  );
+
+  const handleCancelEdit = useCallback(() => {
+    setEditingMessageId(null);
+    setInput("");
+  }, []);
+
+  const [copiedAll, setCopiedAll] = useState(false);
+
+  const handleCopyAll = useCallback(async () => {
+    if (messages.length === 0) return;
+
+    // Convert messages to markdown format
+    const markdown = messages
+      .map((msg) => {
+        const role = msg.role === "user" ? "**User**" : "**Assistant**";
+        const text =
+          msg.parts
+            ?.filter((part): part is { type: "text"; text: string } => part.type === "text")
+            .map((part) => part.text)
+            .join("") || "";
+        return `${role}:\n${text}`;
+      })
+      .join("\n\n---\n\n");
+
+    try {
+      await navigator.clipboard.writeText(markdown);
+      setCopiedAll(true);
+      toast.success("Conversation copied");
+      setTimeout(() => setCopiedAll(false), 2000);
+    } catch {
+      toast.error("Failed to copy");
+    }
+  }, [messages]);
+
   return (
     <div className="flex-1 overflow-hidden flex flex-col min-h-0">
-      <ChatMessages messages={messages} isLoading={isLoading} />
+      {/* Copy all button */}
+      {messages.length > 0 && (
+        <div className="px-4 py-2 border-b flex justify-end">
+          <Button variant="ghost" size="sm" onClick={handleCopyAll} className="h-7 text-xs gap-1.5">
+            {copiedAll ? (
+              <>
+                <Check className="w-3 h-3" />
+                Copied
+              </>
+            ) : (
+              <>
+                <Copy className="w-3 h-3" />
+                Copy all
+              </>
+            )}
+          </Button>
+        </div>
+      )}
+
+      <ChatMessages
+        messages={messages}
+        isLoading={isLoading}
+        onEditMessage={handleEditMessage}
+        editingMessageId={editingMessageId}
+      />
 
       {error && (
         <div className="px-4 py-2 text-sm text-destructive bg-destructive/10">
@@ -67,6 +153,8 @@ function ChatPanelContent({ context }: { context: ChatContext }) {
         onSubmit={handleSubmit}
         disabled={isLoading}
         isLoading={isLoading}
+        isEditing={!!editingMessageId}
+        onCancelEdit={handleCancelEdit}
       />
     </div>
   );

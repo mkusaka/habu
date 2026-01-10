@@ -640,14 +640,16 @@ const mergeContentStep = createStep({
 });
 
 // Summary output schema
+// Note: Use .nullable() instead of .optional() for OpenAI structured output compatibility
+// OpenAI requires all properties to be in 'required' array; nullable emulates optional
 const SummaryOutputSchema = z.object({
   summary: z
     .string()
     .min(10)
     .max(100)
     .describe("Concise summary in Japanese, 10-100 characters (ideally 70-100)"),
-  webContext: z.string().optional(),
-  canonicalUrl: z.string().optional(),
+  webContext: z.string().nullable(),
+  canonicalUrl: z.string().nullable(),
 });
 
 // Tags output schema

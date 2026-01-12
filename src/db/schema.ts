@@ -69,6 +69,85 @@ export const verifications = sqliteTable("verifications", {
     .default(sql`(unixepoch('now') * 1000)`),
 });
 
+// OAuth Provider tables for MCP support
+export const oauthClients = sqliteTable("oauth_clients", {
+  id: text("id").primaryKey(),
+  clientId: text("client_id").notNull().unique(),
+  clientSecret: text("client_secret"),
+  disabled: integer("disabled", { mode: "boolean" }).default(false),
+  skipConsent: integer("skip_consent", { mode: "boolean" }).default(false),
+  enableEndSession: integer("enable_end_session", { mode: "boolean" }).default(false),
+  scopes: text("scopes"), // JSON array as text
+  userId: text("user_id").references(() => users.id, { onDelete: "set null" }),
+  referenceId: text("reference_id"),
+  name: text("name"),
+  uri: text("uri"),
+  icon: text("icon"),
+  contacts: text("contacts"), // JSON array as text
+  tos: text("tos"),
+  policy: text("policy"),
+  softwareId: text("software_id"),
+  softwareVersion: text("software_version"),
+  softwareStatement: text("software_statement"),
+  redirectUris: text("redirect_uris").notNull(), // JSON array as text
+  tokenEndpointAuthMethod: text("token_endpoint_auth_method"),
+  grantTypes: text("grant_types"), // JSON array as text
+  responseTypes: text("response_types"), // JSON array as text
+  public: integer("public", { mode: "boolean" }).default(true),
+  type: text("type"),
+  metadata: text("metadata"), // JSON as text
+  createdAt: integer("created_at", { mode: "timestamp_ms" })
+    .notNull()
+    .default(sql`(unixepoch('now') * 1000)`),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+    .notNull()
+    .default(sql`(unixepoch('now') * 1000)`),
+});
+
+export const oauthRefreshTokens = sqliteTable("oauth_refresh_tokens", {
+  id: text("id").primaryKey(),
+  token: text("token").notNull(),
+  clientId: text("client_id").notNull(),
+  sessionId: text("session_id"),
+  userId: text("user_id").notNull(),
+  referenceId: text("reference_id"),
+  scopes: text("scopes").notNull(), // JSON array as text
+  revoked: integer("revoked", { mode: "timestamp_ms" }),
+  createdAt: integer("created_at", { mode: "timestamp_ms" })
+    .notNull()
+    .default(sql`(unixepoch('now') * 1000)`),
+  expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
+});
+
+export const oauthAccessTokens = sqliteTable("oauth_access_tokens", {
+  id: text("id").primaryKey(),
+  token: text("token").notNull(),
+  clientId: text("client_id").notNull(),
+  sessionId: text("session_id"),
+  refreshId: text("refresh_id"),
+  userId: text("user_id"),
+  referenceId: text("reference_id"),
+  scopes: text("scopes").notNull(), // JSON array as text
+  createdAt: integer("created_at", { mode: "timestamp_ms" })
+    .notNull()
+    .default(sql`(unixepoch('now') * 1000)`),
+  expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
+});
+
+export const oauthConsents = sqliteTable("oauth_consents", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  clientId: text("client_id").notNull(),
+  referenceId: text("reference_id"),
+  scopes: text("scopes").notNull(),
+  createdAt: integer("created_at", { mode: "timestamp_ms" })
+    .notNull()
+    .default(sql`(unixepoch('now') * 1000)`),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+    .notNull()
+    .default(sql`(unixepoch('now') * 1000)`),
+});
+
 // Hatena OAuth tokens - keyed by hatenaId so multiple users can share the same token
 export const hatenaTokens = sqliteTable("hatena_tokens", {
   hatenaId: text("hatena_id").primaryKey(), // Hatena user ID as primary key

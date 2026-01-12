@@ -148,6 +148,14 @@ function BookmarkDetailLoading() {
       <div className="space-y-2">
         <Skeleton className="h-3.5 w-16" /> {/* "Comment" label */}
         <Skeleton className="h-[74px] w-full" /> {/* Textarea (rows=3) */}
+        {/* Tag preview */}
+        <div className="flex flex-wrap gap-1">
+          <Skeleton className="h-5 w-12" /> {/* tag chip */}
+          <Skeleton className="h-5 w-16" /> {/* tag chip */}
+          <Skeleton className="h-5 w-10" /> {/* tag chip */}
+        </div>
+        {/* Comment text preview */}
+        <Skeleton className="h-4 w-3/4" /> {/* text-xs */}
       </div>
       {/* Context toggle skeleton */}
       <div className="flex items-center gap-2">

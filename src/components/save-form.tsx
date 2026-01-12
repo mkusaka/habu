@@ -192,6 +192,22 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
     saveDraft(debouncedUrl, debouncedTitle, debouncedComment, debouncedContext);
   }, [debouncedUrl, debouncedTitle, debouncedComment, debouncedContext, draftRestored]);
 
+  // Update URL params when form fields change (sync with share redirect format)
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (debouncedUrl) params.set("url", debouncedUrl);
+    if (debouncedTitle) params.set("title", debouncedTitle);
+    if (debouncedComment) params.set("text", debouncedComment);
+
+    const search = params.toString();
+    const newPath = search ? `/?${search}` : "/";
+
+    // Only update if different from current URL
+    if (window.location.search !== (search ? `?${search}` : "")) {
+      router.replace(newPath, { scroll: false });
+    }
+  }, [debouncedUrl, debouncedTitle, debouncedComment, router]);
+
   // Track online status
   useEffect(() => {
     setIsOnline(navigator.onLine);

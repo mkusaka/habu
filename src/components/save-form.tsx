@@ -512,7 +512,7 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
     }
   };
 
-  const handleSave = async () => {
+  const handleSaveWithComment = async (commentToSave: string) => {
     if (!url) {
       toast.error("URL is required");
       return;
@@ -530,7 +530,7 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
     const skipAiGeneration = !aiGenerateEnabled;
 
     // Fire-and-forget: queue the bookmark
-    queueBookmark(url, title, comment, skipAiGeneration);
+    queueBookmark(url, title, commentToSave, skipAiGeneration);
 
     toast.success("Bookmark saved!", {
       description:
@@ -553,6 +553,10 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
 
     // If window.close() didn't work, redirect to saved page
     router.replace("/saved");
+  };
+
+  const handleSave = () => {
+    handleSaveWithComment(comment);
   };
 
   // Auto-save on mount if enabled and has URL
@@ -748,8 +752,10 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
                     <Button
                       size="sm"
                       onClick={() => {
-                        setComment(generatedResult.formattedComment!);
-                        handleSave();
+                        // Use formattedComment directly instead of relying on state update
+                        const newComment = generatedResult.formattedComment!;
+                        setComment(newComment);
+                        handleSaveWithComment(newComment);
                       }}
                       disabled={isSaving}
                       className="flex-1"

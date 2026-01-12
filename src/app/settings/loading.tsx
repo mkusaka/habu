@@ -42,19 +42,25 @@ export default function SettingsLoading() {
                 <Skeleton className="h-8 w-[60px] rounded-md" />
               </div>
             </div>
-            {/* AutoSaveToggle: Label + description + switch */}
+            {/* AutoSaveToggle: Label + description (2 lines) + switch */}
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <Skeleton className="h-3.5 w-32" />
-                <Skeleton className="h-3.5 w-64" />
+                <div className="space-y-1">
+                  <Skeleton className="h-3.5 w-56" />
+                  <Skeleton className="h-3.5 w-32" />
+                </div>
               </div>
               <Skeleton className="h-[1.15rem] w-8 rounded-full" />
             </div>
-            {/* AiGenerateToggle: Label + description + switch */}
+            {/* AiGenerateToggle: Label + description (2 lines) + switch */}
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <Skeleton className="h-3.5 w-28" />
-                <Skeleton className="h-3.5 w-80" />
+                <div className="space-y-1">
+                  <Skeleton className="h-3.5 w-64" />
+                  <Skeleton className="h-3.5 w-48" />
+                </div>
               </div>
               <Skeleton className="h-[1.15rem] w-8 rounded-full" />
             </div>

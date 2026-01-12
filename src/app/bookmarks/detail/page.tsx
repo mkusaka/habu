@@ -8,6 +8,7 @@ import { eq } from "drizzle-orm";
 import { createSignedRequest } from "@/lib/hatena-oauth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Bookmark, ExternalLink, ArrowLeft, AlertCircle, Home } from "lucide-react";
+import { CopyButton } from "@/components/copy-button";
 import { Label } from "@/components/ui/label";
 import { LinkButton } from "@/components/ui/link-button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -131,6 +132,7 @@ function BookmarkDetailLoading() {
         <Skeleton className="h-4 w-8" /> {/* "URL" label */}
         <div className="flex items-center gap-2 p-2 bg-muted rounded-md">
           <Skeleton className="h-5 flex-1" /> {/* URL text */}
+          <Skeleton className="h-4 w-4 rounded" /> {/* Copy icon */}
           <Skeleton className="h-4 w-4 rounded" /> {/* ExternalLink icon */}
           <Skeleton className="h-4 w-4 rounded" /> {/* Bookmark icon */}
         </div>
@@ -202,6 +204,7 @@ async function BookmarkDetailContent({ bookmarkUrl }: { bookmarkUrl: string }) {
         <Label>URL</Label>
         <div className="flex items-center gap-2 p-2 bg-muted rounded-md">
           <span className="text-sm truncate flex-1">{bookmarkUrl}</span>
+          <CopyButton text={bookmarkUrl} label="URL" />
           <a
             href={bookmarkUrl}
             target="_blank"

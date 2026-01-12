@@ -197,31 +197,35 @@ function extractComment(comment: string) {
   return comment.replace(/^(\[[^\]]+\])+/, "").trim();
 }
 
-function BookmarkListLoading() {
+function BookmarkListLoading({ page }: { page: number }) {
   return (
-    <div className="space-y-2">
-      {Array.from({ length: 20 }).map((_, i) => (
-        <div key={i} className="w-full p-3 rounded-md border">
-          {/* Header skeleton */}
-          <div className="flex items-center gap-2">
-            <Skeleton className="h-4 flex-1" />
-            <div className="flex items-center gap-1 flex-shrink-0">
-              <Skeleton className="h-6 w-6 rounded" />
-              <Skeleton className="h-6 w-6 rounded" />
+    <div className="flex flex-col flex-1 min-h-0">
+      <div className="h-full overflow-auto space-y-2">
+        {Array.from({ length: 20 }).map((_, i) => (
+          <div key={i} className="w-full p-3 rounded-md border">
+            {/* Header skeleton */}
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-4 flex-1" />
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <Skeleton className="h-6 w-6 rounded" />
+                <Skeleton className="h-6 w-6 rounded" />
+              </div>
+            </div>
+            {/* Body skeleton */}
+            <div className="mt-1 space-y-1">
+              <div className="flex gap-1">
+                <Skeleton className="h-5 w-12 rounded" />
+                <Skeleton className="h-5 w-16 rounded" />
+                <Skeleton className="h-5 w-10 rounded" />
+              </div>
+              <Skeleton className="h-3 w-full" />
+              <Skeleton className="h-3 w-24" />
             </div>
           </div>
-          {/* Body skeleton */}
-          <div className="mt-1 space-y-1">
-            <div className="flex gap-1">
-              <Skeleton className="h-5 w-12 rounded" />
-              <Skeleton className="h-5 w-16 rounded" />
-              <Skeleton className="h-5 w-10 rounded" />
-            </div>
-            <Skeleton className="h-3 w-full" />
-            <Skeleton className="h-3 w-24" />
-          </div>
-        </div>
-      ))}
+        ))}
+      </div>
+      {/* Pagination (footer) - show during loading to keep layout stable */}
+      <Pagination page={page} hasMore={true} />
     </div>
   );
 }
@@ -379,7 +383,7 @@ export default async function BookmarksPage({ searchParams }: BookmarksPageProps
           </LinkButton>
         )}
         <div className="flex-1 min-h-0 flex flex-col">
-          <Suspense key={page} fallback={<BookmarkListLoading />}>
+          <Suspense key={page} fallback={<BookmarkListLoading page={page} />}>
             <BookmarkList page={page} />
           </Suspense>
         </div>

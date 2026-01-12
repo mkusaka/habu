@@ -37,7 +37,7 @@ export default async function QueuePage() {
   const hasHatena = await getHatenaStatus();
 
   return (
-    <Card className="w-full max-h-[100dvh]">
+    <Card className="w-full max-h-[100dvh] overflow-hidden">
       <CardHeader className="pb-4 shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">

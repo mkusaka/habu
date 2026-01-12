@@ -37,8 +37,8 @@ export default async function QueuePage() {
   const hasHatena = await getHatenaStatus();
 
   return (
-    <Card className="w-full">
-      <CardHeader className="pb-4">
+    <Card className="w-full min-h-[100dvh]">
+      <CardHeader className="pb-4 shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <ListTodo className="w-6 h-6 text-primary" />
@@ -52,7 +52,7 @@ export default async function QueuePage() {
           </div>
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="flex flex-1 min-h-0 flex-col gap-4">
         {/* Stats */}
         <QueueStats />
 
@@ -65,10 +65,12 @@ export default async function QueuePage() {
         )}
 
         {/* Queue items */}
-        <QueueList />
+        <div className="flex-1 min-h-0">
+          <QueueList />
+        </div>
 
         {/* Action buttons */}
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex gap-2 flex-wrap shrink-0">
           <CopyAllUrlsButton />
           <ClearCompletedButton />
         </div>

@@ -105,7 +105,7 @@ export default function RootLayout({
           <BackgroundSyncFallback />
           <TooltipProvider>
             <main className="h-full p-2 bg-background overflow-auto">
-              <div className="min-h-full flex items-start py-4">
+              <div className="min-h-full flex items-center">
                 <div className="max-w-lg mx-auto w-full">{children}</div>
               </div>
             </main>

@@ -265,7 +265,7 @@ export function QueueList() {
 
   return (
     <>
-      <div ref={parentRef} className="h-[calc(100vh-200px)] overflow-auto">
+      <div ref={parentRef} className="h-full overflow-auto">
         <div
           className="relative w-full"
           style={{

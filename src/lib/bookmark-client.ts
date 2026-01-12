@@ -129,10 +129,11 @@ export async function triggerSync(): Promise<void> {
   }
 
   // Always use postMessage for immediate sync (Background Sync may not fire if already online)
+  // Pass force: true to retry error items immediately, ignoring nextRetryAt
   const controller = navigator.serviceWorker.controller;
   if (controller) {
-    controller.postMessage({ type: "sync-now" });
-    console.log("triggerSync: postMessage sent");
+    controller.postMessage({ type: "sync-now", force: true });
+    console.log("triggerSync: postMessage sent with force=true");
   } else {
     console.warn("triggerSync: No SW controller available for sync");
   }

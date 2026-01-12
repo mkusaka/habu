@@ -383,9 +383,10 @@ self.addEventListener("sync", (event: SyncEvent) => {
 
 // Message listener for manual sync (fallback for browsers without Background Sync)
 self.addEventListener("message", (event: SWMessageEvent) => {
-  const data = event.data as { type?: string } | null;
+  const data = event.data as { type?: string; force?: boolean } | null;
   if (data?.type === "sync-now") {
-    console.log("SW: Manual sync requested via message");
+    const forceRetry = data.force === true;
+    console.log(`SW: Manual sync requested via message (force=${forceRetry})`);
     event.waitUntil(
       (async () => {
         if (syncInProgress) {
@@ -394,7 +395,7 @@ self.addEventListener("message", (event: SWMessageEvent) => {
         }
         syncInProgress = true;
         try {
-          await processQueue();
+          await processQueue(forceRetry);
         } finally {
           syncInProgress = false;
         }
@@ -410,7 +411,7 @@ self.addEventListener("message", (event: SWMessageEvent) => {
 // Time after which a "sending" item is considered stuck (2 minutes)
 const SENDING_TIMEOUT_MS = 2 * 60 * 1000;
 
-async function processQueue(): Promise<void> {
+async function processQueue(forceRetry = false): Promise<void> {
   const now = Date.now();
 
   // First, reset any stuck "sending" items back to "queued"
@@ -438,13 +439,19 @@ async function processQueue(): Promise<void> {
   }
 
   // Get items that need to be sent
+  // When forceRetry is true, include all error items regardless of nextRetryAt
   const items = await db.bookmarks
     .where("status")
     .anyOf("queued", "error")
     .filter((item) => {
       if (item.status === "queued") return true;
-      if (item.status === "error" && item.nextRetryAt) {
-        return now >= item.nextRetryAt;
+      if (item.status === "error") {
+        // Force retry: include all error items
+        if (forceRetry) return true;
+        // Normal retry: only include if nextRetryAt has passed
+        if (item.nextRetryAt) {
+          return now >= item.nextRetryAt;
+        }
       }
       return false;
     })

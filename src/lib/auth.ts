@@ -22,8 +22,18 @@ export function createAuth(db: D1Database) {
   return betterAuth({
     database: drizzleAdapter(getDb(db), {
       provider: "sqlite",
-      schema,
-      usePlural: true,
+      schema: {
+        // Map plural table exports to Better Auth's expected singular model names
+        user: schema.users,
+        session: schema.sessions,
+        account: schema.accounts,
+        verification: schema.verifications,
+        jwks: schema.jwkss,
+        oauthClient: schema.oauthClients,
+        oauthRefreshToken: schema.oauthRefreshTokens,
+        oauthAccessToken: schema.oauthAccessTokens,
+        oauthConsent: schema.oauthConsents,
+      },
     }),
 
     secret: process.env.BETTER_AUTH_SECRET || "change-this-secret-in-production",

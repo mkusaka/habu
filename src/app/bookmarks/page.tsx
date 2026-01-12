@@ -251,7 +251,7 @@ async function BookmarkList({ page }: { page: number }) {
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
-      <div className="flex-1 min-h-0 overflow-y-auto space-y-2">
+      <div className="h-full overflow-auto space-y-2">
         {bookmarks.map((bookmark, index) => (
           <div
             key={`${bookmark.url}-${index}`}
@@ -352,7 +352,7 @@ export default async function BookmarksPage({ searchParams }: BookmarksPageProps
   const hasHatena = await getHatenaStatus();
 
   return (
-    <Card className="w-full min-h-[100dvh]">
+    <Card className="w-full h-[100dvh]">
       <CardHeader className="pb-4 shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">

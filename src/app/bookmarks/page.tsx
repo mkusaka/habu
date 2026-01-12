@@ -250,8 +250,8 @@ async function BookmarkList({ page }: { page: number }) {
   }
 
   return (
-    <>
-      <div className="space-y-2">
+    <div className="flex flex-col flex-1 min-h-0">
+      <div className="flex-1 min-h-0 overflow-y-auto space-y-2">
         {bookmarks.map((bookmark, index) => (
           <div
             key={`${bookmark.url}-${index}`}
@@ -306,33 +306,39 @@ async function BookmarkList({ page }: { page: number }) {
         ))}
       </div>
 
-      {/* Pagination */}
-      <div className="relative z-10 flex items-center justify-between pt-2">
-        {page > 1 ? (
-          <LinkButton href={`/bookmarks?page=${page - 1}`} variant="outline" size="sm">
-            <ChevronLeft className="w-4 h-4 mr-1" />
-            Prev
-          </LinkButton>
-        ) : (
-          <span className="inline-flex items-center px-3 py-1.5 text-sm text-muted-foreground">
-            <ChevronLeft className="w-4 h-4 mr-1" />
-            Prev
-          </span>
-        )}
-        <span className="text-sm text-muted-foreground">Page {page}</span>
-        {hasMore ? (
-          <LinkButton href={`/bookmarks?page=${page + 1}`} variant="outline" size="sm">
-            Next
-            <ChevronRight className="w-4 h-4 ml-1" />
-          </LinkButton>
-        ) : (
-          <span className="inline-flex items-center px-3 py-1.5 text-sm text-muted-foreground">
-            Next
-            <ChevronRight className="w-4 h-4 ml-1" />
-          </span>
-        )}
-      </div>
-    </>
+      {/* Pagination (footer) */}
+      <Pagination page={page} hasMore={hasMore} />
+    </div>
+  );
+}
+
+function Pagination({ page, hasMore }: { page: number; hasMore: boolean }) {
+  return (
+    <div className="flex items-center justify-between shrink-0 pt-2">
+      {page > 1 ? (
+        <LinkButton href={`/bookmarks?page=${page - 1}`} variant="outline" size="sm">
+          <ChevronLeft className="w-4 h-4 mr-1" />
+          Prev
+        </LinkButton>
+      ) : (
+        <span className="inline-flex items-center px-3 py-1.5 text-sm text-muted-foreground">
+          <ChevronLeft className="w-4 h-4 mr-1" />
+          Prev
+        </span>
+      )}
+      <span className="text-sm text-muted-foreground">Page {page}</span>
+      {hasMore ? (
+        <LinkButton href={`/bookmarks?page=${page + 1}`} variant="outline" size="sm">
+          Next
+          <ChevronRight className="w-4 h-4 ml-1" />
+        </LinkButton>
+      ) : (
+        <span className="inline-flex items-center px-3 py-1.5 text-sm text-muted-foreground">
+          Next
+          <ChevronRight className="w-4 h-4 ml-1" />
+        </span>
+      )}
+    </div>
   );
 }
 
@@ -346,8 +352,8 @@ export default async function BookmarksPage({ searchParams }: BookmarksPageProps
   const hasHatena = await getHatenaStatus();
 
   return (
-    <Card className="w-full">
-      <CardHeader className="pb-4">
+    <Card className="w-full min-h-[100dvh]">
+      <CardHeader className="pb-4 shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Bookmark className="w-6 h-6 text-primary" />
@@ -364,10 +370,10 @@ export default async function BookmarksPage({ searchParams }: BookmarksPageProps
           </div>
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="flex flex-1 min-h-0 flex-col gap-4">
         {/* Connect to Hatena (only when not connected) */}
         {!hasHatena && (
-          <LinkButton href="/settings" variant="outline" size="sm" className="w-full">
+          <LinkButton href="/settings" variant="outline" size="sm" className="w-full shrink-0">
             <Settings className="w-4 h-4 mr-2" />
             Connect to Hatena Bookmark
           </LinkButton>

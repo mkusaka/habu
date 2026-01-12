@@ -352,7 +352,7 @@ export default async function BookmarksPage({ searchParams }: BookmarksPageProps
   const hasHatena = await getHatenaStatus();
 
   return (
-    <Card className="w-full h-[100dvh]">
+    <Card className="w-full max-h-[100dvh]">
       <CardHeader className="pb-4 shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">

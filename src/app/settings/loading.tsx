@@ -33,21 +33,38 @@ export default function SettingsLoading() {
         <div>
           <h3 className="text-sm font-medium mb-3">Preferences</h3>
           <div className="space-y-4">
+            {/* ThemeToggle: Label + 3 buttons */}
             <div className="flex items-center justify-between">
-              <Skeleton className="h-4 w-20" />
-              <Skeleton className="h-6 w-11 rounded-full" />
+              <Skeleton className="h-3.5 w-12" />
+              <div className="flex items-center gap-2">
+                <Skeleton className="h-8 w-[74px] rounded-md" />
+                <Skeleton className="h-8 w-[62px] rounded-md" />
+                <Skeleton className="h-8 w-[60px] rounded-md" />
+              </div>
             </div>
+            {/* AutoSaveToggle: Label + description + switch */}
             <div className="flex items-center justify-between">
-              <Skeleton className="h-4 w-24" />
-              <Skeleton className="h-6 w-11 rounded-full" />
+              <div className="space-y-0.5">
+                <Skeleton className="h-3.5 w-32" />
+                <Skeleton className="h-3.5 w-64" />
+              </div>
+              <Skeleton className="h-[1.15rem] w-8 rounded-full" />
             </div>
+            {/* AiGenerateToggle: Label + description + switch */}
             <div className="flex items-center justify-between">
-              <Skeleton className="h-4 w-28" />
-              <Skeleton className="h-6 w-11 rounded-full" />
+              <div className="space-y-0.5">
+                <Skeleton className="h-3.5 w-28" />
+                <Skeleton className="h-3.5 w-80" />
+              </div>
+              <Skeleton className="h-[1.15rem] w-8 rounded-full" />
             </div>
+            {/* NotificationToggle: icon + label + switch */}
             <div className="flex items-center justify-between">
-              <Skeleton className="h-4 w-24" />
-              <Skeleton className="h-6 w-11 rounded-full" />
+              <div className="flex items-center gap-2">
+                <Skeleton className="w-4 h-4 rounded" />
+                <Skeleton className="h-3.5 w-28" />
+              </div>
+              <Skeleton className="h-[1.15rem] w-8 rounded-full" />
             </div>
           </div>
         </div>

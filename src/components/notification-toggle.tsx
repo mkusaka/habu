@@ -42,9 +42,9 @@ export function NotificationToggle() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Skeleton className="w-4 h-4 rounded" />
-          <Skeleton className="h-4 w-28" />
+          <Skeleton className="h-3.5 w-28" />
         </div>
-        <Skeleton className="h-5 w-9 rounded-full" />
+        <Skeleton className="h-[1.15rem] w-8 rounded-full" />
       </div>
     );
   }

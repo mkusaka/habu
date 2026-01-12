@@ -9,6 +9,25 @@ import { eq } from "drizzle-orm";
 import { createMcpServer } from "@/mcp/server";
 import type { McpContext } from "@/mcp/types";
 
+// CORS headers required for browser-based MCP clients (e.g., MCP Inspector)
+// MCP_ALLOWED_ORIGINS env var: comma-separated list of allowed origins
+// Default: http://localhost:6274 (MCP Inspector default)
+function getCorsHeaders(request?: NextRequest) {
+  const allowedOrigins = (process.env.MCP_ALLOWED_ORIGINS || "http://localhost:6274")
+    .split(",")
+    .map((o) => o.trim());
+
+  const origin = request?.headers.get("origin") || "";
+  const allowOrigin = allowedOrigins.includes(origin) ? origin : allowedOrigins[0];
+
+  return {
+    "Access-Control-Allow-Origin": allowOrigin,
+    "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization, mcp-protocol-version",
+    "Access-Control-Expose-Headers": "mcp-session-id",
+  };
+}
+
 // Helper to verify JWT and extract user info
 async function verifyMcpAuth(request: NextRequest, env: CloudflareEnv): Promise<McpContext | null> {
   const authorization = request.headers.get("authorization");
@@ -123,11 +142,12 @@ async function handleMcpRequest(
     // Handle the request through the transport
     await transport.handleRequest(mockReq as any, mockRes as any, body);
 
-    // Return the response
+    // Return the response with CORS headers
     return new Response(responseBody, {
       status: responseStatus,
       headers: {
         "Content-Type": "application/json",
+        ...getCorsHeaders(request),
         ...responseHeaders,
       },
     });
@@ -157,6 +177,7 @@ export async function POST(request: NextRequest) {
       {
         status: 401,
         headers: {
+          ...getCorsHeaders(request),
           "WWW-Authenticate": 'Bearer realm="habu MCP"',
         },
       },
@@ -176,13 +197,13 @@ export async function POST(request: NextRequest) {
         },
         id: null,
       },
-      { status: 500 },
+      { status: 500, headers: getCorsHeaders(request) },
     );
   }
 }
 
 // GET - Return 405 Method Not Allowed (SSE not supported in stateless mode)
-export async function GET() {
+export async function GET(request: NextRequest) {
   return NextResponse.json(
     {
       jsonrpc: "2.0",
@@ -192,12 +213,12 @@ export async function GET() {
       },
       id: null,
     },
-    { status: 405 },
+    { status: 405, headers: getCorsHeaders(request) },
   );
 }
 
 // DELETE - Return 405 Method Not Allowed (no session management in stateless mode)
-export async function DELETE() {
+export async function DELETE(request: NextRequest) {
   return NextResponse.json(
     {
       jsonrpc: "2.0",
@@ -207,6 +228,14 @@ export async function DELETE() {
       },
       id: null,
     },
-    { status: 405 },
+    { status: 405, headers: getCorsHeaders(request) },
   );
+}
+
+// OPTIONS - CORS preflight handler
+export async function OPTIONS(request: NextRequest) {
+  return new Response(null, {
+    status: 204,
+    headers: getCorsHeaders(request),
+  });
 }

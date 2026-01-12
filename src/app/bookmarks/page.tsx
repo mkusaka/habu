@@ -378,9 +378,11 @@ export default async function BookmarksPage({ searchParams }: BookmarksPageProps
             Connect to Hatena Bookmark
           </LinkButton>
         )}
-        <Suspense key={page} fallback={<BookmarkListLoading />}>
-          <BookmarkList page={page} />
-        </Suspense>
+        <div className="flex-1 min-h-0 flex flex-col">
+          <Suspense key={page} fallback={<BookmarkListLoading />}>
+            <BookmarkList page={page} />
+          </Suspense>
+        </div>
       </CardContent>
     </Card>
   );

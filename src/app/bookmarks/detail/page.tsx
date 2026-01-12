@@ -129,45 +129,45 @@ function BookmarkDetailLoading() {
     <div className="space-y-4">
       {/* URL Display skeleton */}
       <div className="space-y-2">
-        <Skeleton className="h-4 w-8" /> {/* "URL" label */}
+        <Skeleton className="h-3.5 w-8" /> {/* "URL" label: text-sm leading-none */}
         <div className="flex items-center gap-2 p-2 bg-muted rounded-md">
-          <Skeleton className="h-5 flex-1" /> {/* URL text */}
-          <Skeleton className="h-4 w-4 rounded" /> {/* Copy icon */}
-          <Skeleton className="h-4 w-4 rounded" /> {/* ExternalLink icon */}
-          <Skeleton className="h-4 w-4 rounded" /> {/* Bookmark icon */}
+          <Skeleton className="h-5 flex-1" /> {/* URL text: text-sm */}
+          <Skeleton className="h-4 w-4" /> {/* Copy icon */}
+          <Skeleton className="h-4 w-4" /> {/* ExternalLink icon */}
+          <Skeleton className="h-4 w-4" /> {/* Bookmark icon */}
         </div>
       </div>
       {/* Title Display skeleton */}
       <div className="space-y-2">
-        <Skeleton className="h-4 w-10" /> {/* "Title" label */}
+        <Skeleton className="h-3.5 w-8" /> {/* "Title" label: text-sm leading-none */}
         <div className="p-2 bg-muted rounded-md">
-          <Skeleton className="h-5 w-3/4" /> {/* Title text */}
+          <Skeleton className="h-5 w-3/4" /> {/* Title text: text-sm */}
         </div>
       </div>
       {/* Comment textarea skeleton */}
       <div className="space-y-2">
-        <Skeleton className="h-4 w-16" /> {/* "Comment" label */}
-        <Skeleton className="h-[74px] w-full rounded-md" /> {/* Textarea (rows=3) */}
+        <Skeleton className="h-3.5 w-16" /> {/* "Comment" label */}
+        <Skeleton className="h-[74px] w-full" /> {/* Textarea (rows=3) */}
       </div>
       {/* Context toggle skeleton */}
       <div className="flex items-center gap-2">
-        <Skeleton className="h-4 w-4 rounded" /> {/* Chevron icon */}
-        <Skeleton className="h-4 w-44" /> {/* "Add context for AI generation" */}
+        <Skeleton className="h-4 w-4" /> {/* Chevron icon */}
+        <Skeleton className="h-3.5 w-44" /> {/* "Add context...": text-sm */}
       </div>
       {/* Bookmarked at skeleton */}
-      <Skeleton className="h-4 w-48" /> {/* Bookmarked date text */}
+      <Skeleton className="h-4 w-48" /> {/* Bookmarked date: text-xs */}
       {/* Action buttons skeleton - Generate / Update */}
       <div className="flex gap-2">
-        <Skeleton className="h-11 flex-1 rounded-md" /> {/* Generate button */}
-        <Skeleton className="h-11 flex-1 rounded-md" /> {/* Update button */}
+        <Skeleton className="h-11 flex-1" /> {/* Generate button */}
+        <Skeleton className="h-11 flex-1" /> {/* Update button */}
       </div>
       {/* Chat button skeleton */}
-      <Skeleton className="h-11 w-full rounded-md" />
+      <Skeleton className="h-11 w-full" />
       {/* Delete button skeleton */}
-      <Skeleton className="h-11 w-full rounded-md" />
+      <Skeleton className="h-11 w-full" />
       {/* Back to Bookmarks button skeleton */}
       <div className="pt-2">
-        <Skeleton className="h-9 w-full rounded-md" />
+        <Skeleton className="h-9 w-full" />
       </div>
     </div>
   );

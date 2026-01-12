@@ -104,7 +104,7 @@ export default function RootLayout({
           <ServiceWorkerRegister />
           <BackgroundSyncFallback />
           <TooltipProvider>
-            <main className="h-full p-2 bg-background overflow-auto">
+            <main className="h-full p-2 bg-background overflow-hidden">
               <div className="min-h-full flex items-center">
                 <div className="max-w-lg mx-auto w-full">{children}</div>
               </div>

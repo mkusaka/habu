@@ -209,6 +209,7 @@ function BookmarkListLoading({ page }: { page: number }) {
               <div className="flex items-center gap-1 flex-shrink-0">
                 <Skeleton className="h-6 w-6 rounded" />
                 <Skeleton className="h-6 w-6 rounded" />
+                <Skeleton className="h-6 w-6 rounded" />
               </div>
             </div>
             {/* Body skeleton */}
@@ -278,8 +279,18 @@ async function BookmarkList({ page }: { page: number }) {
                   target="_blank"
                   rel="noopener noreferrer"
                   className="p-1 text-muted-foreground hover:text-foreground cursor-pointer"
+                  title="Open page"
                 >
                   <ExternalLink className="w-4 h-4" />
+                </a>
+                <a
+                  href={`https://b.hatena.ne.jp/entry/${bookmark.url.startsWith("https://") ? "s/" + bookmark.url.slice(8) : bookmark.url}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-1 text-muted-foreground hover:text-foreground cursor-pointer"
+                  title="View on Hatena Bookmark"
+                >
+                  <Bookmark className="w-4 h-4" />
                 </a>
               </div>
             </div>

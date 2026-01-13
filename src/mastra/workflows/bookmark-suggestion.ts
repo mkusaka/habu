@@ -113,7 +113,7 @@ Pass if ALL of the following are true:
 1. CONCRETE: Contains at least one specific detail from the content (feature name, number, method, technology)
 2. ACCURATE: Claims match the actual page content
 3. JAPANESE: Written in Japanese
-4. LENGTH: 70-100 characters (acceptable: 50-100). See <character_count> for the actual length.
+4. LENGTH: 70-100 characters preferred (acceptable: 50-110). If over 100, check if it can be shortened without losing key info. See <character_count> for the actual length.
 </evaluation_criteria>
 ${
   hasUserContext
@@ -151,7 +151,7 @@ ${summary}
 
 <character_count>
 Summary length: ${summaryLength} characters
-Length OK: ${summaryLength >= 50 && summaryLength <= 100 ? "YES (within 50-100)" : `NO (${summaryLength < 50 ? "too short, need 50+" : "too long, max 100"})`}
+Length OK: ${summaryLength >= 50 && summaryLength <= 110 ? "YES (within acceptable range)" : `NO (${summaryLength < 50 ? "too short, aim for 70+" : "over 110, try to condense"})`}
 </character_count>
 
 Evaluate this summary against the criteria.`,
@@ -640,21 +640,14 @@ const mergeContentStep = createStep({
 });
 
 // Schema for AI generation (only summary - webContext/canonicalUrl are passed through, not generated)
+// Note: No max length constraint here - let AI write naturally, Judge will reject if too long
 const SummaryGenerationSchema = z.object({
-  summary: z
-    .string()
-    .min(10)
-    .max(100)
-    .describe("Concise summary in Japanese, 10-100 characters (ideally 70-100)"),
+  summary: z.string().min(10).describe("Concise summary in Japanese, ideally 70-100 characters"),
 });
 
 // Summary step output schema (includes passthrough fields)
 const SummaryOutputSchema = z.object({
-  summary: z
-    .string()
-    .min(10)
-    .max(100)
-    .describe("Concise summary in Japanese, 10-100 characters (ideally 70-100)"),
+  summary: z.string().min(10).describe("Concise summary in Japanese, ideally 70-100 characters"),
   webContext: z.string().optional(),
   canonicalUrl: z.string().optional(),
 });
@@ -709,7 +702,7 @@ Adapt your tone to the content type (product, article, news, tool, etc.).
 
 <output_requirements>
 - Language: Japanese only
-- Length: 10-100 characters (aim for 70-100, full-width = 1)
+- Length: Write a complete, natural sentence. Aim for 70-100 characters but prioritize completeness over hitting a specific count. Never cut off mid-word or mid-thought.
 - Include at least ONE concrete detail from the content (feature, number, method, etc.)
 - Keep technical terms in their original form (e.g., "API", "Docker", "React") - do NOT translate them into Japanese
 </output_requirements>

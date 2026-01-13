@@ -106,7 +106,9 @@ export default function RootLayout({
           <TooltipProvider>
             <main className="h-full bg-background flex flex-col overflow-hidden">
               <div className="flex-1 min-h-0 p-2 overflow-y-auto">
-                <div className="h-full flex items-center max-w-lg mx-auto w-full">{children}</div>
+                <div className="min-h-full flex items-center max-w-lg mx-auto w-full">
+                  {children}
+                </div>
               </div>
             </main>
           </TooltipProvider>

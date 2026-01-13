@@ -97,7 +97,7 @@ export function BookmarkEditForm({
     setIsGenerating(true);
     setGeneratedResult(null);
     setWorkflowRunId(null);
-    setWorkflowSteps(initBookmarkSuggestionSteps());
+    setWorkflowSteps(initBookmarkSuggestionSteps(bookmarkUrl));
 
     try {
       const response = await fetch("/api/habu/suggest?stream=1", {

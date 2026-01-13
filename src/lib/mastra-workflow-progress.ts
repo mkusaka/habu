@@ -28,26 +28,43 @@ export function formatWorkflowStepMeta(meta?: Partial<WorkflowStepMeta>) {
   return parts.join(" / ");
 }
 
+// Static metadata (for non-URL-dependent steps)
 export const BOOKMARK_SUGGESTION_STEP_META: Record<string, WorkflowStepMeta> = {
-  "fetch-markdown-and-moderate": {
-    provider: "Cloudflare + OpenAI (+ xAI for X/Twitter)",
-    api: "browser-rendering/markdown + (X/Twitter: Grok→oEmbed) + omni-moderation-latest",
-  },
   "moderate-user-context": {
     provider: "OpenAI",
     model: "omni-moderation-latest",
     api: "moderations",
   },
   "fetch-metadata": { provider: "Habu", api: "HTMLRewriter (local)" },
-  "web-search": {
-    provider: "xAI (X/Twitter) / Groq (others)",
-    model: "grok-* (XAI_MODEL) / gpt-oss-120b",
-    api: "chat/completions / browser_search",
-  },
   "merge-content": { provider: "Habu", api: "merge" },
-  "generate-summary": { provider: "Groq", model: "gpt-oss-120b", api: "generate + judge" },
-  "generate-tags": { provider: "Groq", model: "gpt-oss-120b", api: "generate + judge" },
+  "generate-summary": { provider: "OpenAI", model: "gpt-5-mini", api: "generate + judge" },
+  "generate-tags": { provider: "OpenAI", model: "gpt-5-mini", api: "generate + judge" },
   "merge-results": { provider: "Habu", api: "merge" },
+};
+
+// URL-dependent metadata
+export const BOOKMARK_SUGGESTION_STEP_META_TWITTER: Record<string, WorkflowStepMeta> = {
+  "fetch-markdown-and-moderate": {
+    provider: "xAI + OpenAI",
+    api: "Grok→oEmbed + omni-moderation-latest",
+  },
+  "web-search": {
+    provider: "xAI",
+    model: "grok-3-fast-latest",
+    api: "chat/completions",
+  },
+};
+
+export const BOOKMARK_SUGGESTION_STEP_META_DEFAULT: Record<string, WorkflowStepMeta> = {
+  "fetch-markdown-and-moderate": {
+    provider: "Cloudflare + OpenAI",
+    api: "browser-rendering/markdown + omni-moderation-latest",
+  },
+  "web-search": {
+    provider: "OpenAI",
+    model: "gpt-5-mini",
+    api: "web_search",
+  },
 };
 
 export const BOOKMARK_SUGGESTION_STEP_ORDER: Array<Pick<WorkflowStepState, "id" | "label">> = [
@@ -64,19 +81,46 @@ export const BOOKMARK_SUGGESTION_STEP_ORDER: Array<Pick<WorkflowStepState, "id" 
 /** Internal steps that should be hidden from UI */
 export const INTERNAL_STEP_IDS = new Set(["merge-content", "merge-results"]);
 
-export function initBookmarkSuggestionSteps(): Record<string, WorkflowStepState> {
+/** Check if URL is a Twitter/X status URL (simplified check for UI purposes) */
+function isTwitterStatusUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    const isTwitterHost =
+      parsed.hostname === "twitter.com" ||
+      parsed.hostname === "www.twitter.com" ||
+      parsed.hostname === "x.com" ||
+      parsed.hostname === "www.x.com" ||
+      parsed.hostname === "mobile.twitter.com" ||
+      parsed.hostname === "mobile.x.com";
+    // Check for status pattern: /<user>/status/<id>
+    return isTwitterHost && /^\/[^/]+\/status\/\d+/.test(parsed.pathname);
+  } catch {
+    return false;
+  }
+}
+
+/** Get step metadata based on URL characteristics */
+function getStepMeta(stepId: string, url?: string): WorkflowStepMeta | undefined {
+  // Check static metadata first
+  if (BOOKMARK_SUGGESTION_STEP_META[stepId]) {
+    return BOOKMARK_SUGGESTION_STEP_META[stepId];
+  }
+  // URL-dependent metadata
+  const isTwitter = url ? isTwitterStatusUrl(url) : false;
+  const urlDependentMeta = isTwitter
+    ? BOOKMARK_SUGGESTION_STEP_META_TWITTER
+    : BOOKMARK_SUGGESTION_STEP_META_DEFAULT;
+  return urlDependentMeta[stepId];
+}
+
+export function initBookmarkSuggestionSteps(url?: string): Record<string, WorkflowStepState> {
   return Object.fromEntries(
     BOOKMARK_SUGGESTION_STEP_ORDER.map((s) => [
       s.id,
       {
         id: s.id,
         label: s.label,
-        detail:
-          s.id === "fetch-markdown-and-moderate" ||
-          s.id === "moderate-user-context" ||
-          s.id === "web-search"
-            ? undefined
-            : formatWorkflowStepMeta(BOOKMARK_SUGGESTION_STEP_META[s.id]),
+        detail: formatWorkflowStepMeta(getStepMeta(s.id, url)),
         status: "pending" as const,
       },
     ]),

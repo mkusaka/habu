@@ -338,7 +338,7 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
     setIsGenerating(true);
     setGeneratedResult(null);
     setWorkflowRunId(null);
-    setWorkflowSteps(initBookmarkSuggestionSteps());
+    setWorkflowSteps(initBookmarkSuggestionSteps(url));
 
     try {
       const response = await fetch("/api/habu/suggest?stream=1", {

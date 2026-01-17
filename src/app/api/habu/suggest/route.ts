@@ -388,21 +388,29 @@ export async function POST(request: NextRequest) {
                   stage: "fetch_markdown_done",
                   ok: true,
                   hasError: !!res.error,
+                  markdown: res.markdown,
+                  markdownError: res.error,
                 });
                 return res;
               })
               .catch((error) => {
+                const errorMsg = error instanceof Error ? error.message : "Unknown error";
                 send("preflight", {
                   stage: "fetch_markdown_done",
                   ok: false,
-                  error: error instanceof Error ? error.message : "Unknown error",
+                  error: errorMsg,
+                  markdownError: errorMsg,
                 });
                 return { markdown: "", error: "Markdown fetch failed" };
               });
 
             const metadataPromise = fetchMetadata(url)
               .then((res) => {
-                send("preflight", { stage: "fetch_metadata_done", ok: true });
+                send("preflight", {
+                  stage: "fetch_metadata_done",
+                  ok: true,
+                  metadata: res,
+                });
                 return res;
               })
               .catch((error) => {

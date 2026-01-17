@@ -363,7 +363,40 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
         if (!data) return;
 
         if (event === "preflight") {
-          // Preflight events are internal progress - no UI action needed
+          try {
+            const payload = JSON.parse(data) as {
+              stage?: string;
+              markdown?: string;
+              markdownError?: string;
+              metadata?: {
+                title?: string;
+                description?: string;
+                lang?: string;
+                ogType?: string;
+                siteName?: string;
+                keywords?: string;
+                author?: string;
+              };
+            };
+
+            // Update debug info as soon as it's available
+            if (payload.stage === "fetch_markdown_done") {
+              setGeneratedResult((prev) => ({
+                ...prev,
+                markdown: payload.markdown || prev?.markdown,
+                markdownError: payload.markdownError || prev?.markdownError,
+              }));
+            }
+
+            if (payload.stage === "fetch_metadata_done" && payload.metadata) {
+              setGeneratedResult((prev) => ({
+                ...prev,
+                metadata: payload.metadata,
+              }));
+            }
+          } catch {
+            // ignore parse errors
+          }
           return;
         }
 
@@ -724,225 +757,226 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
         )}
 
         {/* Generated Result */}
-        {generatedResult && (
-          <div className="p-3 bg-muted rounded-md space-y-3 text-sm">
-            {/* AI Generated Summary */}
-            <div>
-              <div className="font-medium flex items-center gap-2 mb-2">
-                <Sparkles className="w-4 h-4 text-primary" />
-                Generated Preview
-              </div>
-              {generatedResult.tags && generatedResult.tags.length > 0 && (
-                <div className="flex flex-wrap gap-1 mb-2">
-                  {generatedResult.tags.map((tag, i) => (
-                    <span
-                      key={i}
-                      className="px-2 py-0.5 bg-primary/10 text-primary rounded text-xs"
-                    >
-                      {tag}
-                    </span>
-                  ))}
+        {generatedResult &&
+          (generatedResult.summary || generatedResult.tags || generatedResult.formattedComment) && (
+            <div className="p-3 bg-muted rounded-md space-y-3 text-sm">
+              {/* AI Generated Summary */}
+              <div>
+                <div className="font-medium flex items-center gap-2 mb-2">
+                  <Sparkles className="w-4 h-4 text-primary" />
+                  Generated Preview
                 </div>
-              )}
-              {generatedResult.summary && (
-                <p className="text-muted-foreground">{generatedResult.summary}</p>
-              )}
-              {generatedResult.formattedComment && (
-                <div className="pt-2 border-t">
-                  <p className="text-xs text-muted-foreground mb-1">Formatted comment:</p>
-                  <code className="text-xs bg-background p-2 rounded block break-all">
-                    {generatedResult.formattedComment}
-                  </code>
-                  <div className="flex gap-2 mt-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setComment(generatedResult.formattedComment!);
-                        toast.success("Applied generated comment");
-                      }}
-                      className="flex-1"
-                    >
-                      Apply
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={() => {
-                        // Use formattedComment directly instead of relying on state update
-                        const newComment = generatedResult.formattedComment!;
-                        setComment(newComment);
-                        handleSaveWithComment(newComment);
-                      }}
-                      disabled={isSaving}
-                      className="flex-1"
-                    >
-                      {isSaving ? "Saving..." : "Apply & Save"}
-                    </Button>
+                {generatedResult.tags && generatedResult.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mb-2">
+                    {generatedResult.tags.map((tag, i) => (
+                      <span
+                        key={i}
+                        className="px-2 py-0.5 bg-primary/10 text-primary rounded text-xs"
+                      >
+                        {tag}
+                      </span>
+                    ))}
                   </div>
-                </div>
-              )}
-            </div>
-
-            {/* Raw Content Toggle */}
-            {(generatedResult.markdown ||
-              generatedResult.markdownError ||
-              generatedResult.metadata ||
-              generatedResult.webContext) && (
-              <div className="border-t pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowRawContent(!showRawContent)}
-                  className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground w-full"
-                >
-                  {showRawContent ? (
-                    <ChevronUp className="w-3 h-3" />
-                  ) : (
-                    <ChevronDown className="w-3 h-3" />
-                  )}
-                  <span>Raw content (debug)</span>
-                </button>
-
-                {showRawContent && (
-                  <div className="mt-2 space-y-3">
-                    {/* Metadata */}
-                    {generatedResult.metadata &&
-                      Object.keys(generatedResult.metadata).length > 0 && (
-                        <div>
-                          <div className="flex items-center justify-between text-xs font-medium mb-1">
-                            <div className="flex items-center gap-1">
-                              <Info className="w-3 h-3" />
-                              Metadata
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() =>
-                                handleCopy(
-                                  JSON.stringify(generatedResult.metadata, null, 2),
-                                  "Metadata",
-                                )
-                              }
-                              className="text-muted-foreground hover:text-foreground"
-                            >
-                              <Copy className="w-3 h-3" />
-                            </button>
-                          </div>
-                          <div className="bg-background p-2 rounded text-xs space-y-1">
-                            {generatedResult.metadata.title && (
-                              <div>
-                                <span className="text-muted-foreground">title:</span>{" "}
-                                {generatedResult.metadata.title}
-                              </div>
-                            )}
-                            {generatedResult.metadata.description && (
-                              <div>
-                                <span className="text-muted-foreground">description:</span>{" "}
-                                {generatedResult.metadata.description}
-                              </div>
-                            )}
-                            {generatedResult.metadata.siteName && (
-                              <div>
-                                <span className="text-muted-foreground">site:</span>{" "}
-                                {generatedResult.metadata.siteName}
-                              </div>
-                            )}
-                            {generatedResult.metadata.lang && (
-                              <div>
-                                <span className="text-muted-foreground">lang:</span>{" "}
-                                {generatedResult.metadata.lang}
-                              </div>
-                            )}
-                            {generatedResult.metadata.ogType && (
-                              <div>
-                                <span className="text-muted-foreground">type:</span>{" "}
-                                {generatedResult.metadata.ogType}
-                              </div>
-                            )}
-                            {generatedResult.metadata.keywords && (
-                              <div>
-                                <span className="text-muted-foreground">keywords:</span>{" "}
-                                {generatedResult.metadata.keywords}
-                              </div>
-                            )}
-                            {generatedResult.metadata.author && (
-                              <div>
-                                <span className="text-muted-foreground">author:</span>{" "}
-                                {generatedResult.metadata.author}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )}
-
-                    {/* Web Context */}
-                    {generatedResult.webContext && (
-                      <div>
-                        <div className="flex items-center justify-between text-xs font-medium mb-1">
-                          <div className="flex items-center gap-1">
-                            <Info className="w-3 h-3" />
-                            Web Search Context
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => handleCopy(generatedResult.webContext!, "Web Context")}
-                            className="text-muted-foreground hover:text-foreground"
-                          >
-                            <Copy className="w-3 h-3" />
-                          </button>
-                        </div>
-                        <pre className="bg-background p-2 rounded text-xs overflow-auto max-h-48 whitespace-pre-wrap break-all">
-                          {generatedResult.webContext}
-                        </pre>
-                      </div>
-                    )}
-
-                    {/* Markdown */}
-                    {generatedResult.markdown ? (
-                      <div>
-                        <div className="flex items-center justify-between text-xs font-medium mb-1">
-                          <div className="flex items-center gap-1">
-                            <FileText className="w-3 h-3" />
-                            Markdown ({generatedResult.markdown.length.toLocaleString()} chars)
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => handleCopy(generatedResult.markdown!, "Markdown")}
-                            className="text-muted-foreground hover:text-foreground"
-                          >
-                            <Copy className="w-3 h-3" />
-                          </button>
-                        </div>
-                        <pre className="bg-background p-2 rounded text-xs overflow-auto whitespace-pre-wrap break-all">
-                          {generatedResult.markdown}
-                        </pre>
-                      </div>
-                    ) : generatedResult.markdownError ? (
-                      <div>
-                        <div className="flex items-center justify-between text-xs font-medium mb-1 text-yellow-600">
-                          <div className="flex items-center gap-1">
-                            <AlertCircle className="w-3 h-3" />
-                            Markdown fetch error
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              handleCopy(generatedResult.markdownError!, "Markdown error")
-                            }
-                            className="text-muted-foreground hover:text-foreground"
-                          >
-                            <Copy className="w-3 h-3" />
-                          </button>
-                        </div>
-                        <pre className="bg-yellow-50 dark:bg-yellow-900/20 p-2 rounded text-xs text-yellow-800 dark:text-yellow-200 overflow-auto max-h-24 whitespace-pre-wrap break-all">
-                          {generatedResult.markdownError}
-                        </pre>
-                      </div>
-                    ) : null}
+                )}
+                {generatedResult.summary && (
+                  <p className="text-muted-foreground">{generatedResult.summary}</p>
+                )}
+                {generatedResult.formattedComment && (
+                  <div className="pt-2 border-t">
+                    <p className="text-xs text-muted-foreground mb-1">Formatted comment:</p>
+                    <code className="text-xs bg-background p-2 rounded block break-all">
+                      {generatedResult.formattedComment}
+                    </code>
+                    <div className="flex gap-2 mt-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setComment(generatedResult.formattedComment!);
+                          toast.success("Applied generated comment");
+                        }}
+                        className="flex-1"
+                      >
+                        Apply
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          // Use formattedComment directly instead of relying on state update
+                          const newComment = generatedResult.formattedComment!;
+                          setComment(newComment);
+                          handleSaveWithComment(newComment);
+                        }}
+                        disabled={isSaving}
+                        className="flex-1"
+                      >
+                        {isSaving ? "Saving..." : "Apply & Save"}
+                      </Button>
+                    </div>
                   </div>
                 )}
               </div>
-            )}
-          </div>
-        )}
+            </div>
+          )}
+
+        {/* Raw Content (debug) - shown during workflow or after generation */}
+        {generatedResult &&
+          (generatedResult.markdown ||
+            generatedResult.markdownError ||
+            generatedResult.metadata ||
+            generatedResult.webContext) && (
+            <div className="p-3 bg-muted rounded-md text-sm">
+              <button
+                type="button"
+                onClick={() => setShowRawContent(!showRawContent)}
+                className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground w-full"
+              >
+                {showRawContent ? (
+                  <ChevronUp className="w-3 h-3" />
+                ) : (
+                  <ChevronDown className="w-3 h-3" />
+                )}
+                <span>Raw content (debug)</span>
+              </button>
+
+              {showRawContent && (
+                <div className="mt-2 space-y-3">
+                  {/* Metadata */}
+                  {generatedResult.metadata && Object.keys(generatedResult.metadata).length > 0 && (
+                    <div>
+                      <div className="flex items-center justify-between text-xs font-medium mb-1">
+                        <div className="flex items-center gap-1">
+                          <Info className="w-3 h-3" />
+                          Metadata
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleCopy(
+                              JSON.stringify(generatedResult.metadata, null, 2),
+                              "Metadata",
+                            )
+                          }
+                          className="text-muted-foreground hover:text-foreground"
+                        >
+                          <Copy className="w-3 h-3" />
+                        </button>
+                      </div>
+                      <div className="bg-background p-2 rounded text-xs space-y-1">
+                        {generatedResult.metadata.title && (
+                          <div>
+                            <span className="text-muted-foreground">title:</span>{" "}
+                            {generatedResult.metadata.title}
+                          </div>
+                        )}
+                        {generatedResult.metadata.description && (
+                          <div>
+                            <span className="text-muted-foreground">description:</span>{" "}
+                            {generatedResult.metadata.description}
+                          </div>
+                        )}
+                        {generatedResult.metadata.siteName && (
+                          <div>
+                            <span className="text-muted-foreground">site:</span>{" "}
+                            {generatedResult.metadata.siteName}
+                          </div>
+                        )}
+                        {generatedResult.metadata.lang && (
+                          <div>
+                            <span className="text-muted-foreground">lang:</span>{" "}
+                            {generatedResult.metadata.lang}
+                          </div>
+                        )}
+                        {generatedResult.metadata.ogType && (
+                          <div>
+                            <span className="text-muted-foreground">type:</span>{" "}
+                            {generatedResult.metadata.ogType}
+                          </div>
+                        )}
+                        {generatedResult.metadata.keywords && (
+                          <div>
+                            <span className="text-muted-foreground">keywords:</span>{" "}
+                            {generatedResult.metadata.keywords}
+                          </div>
+                        )}
+                        {generatedResult.metadata.author && (
+                          <div>
+                            <span className="text-muted-foreground">author:</span>{" "}
+                            {generatedResult.metadata.author}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Web Context */}
+                  {generatedResult.webContext && (
+                    <div>
+                      <div className="flex items-center justify-between text-xs font-medium mb-1">
+                        <div className="flex items-center gap-1">
+                          <Info className="w-3 h-3" />
+                          Web Search Context
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleCopy(generatedResult.webContext!, "Web Context")}
+                          className="text-muted-foreground hover:text-foreground"
+                        >
+                          <Copy className="w-3 h-3" />
+                        </button>
+                      </div>
+                      <pre className="bg-background p-2 rounded text-xs overflow-auto max-h-48 whitespace-pre-wrap break-all">
+                        {generatedResult.webContext}
+                      </pre>
+                    </div>
+                  )}
+
+                  {/* Markdown */}
+                  {generatedResult.markdown ? (
+                    <div>
+                      <div className="flex items-center justify-between text-xs font-medium mb-1">
+                        <div className="flex items-center gap-1">
+                          <FileText className="w-3 h-3" />
+                          Markdown ({generatedResult.markdown.length.toLocaleString()} chars)
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleCopy(generatedResult.markdown!, "Markdown")}
+                          className="text-muted-foreground hover:text-foreground"
+                        >
+                          <Copy className="w-3 h-3" />
+                        </button>
+                      </div>
+                      <pre className="bg-background p-2 rounded text-xs overflow-auto whitespace-pre-wrap break-all">
+                        {generatedResult.markdown}
+                      </pre>
+                    </div>
+                  ) : generatedResult.markdownError ? (
+                    <div>
+                      <div className="flex items-center justify-between text-xs font-medium mb-1 text-yellow-600">
+                        <div className="flex items-center gap-1">
+                          <AlertCircle className="w-3 h-3" />
+                          Markdown fetch error
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleCopy(generatedResult.markdownError!, "Markdown error")
+                          }
+                          className="text-muted-foreground hover:text-foreground"
+                        >
+                          <Copy className="w-3 h-3" />
+                        </button>
+                      </div>
+                      <pre className="bg-yellow-50 dark:bg-yellow-900/20 p-2 rounded text-xs text-yellow-800 dark:text-yellow-200 overflow-auto max-h-24 whitespace-pre-wrap break-all">
+                        {generatedResult.markdownError}
+                      </pre>
+                    </div>
+                  ) : null}
+                </div>
+              )}
+            </div>
+          )}
 
         {/* Action Buttons */}
         <div className="flex gap-2">

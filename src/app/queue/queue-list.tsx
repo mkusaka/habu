@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { db, deleteQueueItem, clearCompletedItems } from "@/lib/queue-db";
+import { db, deleteQueueItem, clearCompletedItems, recoverErrorItem } from "@/lib/queue-db";
 import { saveBookmark } from "@/lib/bookmark-client";
 import type { BookmarkQueue } from "@/types/habu";
 import { Button } from "@/components/ui/button";
@@ -45,6 +45,86 @@ function parseComment(comment: string): { tags: string[]; text: string } {
   }
 
   return { tags, text: remaining.trim() };
+}
+
+/**
+ * Hook to recover error items by checking if bookmarks exist on Hatena
+ * Runs once when error items are detected, fetches bookmark status in parallel
+ * Returns set of item IDs currently being checked
+ */
+function useRecoverErrorItems(items: BookmarkQueue[] | undefined): Set<number> {
+  const [recoveredIds, setRecoveredIds] = useState<Set<number>>(new Set());
+  const [checkingIds, setCheckingIds] = useState<Set<number>>(new Set());
+  const isRecoveringRef = useRef(false);
+
+  useEffect(() => {
+    if (!items || isRecoveringRef.current) return;
+
+    const errorItems = items.filter(
+      (item) => item.status === "error" && item.id && !recoveredIds.has(item.id),
+    );
+
+    if (errorItems.length === 0) return;
+
+    isRecoveringRef.current = true;
+
+    // Mark items as checking
+    const itemIds = errorItems.map((item) => item.id!);
+    setCheckingIds(new Set(itemIds));
+
+    const recoverItems = async () => {
+      // Fetch all error items in parallel
+      const results = await Promise.allSettled(
+        errorItems.map(async (item) => {
+          const response = await fetch(`/api/habu/bookmark?url=${encodeURIComponent(item.url)}`, {
+            credentials: "include",
+          });
+
+          if (response.ok) {
+            const bookmark = (await response.json()) as {
+              url: string;
+              comment: string;
+              tags: string[];
+              created_datetime: string;
+            };
+            return { item, bookmark };
+          }
+
+          // 404 means bookmark doesn't exist - not a recovery candidate
+          return null;
+        }),
+      );
+
+      // Process results and recover items that exist on Hatena
+      const newRecoveredIds = new Set(recoveredIds);
+
+      for (const result of results) {
+        if (result.status === "fulfilled" && result.value) {
+          const { item, bookmark } = result.value;
+          if (item.id) {
+            try {
+              await recoverErrorItem(item.id, bookmark.comment, bookmark.tags);
+              newRecoveredIds.add(item.id);
+            } catch (error) {
+              console.error(`Failed to recover item ${item.id}:`, error);
+            }
+          }
+        }
+      }
+
+      if (newRecoveredIds.size > recoveredIds.size) {
+        setRecoveredIds(newRecoveredIds);
+      }
+
+      // Clear checking state
+      setCheckingIds(new Set());
+      isRecoveringRef.current = false;
+    };
+
+    recoverItems();
+  }, [items, recoveredIds]);
+
+  return checkingIds;
 }
 
 export function QueueStats() {
@@ -148,6 +228,9 @@ export function QueueList() {
   const items = useLiveQuery(() => db.bookmarks.orderBy("createdAt").reverse().toArray(), []);
   const parentRef = useRef<HTMLDivElement>(null);
 
+  // Attempt to recover error items by checking if bookmarks exist on Hatena
+  const checkingIds = useRecoverErrorItems(items);
+
   const virtualizer = useVirtualizer({
     count: items?.length ?? 0,
     getScrollElement: () => parentRef.current,
@@ -201,7 +284,10 @@ export function QueueList() {
     }
   };
 
-  const getStatusIcon = (status: BookmarkQueue["status"]) => {
+  const getStatusIcon = (status: BookmarkQueue["status"], isChecking: boolean) => {
+    if (isChecking) {
+      return <Loader2 className="w-5 h-5 text-yellow-500 animate-spin" />;
+    }
     switch (status) {
       case "done":
         return <CheckCircle2 className="w-5 h-5 text-green-500" />;
@@ -214,7 +300,10 @@ export function QueueList() {
     }
   };
 
-  const getStatusText = (status: BookmarkQueue["status"]) => {
+  const getStatusText = (status: BookmarkQueue["status"], isChecking: boolean) => {
+    if (isChecking) {
+      return "確認中...";
+    }
     switch (status) {
       case "done":
         return "Saved";
@@ -274,6 +363,7 @@ export function QueueList() {
         >
           {virtualItems.map((virtualRow) => {
             const item = items[virtualRow.index];
+            const isChecking = item.id ? checkingIds.has(item.id) : false;
             return (
               <div
                 key={item.id || virtualRow.index}
@@ -295,7 +385,7 @@ export function QueueList() {
                   )}
                   {/* Header: Status icon, Title, Action buttons */}
                   <div className="flex items-center gap-3">
-                    <div className="flex-shrink-0">{getStatusIcon(item.status)}</div>
+                    <div className="flex-shrink-0">{getStatusIcon(item.status, isChecking)}</div>
                     <h3 className="font-medium text-sm truncate flex-1 min-w-0">
                       {item.title || item.url}
                     </h3>
@@ -408,7 +498,8 @@ export function QueueList() {
                       </div>
                     )}
                     <p className="text-xs text-muted-foreground mt-1">
-                      {getStatusText(item.status)} • {new Date(item.createdAt).toLocaleString()}
+                      {getStatusText(item.status, isChecking)} •{" "}
+                      {new Date(item.createdAt).toLocaleString()}
                       {item.retryCount > 0 && ` • Retry ${item.retryCount}`}
                       {item.nextRetryAt && item.status === "error" && (
                         <span>

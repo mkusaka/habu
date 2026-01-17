@@ -125,3 +125,23 @@ export async function updateWithGeneratedContent(
     updatedAt: new Date(),
   });
 }
+
+/**
+ * Recover an error item by marking it as done with the bookmark data from Hatena
+ */
+export async function recoverErrorItem(
+  id: number,
+  comment?: string,
+  tags?: string[],
+): Promise<void> {
+  await db.bookmarks.update(id, {
+    status: "done",
+    updatedAt: new Date(),
+    lastError: undefined,
+    nextRetryAt: undefined,
+    retryCount: 0,
+    generatedComment: comment,
+    generatedSummary: comment,
+    generatedTags: tags,
+  });
+}

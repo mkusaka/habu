@@ -594,6 +594,10 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
     setComment("");
     setContext("");
     setShowContext(false);
+    setWorkflowRunId(null);
+    setWorkflowSteps(initBookmarkSuggestionSteps());
+    setGeneratedResult(null);
+    setShowRawContent(false);
     clearDraft();
     setIsSaving(false);
 
@@ -625,6 +629,10 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
       setComment("");
       setContext("");
       setShowContext(false);
+      setWorkflowRunId(null);
+      setWorkflowSteps(initBookmarkSuggestionSteps());
+      setGeneratedResult(null);
+      setShowRawContent(false);
       clearDraft();
 
       // Close the window immediately - SW handles the rest

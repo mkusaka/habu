@@ -26,6 +26,7 @@ import {
   Trash2,
   Copy,
   ExternalLink,
+  RefreshCw,
 } from "lucide-react";
 import Link from "next/link";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -238,6 +239,32 @@ export function QueueList() {
     overscan: 5,
   });
 
+  // Regenerate: re-run AI generation (for success items or error items without comment)
+  const handleRegenerate = async (id: number) => {
+    try {
+      const item = await db.bookmarks.get(id);
+      if (!item) {
+        toast.error("Item not found");
+        return;
+      }
+
+      await deleteQueueItem(id);
+
+      // Pass empty comment to trigger AI regeneration
+      const result = await saveBookmark(item.url, item.title, undefined);
+
+      if (result.success) {
+        toast.success(result.queued ? "Queued for regeneration" : "Bookmark regenerated!");
+      } else {
+        toast.error(result.error || "Regeneration failed");
+      }
+    } catch (error) {
+      console.error("Regeneration failed:", error);
+      toast.error("Regeneration failed");
+    }
+  };
+
+  // Retry: re-send with existing comment (skip AI generation)
   const handleRetry = async (id: number) => {
     try {
       const item = await db.bookmarks.get(id);
@@ -248,7 +275,8 @@ export function QueueList() {
 
       await deleteQueueItem(id);
 
-      const result = await saveBookmark(item.url, item.title, item.comment);
+      // Pass skipAiGeneration=true to preserve existing comment and skip AI
+      const result = await saveBookmark(item.url, item.title, item.comment, true);
 
       if (result.success) {
         toast.success(result.queued ? "Queued for retry" : "Bookmark saved!");
@@ -418,13 +446,45 @@ export function QueueList() {
                         </TooltipTrigger>
                         <TooltipContent>Copy URL</TooltipContent>
                       </Tooltip>
-                      {(item.status === "error" || item.status === "done") && item.id && (
+                      {/* Error state: show Retry (if has comment) or Regenerate (if no comment) */}
+                      {item.status === "error" && item.id && item.comment && (
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Button
                               variant="ghost"
                               size="icon"
                               onClick={() => handleRetry(item.id!)}
+                              className="cursor-pointer"
+                            >
+                              <RefreshCw className="w-4 h-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Retry</TooltipContent>
+                        </Tooltip>
+                      )}
+                      {item.status === "error" && item.id && !item.comment && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleRegenerate(item.id!)}
+                              className="cursor-pointer"
+                            >
+                              <Sparkles className="w-4 h-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Regenerate</TooltipContent>
+                        </Tooltip>
+                      )}
+                      {/* Done state: always show Regenerate */}
+                      {item.status === "done" && item.id && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleRegenerate(item.id!)}
                               className="cursor-pointer"
                             >
                               <Sparkles className="w-4 h-4" />

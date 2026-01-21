@@ -7,7 +7,7 @@ import { ServiceWorkerRegister } from "@/components/sw-register";
 import { BackgroundSyncFallback } from "@/components/background-sync";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ThemeColorSync } from "@/components/theme-color-sync";
-import { BottomNav } from "@/components/bottom-nav";
+import { BottomNav, SideNav } from "@/components/bottom-nav";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -105,9 +105,10 @@ export default function RootLayout({
           <ServiceWorkerRegister />
           <BackgroundSyncFallback />
           <TooltipProvider>
-            <main className="h-full bg-background flex flex-col overflow-hidden">
-              <div className="flex-1 min-h-0 px-4 overflow-y-auto pb-16 md:pb-4 md:pl-20">
-                <div className="min-h-full max-w-2xl mx-auto w-full">{children}</div>
+            <main className="h-full bg-background overflow-y-auto pb-16 md:pb-0">
+              <div className="max-w-4xl mx-auto px-4 flex">
+                <SideNav />
+                <div className="flex-1 min-w-0">{children}</div>
               </div>
               <BottomNav />
             </main>

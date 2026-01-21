@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { cookies } from "next/headers";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { createAuth } from "@/lib/auth";
@@ -5,6 +6,7 @@ import { getDb } from "@/db/client";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import { CheckCircle2, AlertCircle, Home, ExternalLink } from "lucide-react";
 import { LinkButton } from "@/components/ui/link-button";
 import { OAuthButton } from "@/components/ui/oauth-button";
@@ -126,10 +128,82 @@ async function SettingsContent({ searchParams }: SettingsContentProps) {
   );
 }
 
+function SettingsLoading() {
+  return (
+    <div className="w-full py-8">
+      <header className="flex items-center justify-between mb-8">
+        <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
+        <LinkButton variant="ghost" size="icon" href="/">
+          <Home className="w-5 h-5" />
+        </LinkButton>
+      </header>
+      <div className="space-y-8">
+        {/* Hatena Connection skeleton */}
+        <div>
+          <Skeleton className="h-4 w-28 mb-2" />
+          <div className="flex items-center gap-2 mb-3">
+            <Skeleton className="h-5 w-5 rounded-full" />
+            <Skeleton className="h-4 w-24" />
+          </div>
+          <Skeleton className="h-4 w-64 mb-3" />
+          <Skeleton className="h-9 w-36" />
+        </div>
+
+        <Separator />
+
+        {/* Preferences skeleton */}
+        <div>
+          <Skeleton className="h-4 w-24 mb-3" />
+          <div className="space-y-4">
+            {/* Theme */}
+            <div className="flex items-center justify-between">
+              <Skeleton className="h-4 w-12" />
+              <Skeleton className="h-9 w-48" />
+            </div>
+            {/* Auto-save */}
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-3 w-64" />
+              </div>
+              <Skeleton className="h-6 w-11 rounded-full" />
+            </div>
+            {/* AI auto-generation */}
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <Skeleton className="h-4 w-28" />
+                <Skeleton className="h-3 w-72" />
+              </div>
+              <Skeleton className="h-6 w-11 rounded-full" />
+            </div>
+            {/* Notifications */}
+            <div className="flex items-center justify-between">
+              <Skeleton className="h-4 w-36" />
+              <Skeleton className="h-6 w-11 rounded-full" />
+            </div>
+          </div>
+        </div>
+
+        <Separator />
+
+        {/* About skeleton */}
+        <div>
+          <Skeleton className="h-4 w-12 mb-2" />
+          <Skeleton className="h-4 w-80" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 interface SettingsPageProps {
   searchParams: Promise<{ error?: string; success?: string }>;
 }
 
 export default function SettingsPage({ searchParams }: SettingsPageProps) {
-  return <SettingsContent searchParams={searchParams} />;
+  return (
+    <Suspense fallback={<SettingsLoading />}>
+      <SettingsContent searchParams={searchParams} />
+    </Suspense>
+  );
 }

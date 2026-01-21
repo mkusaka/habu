@@ -138,64 +138,57 @@ function SettingsLoading() {
         </LinkButton>
       </header>
       <div className="space-y-8">
-        {/* Hatena Connection skeleton */}
+        {/* Hatena Connection skeleton - matches "Not connected" state */}
         <div>
-          <h3 className="text-sm font-medium mb-2">
-            <Skeleton className="h-4 w-28 inline-block" />
-          </h3>
+          <h3 className="text-sm font-medium mb-2">Hatena Bookmark</h3>
           <div className="flex items-center gap-2 mb-3">
             <Skeleton className="h-5 w-5 rounded-full" />
-            <Skeleton className="h-4 w-20" />
+            <Skeleton className="h-4 w-24" />
           </div>
           <p className="text-sm text-muted-foreground mb-3">
-            <Skeleton className="h-4 w-80 inline-block" />
+            <Skeleton className="h-4 w-72 inline-block" />
           </p>
-          <div className="flex gap-2">
-            <Skeleton className="h-8 w-28" />
-            <Skeleton className="h-8 w-24" />
-          </div>
+          <Skeleton className="h-8 w-32 rounded-md" />
         </div>
 
         <Separator />
 
         {/* Preferences skeleton */}
         <div>
-          <h3 className="text-sm font-medium mb-3">
-            <Skeleton className="h-4 w-24 inline-block" />
-          </h3>
+          <h3 className="text-sm font-medium mb-3">Preferences</h3>
           <div className="space-y-4">
             {/* Theme - Label + 3 Buttons */}
             <div className="flex items-center justify-between">
-              <Skeleton className="h-3.5 w-12" />
+              <Skeleton className="h-4 w-12" />
               <div className="flex items-center gap-2">
-                <Skeleton className="h-8 w-20 rounded-md" />
-                <Skeleton className="h-8 w-16 rounded-md" />
-                <Skeleton className="h-8 w-16 rounded-md" />
+                <Skeleton className="h-8 w-[76px] rounded-md" />
+                <Skeleton className="h-8 w-[62px] rounded-md" />
+                <Skeleton className="h-8 w-[62px] rounded-md" />
               </div>
             </div>
             {/* Auto-save - space-y-0.5 */}
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Skeleton className="h-3.5 w-32" />
-                <Skeleton className="h-3.5 w-72" />
+                <Skeleton className="h-4 w-36" />
+                <Skeleton className="h-4 w-80" />
               </div>
               <Skeleton className="h-5 w-9 rounded-full" />
             </div>
             {/* AI auto-generation - space-y-0.5 */}
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Skeleton className="h-3.5 w-28" />
-                <Skeleton className="h-3.5 w-80" />
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-4 w-full max-w-sm" />
               </div>
               <Skeleton className="h-5 w-9 rounded-full" />
             </div>
-            {/* Notifications - icon + label (no description) */}
+            {/* Notifications - icon + label */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Skeleton className="w-4 h-4 rounded" />
-                <Skeleton className="h-3.5 w-28" />
+                <Skeleton className="h-4 w-32" />
               </div>
-              <Skeleton className="h-[1.15rem] w-8 rounded-full" />
+              <Skeleton className="h-5 w-9 rounded-full" />
             </div>
           </div>
         </div>
@@ -204,11 +197,9 @@ function SettingsLoading() {
 
         {/* About skeleton */}
         <div>
-          <h3 className="text-sm font-medium mb-2">
-            <Skeleton className="h-4 w-12 inline-block" />
-          </h3>
+          <h3 className="text-sm font-medium mb-2">About</h3>
           <p className="text-sm text-muted-foreground">
-            <Skeleton className="h-4 w-80 inline-block" />
+            <Skeleton className="h-4 w-full max-w-sm inline-block" />
           </p>
         </div>
       </div>

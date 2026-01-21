@@ -6,7 +6,6 @@ import { getDb } from "@/db/client";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { createSignedRequest } from "@/lib/hatena-oauth";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Bookmark, ExternalLink, ArrowLeft, AlertCircle, Home } from "lucide-react";
 import { CopyButton } from "@/components/copy-button";
 import { Label } from "@/components/ui/label";
@@ -273,23 +272,19 @@ export default async function BookmarkDetailPage({ searchParams }: BookmarkDetai
   const bookmarkUrl = params.url || "";
 
   return (
-    <Card className="w-full">
-      <CardHeader className="pb-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Bookmark className="w-6 h-6 text-primary" />
-            <CardTitle className="text-xl">Edit Bookmark</CardTitle>
-          </div>
-          <LinkButton href="/" variant="ghost" size="icon" aria-label="Go Home">
-            <Home className="w-5 h-5" />
-          </LinkButton>
+    <div className="w-full py-8">
+      <header className="flex items-center justify-between mb-8">
+        <div className="flex items-center gap-3">
+          <Bookmark className="w-6 h-6" />
+          <h1 className="text-2xl font-bold tracking-tight">Edit Bookmark</h1>
         </div>
-      </CardHeader>
-      <CardContent>
-        <Suspense key={bookmarkUrl} fallback={<BookmarkDetailLoading />}>
-          <BookmarkDetailContent bookmarkUrl={bookmarkUrl} />
-        </Suspense>
-      </CardContent>
-    </Card>
+        <LinkButton href="/" variant="ghost" size="icon" aria-label="Go Home">
+          <Home className="w-5 h-5" />
+        </LinkButton>
+      </header>
+      <Suspense key={bookmarkUrl} fallback={<BookmarkDetailLoading />}>
+        <BookmarkDetailContent bookmarkUrl={bookmarkUrl} />
+      </Suspense>
+    </div>
   );
 }

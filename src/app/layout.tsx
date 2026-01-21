@@ -31,7 +31,7 @@ export const metadata: Metadata = {
 export const viewport = {
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#111111" },
+    { media: "(prefers-color-scheme: dark)", color: "#0d0d0d" },
   ],
 };
 
@@ -68,7 +68,7 @@ export default function RootLayout({
         <script
           dangerouslySetInnerHTML={{
             __html:
-              '(function(){try{if(!globalThis.__name){var d=Object.defineProperty;globalThis.__name=function(t,v){return d(t,"name",{value:v,configurable:true});};}var t=localStorage.getItem("habu-theme");var m=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches;var r=(t==="dark"||t==="light")?t:(m?"dark":"light");var el=document.documentElement;el.classList.toggle("dark",r==="dark");el.style.colorScheme=r;var meta=document.querySelector(\'meta[name="theme-color"]\');if(meta) meta.content=(r==="dark")?"#111111":"#ffffff";}catch(e){}})();',
+              '(function(){try{if(!globalThis.__name){var d=Object.defineProperty;globalThis.__name=function(t,v){return d(t,"name",{value:v,configurable:true});};}var t=localStorage.getItem("habu-theme");var m=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches;var r=(t==="dark"||t==="light")?t:(m?"dark":"light");var el=document.documentElement;el.classList.toggle("dark",r==="dark");el.style.colorScheme=r;var meta=document.querySelector(\'meta[name="theme-color"]\');if(meta) meta.content=(r==="dark")?"#0d0d0d":"#ffffff";}catch(e){}})();',
           }}
         />
         <link rel="manifest" href={`/manifest.json?v=${manifestVersion}`} />
@@ -106,9 +106,7 @@ export default function RootLayout({
           <TooltipProvider>
             <main className="h-full bg-background flex flex-col overflow-hidden">
               <div className="flex-1 min-h-0 p-2 overflow-y-auto">
-                <div className="min-h-full flex items-center max-w-lg mx-auto w-full">
-                  {children}
-                </div>
+                <div className="min-h-full max-w-2xl mx-auto w-full">{children}</div>
               </div>
             </main>
           </TooltipProvider>

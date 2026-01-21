@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { queueBookmark } from "@/lib/bookmark-client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -646,15 +645,15 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
   }, []);
 
   return (
-    <Card className="w-full">
-      <CardHeader className="text-center pb-4">
-        <div className="flex justify-center mb-3">
-          <Bookmark className="w-12 h-12 text-primary" />
+    <div className="w-full py-8">
+      <header className="mb-8">
+        <div className="flex items-center gap-3 mb-2">
+          <Bookmark className="w-8 h-8" />
+          <h1 className="text-2xl font-bold tracking-tight">habu</h1>
         </div>
-        <CardTitle className="text-xl">habu</CardTitle>
-        <p className="text-xs text-muted-foreground">Quick bookmark saving</p>
-      </CardHeader>
-      <CardContent className="space-y-4">
+        <p className="text-sm text-muted-foreground">Quick bookmark saving to Hatena</p>
+      </header>
+      <div className="space-y-6">
         {/* Status messages */}
         {!isOnline && (
           <div className="flex items-center gap-2 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-md text-sm">
@@ -1026,21 +1025,21 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
         </div>
 
         {/* Navigation */}
-        <div className="flex gap-2 pt-2">
-          <LinkButton href="/bookmarks" variant="outline" className="flex-1" size="sm">
+        <nav className="flex gap-4 pt-4 border-t border-border/50">
+          <LinkButton href="/bookmarks" variant="ghost" className="flex-1 justify-start" size="sm">
             <Bookmark className="w-4 h-4 mr-2" />
             Bookmarks
           </LinkButton>
-          <LinkButton href="/queue" variant="outline" className="flex-1" size="sm">
+          <LinkButton href="/queue" variant="ghost" className="flex-1 justify-start" size="sm">
             <List className="w-4 h-4 mr-2" />
             Queue
           </LinkButton>
-          <LinkButton href="/settings" variant="outline" className="flex-1" size="sm">
+          <LinkButton href="/settings" variant="ghost" className="flex-1 justify-start" size="sm">
             <Settings className="w-4 h-4 mr-2" />
             Settings
           </LinkButton>
-        </div>
-      </CardContent>
+        </nav>
+      </div>
 
       {/* Existing Bookmark Dialog */}
       <AlertDialog open={showExistingDialog} onOpenChange={setShowExistingDialog}>
@@ -1091,6 +1090,6 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </Card>
+    </div>
   );
 }

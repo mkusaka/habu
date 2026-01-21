@@ -106,7 +106,7 @@ export default function RootLayout({
           <BackgroundSyncFallback />
           <TooltipProvider>
             <main className="h-full bg-background flex flex-col overflow-hidden">
-              <div className="flex-1 min-h-0 px-4 overflow-y-auto pb-16">
+              <div className="flex-1 min-h-0 px-4 overflow-y-auto pb-16 md:pb-4 md:pl-20">
                 <div className="min-h-full max-w-2xl mx-auto w-full">{children}</div>
               </div>
               <BottomNav />

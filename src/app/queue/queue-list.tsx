@@ -49,11 +49,11 @@ function parseComment(comment: string): { tags: string[]; text: string } {
 }
 
 /**
- * Hook to recover error items by checking if bookmarks exist on Hatena
- * Runs once when error items are detected, fetches bookmark status in parallel
+ * Hook to recover error/queued items by checking if bookmarks already exist on Hatena
+ * Runs once when error or queued items are detected, fetches bookmark status in parallel
  * Returns set of item IDs currently being checked
  */
-function useRecoverErrorItems(items: BookmarkQueue[] | undefined): Set<number> {
+function useRecoverItems(items: BookmarkQueue[] | undefined): Set<number> {
   const [recoveredIds, setRecoveredIds] = useState<Set<number>>(new Set());
   const [checkingIds, setCheckingIds] = useState<Set<number>>(new Set());
   const isRecoveringRef = useRef(false);
@@ -61,22 +61,25 @@ function useRecoverErrorItems(items: BookmarkQueue[] | undefined): Set<number> {
   useEffect(() => {
     if (!items || isRecoveringRef.current) return;
 
-    const errorItems = items.filter(
-      (item) => item.status === "error" && item.id && !recoveredIds.has(item.id),
+    const itemsToCheck = items.filter(
+      (item) =>
+        (item.status === "error" || item.status === "queued") &&
+        item.id &&
+        !recoveredIds.has(item.id),
     );
 
-    if (errorItems.length === 0) return;
+    if (itemsToCheck.length === 0) return;
 
     isRecoveringRef.current = true;
 
     // Mark items as checking
-    const itemIds = errorItems.map((item) => item.id!);
+    const itemIds = itemsToCheck.map((item) => item.id!);
     setCheckingIds(new Set(itemIds));
 
     const recoverItems = async () => {
-      // Fetch all error items in parallel
+      // Fetch all items in parallel
       const results = await Promise.allSettled(
-        errorItems.map(async (item) => {
+        itemsToCheck.map(async (item) => {
           const response = await fetch(`/api/habu/bookmark?url=${encodeURIComponent(item.url)}`, {
             credentials: "include",
           });
@@ -229,8 +232,8 @@ export function QueueList() {
   const items = useLiveQuery(() => db.bookmarks.orderBy("createdAt").reverse().toArray(), []);
   const parentRef = useRef<HTMLDivElement>(null);
 
-  // Attempt to recover error items by checking if bookmarks exist on Hatena
-  const checkingIds = useRecoverErrorItems(items);
+  // Attempt to recover error/queued items by checking if bookmarks already exist on Hatena
+  const checkingIds = useRecoverItems(items);
 
   const virtualizer = useVirtualizer({
     count: items?.length ?? 0,

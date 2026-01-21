@@ -12,7 +12,7 @@ const navItems = [
   { href: "/settings", icon: Settings, label: "Settings" },
 ];
 
-export function MobileNav() {
+export function BottomNav() {
   const pathname = usePathname();
 
   // Check if current path is active (exact match or starts with for nested routes)
@@ -24,7 +24,7 @@ export function MobileNav() {
   };
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden border-t border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
       <div className="flex items-center justify-around h-14 max-w-2xl mx-auto">
         {navItems.map(({ href, icon: Icon, label }) => (
           <Link

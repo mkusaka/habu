@@ -346,33 +346,31 @@ export function QueueList() {
 
   if (items === undefined) {
     return (
-      <div className="space-y-2">
-        {Array.from({ length: 20 }).map((_, i) => (
-          <div key={i} className="w-full p-3 rounded-md border">
-            {/* Header skeleton */}
-            <div className="flex items-center gap-3">
-              <Skeleton className="w-5 h-5 rounded-full flex-shrink-0" />
-              <Skeleton className="h-4 flex-1" />
-              <div className="flex items-center gap-1 flex-shrink-0">
-                <Skeleton className="h-8 w-8 rounded" />
-                <Skeleton className="h-8 w-8 rounded" />
-                <Skeleton className="h-8 w-8 rounded" />
-              </div>
-            </div>
-            {/* Body skeleton */}
-            <div className="mt-1 pl-8 space-y-1">
-              <Skeleton className="h-3 w-full" />
-              <Skeleton className="h-3 w-32" />
+      <div className="animate-in fade-in duration-200">
+        <div className="w-full p-3 rounded-md border">
+          {/* Header skeleton */}
+          <div className="flex items-center gap-3">
+            <Skeleton className="w-5 h-5 rounded-full flex-shrink-0" />
+            <Skeleton className="h-4 flex-1" />
+            <div className="flex items-center gap-1 flex-shrink-0">
+              <Skeleton className="h-8 w-8 rounded" />
+              <Skeleton className="h-8 w-8 rounded" />
+              <Skeleton className="h-8 w-8 rounded" />
             </div>
           </div>
-        ))}
+          {/* Body skeleton */}
+          <div className="mt-1 pl-8 space-y-1">
+            <Skeleton className="h-3 w-full" />
+            <Skeleton className="h-3 w-32" />
+          </div>
+        </div>
       </div>
     );
   }
 
   if (items.length === 0) {
     return (
-      <div className="text-center py-8 text-muted-foreground">
+      <div className="text-center py-8 text-muted-foreground animate-in fade-in duration-200">
         <p>No bookmarks in queue</p>
       </div>
     );
@@ -382,7 +380,7 @@ export function QueueList() {
 
   return (
     <>
-      <div ref={parentRef} className="h-full overflow-auto">
+      <div ref={parentRef} className="h-full overflow-auto animate-in fade-in duration-200">
         <div
           className="relative w-full"
           style={{

@@ -19,8 +19,6 @@ import {
 } from "@/lib/mastra-workflow-progress";
 import {
   Bookmark,
-  List,
-  Settings,
   Loader2,
   WifiOff,
   AlertCircle,
@@ -42,7 +40,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { LinkButton } from "@/components/ui/link-button";
 
 interface SaveFormProps {
   initialUrl: string;
@@ -1023,22 +1020,6 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
             )}
           </Button>
         </div>
-
-        {/* Navigation */}
-        <nav className="flex gap-4 pt-4 border-t border-border/50">
-          <LinkButton href="/bookmarks" variant="ghost" className="flex-1 justify-start" size="sm">
-            <Bookmark className="w-4 h-4 mr-2" />
-            Bookmarks
-          </LinkButton>
-          <LinkButton href="/queue" variant="ghost" className="flex-1 justify-start" size="sm">
-            <List className="w-4 h-4 mr-2" />
-            Queue
-          </LinkButton>
-          <LinkButton href="/settings" variant="ghost" className="flex-1 justify-start" size="sm">
-            <Settings className="w-4 h-4 mr-2" />
-            Settings
-          </LinkButton>
-        </nav>
       </div>
 
       {/* Existing Bookmark Dialog */}

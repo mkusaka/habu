@@ -13,7 +13,7 @@ importers:
         version: 3.0.12(zod@4.3.5)
       '@ai-sdk/react':
         specifier: ^3.0.28
-        version: 3.0.41(react@19.2.3)(zod@4.3.5)
+        version: 3.0.43(react@19.2.3)(zod@4.3.5)
       '@better-auth/oauth-provider':
         specifier: ^1.4.11
         version: 1.4.15(@better-auth/core@1.4.15(@better-auth/utils@0.3.0)(@better-fetch/fetch@1.1.21)(better-call@1.1.8(zod@4.3.5))(jose@6.1.3)(kysely@0.28.10)(nanostores@1.1.0))(@better-auth/utils@0.3.0)(@better-fetch/fetch@1.1.21)(better-auth@1.4.15(drizzle-kit@0.31.8)(drizzle-orm@0.45.1(@cloudflare/workers-types@4.20260118.0)(@opentelemetry/api@1.9.0)(@types/pg@8.15.5)(kysely@0.28.10))(next@16.1.3(@babel/core@7.28.5)(@opentelemetry/api@1.9.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(vitest@3.2.4(@types/debug@4.1.12)(@types/node@24.10.9)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.16.9)(yaml@2.8.2)))(better-call@1.1.8(zod@4.3.5))
@@ -61,7 +61,7 @@ importers:
         version: 4.2.2
       ai:
         specifier: ^6.0.0
-        version: 6.0.39(zod@4.3.5)
+        version: 6.0.41(zod@4.3.5)
       better-auth:
         specifier: ^1.4.11
         version: 1.4.15(drizzle-kit@0.31.8)(drizzle-orm@0.45.1(@cloudflare/workers-types@4.20260118.0)(@opentelemetry/api@1.9.0)(@types/pg@8.15.5)(kysely@0.28.10))(next@16.1.3(@babel/core@7.28.5)(@opentelemetry/api@1.9.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(vitest@3.2.4(@types/debug@4.1.12)(@types/node@24.10.9)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.16.9)(yaml@2.8.2))
@@ -284,8 +284,8 @@ packages:
       zod:
         optional: true
 
-  '@ai-sdk/react@3.0.41':
-    resolution: {integrity: sha512-mTyfkM+WVUIlaqIpOPSgHlKL1sRQ9df+hdhs7EmDi804m/Ouw+Cq++HCJ9GFAnpnLizcO8huBoTNIrgdjewjzQ==}
+  '@ai-sdk/react@3.0.43':
+    resolution: {integrity: sha512-FHlm5mK6qNHR2/jhr2PSNSd6aphHSdzTFP96qumpMpLWoLzK9ZLeAY2ylPqUjlTlPUKx6OfUUafV0zlFbIHEVA==}
     engines: {node: '>=18'}
     peerDependencies:
       react: ^18 || ~19.0.1 || ~19.1.2 || ^19.2.1
@@ -4022,8 +4022,8 @@ packages:
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
-  ai@6.0.39:
-    resolution: {integrity: sha512-hF05gF4H+IxuilA8kNANVVHQXduTJsJaH74jmlmy8mcQt3NZgPYe2zZNyGBV4DPDYTUDt1h31hbLgQqJTn5LGA==}
+  ai@6.0.41:
+    resolution: {integrity: sha512-FaFKBiqOX3RKEz7PJ/K6d9+1JnHilzR4ID2elRzZ/yVGC5vM4RvVRyYHlhFso/gyQRXrQZtOSbqbBchAwcTDXg==}
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
@@ -6923,10 +6923,10 @@ snapshots:
     optionalDependencies:
       zod: 4.3.5
 
-  '@ai-sdk/react@3.0.41(react@19.2.3)(zod@4.3.5)':
+  '@ai-sdk/react@3.0.43(react@19.2.3)(zod@4.3.5)':
     dependencies:
       '@ai-sdk/provider-utils': 4.0.8(zod@4.3.5)
-      ai: 6.0.39(zod@4.3.5)
+      ai: 6.0.41(zod@4.3.5)
       react: 19.2.3
       swr: 2.3.8(react@19.2.3)
       throttleit: 2.1.0
@@ -11357,7 +11357,7 @@ snapshots:
       '@opentelemetry/api': 1.9.0
       zod: 4.3.5
 
-  ai@6.0.39(zod@4.3.5):
+  ai@6.0.41(zod@4.3.5):
     dependencies:
       '@ai-sdk/gateway': 3.0.16(zod@4.3.5)
       '@ai-sdk/provider': 3.0.4

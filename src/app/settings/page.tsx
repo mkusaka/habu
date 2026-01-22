@@ -7,7 +7,7 @@ import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CheckCircle2, AlertCircle, Home, ExternalLink } from "lucide-react";
+import { CheckCircle2, AlertCircle, Home, ExternalLink, Settings } from "lucide-react";
 import { LinkButton } from "@/components/ui/link-button";
 import { OAuthButton } from "@/components/ui/oauth-button";
 import { ActionButton } from "@/components/ui/action-button";
@@ -50,7 +50,10 @@ async function SettingsContent({ searchParams }: SettingsContentProps) {
     <div className="w-full py-8">
       <ToastHandler error={params.error} success={params.success} />
       <header className="flex items-center justify-between mb-8">
-        <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
+        <div className="flex items-center gap-3">
+          <Settings className="w-6 h-6" />
+          <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
+        </div>
         <LinkButton variant="ghost" size="icon" href="/">
           <Home className="w-5 h-5" />
         </LinkButton>
@@ -132,7 +135,10 @@ function SettingsLoading() {
   return (
     <div className="w-full py-8">
       <header className="flex items-center justify-between mb-8">
-        <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
+        <div className="flex items-center gap-3">
+          <Settings className="w-6 h-6" />
+          <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
+        </div>
         <LinkButton variant="ghost" size="icon" href="/">
           <Home className="w-5 h-5" />
         </LinkButton>

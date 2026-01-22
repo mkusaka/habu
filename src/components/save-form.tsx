@@ -643,12 +643,11 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
 
   return (
     <div className="w-full py-8">
-      <header className="mb-8">
-        <div className="flex items-center gap-3 mb-2">
-          <Bookmark className="w-8 h-8" />
+      <header className="flex items-center justify-between mb-8">
+        <div className="flex items-center gap-3">
+          <Bookmark className="w-6 h-6" />
           <h1 className="text-2xl font-bold tracking-tight">habu</h1>
         </div>
-        <p className="text-sm text-muted-foreground">Quick bookmark saving to Hatena</p>
       </header>
       <div className="space-y-6">
         {/* Status messages */}

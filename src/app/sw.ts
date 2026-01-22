@@ -133,11 +133,52 @@ const db = new HabuDatabase();
 self.addEventListener("fetch", (event: FetchEvent) => {
   const url = new URL(event.request.url);
 
+  // Intercept POST requests to /api/share (Web Share Target)
+  if (url.pathname === "/api/share" && event.request.method === "POST") {
+    event.respondWith(handleShareRequest(event.request));
+    return;
+  }
+
   // Only intercept POST requests to /api/habu/bookmark
   if (url.pathname === "/api/habu/bookmark" && event.request.method === "POST") {
     event.respondWith(handleBookmarkRequest(event));
   }
 });
+
+// Handle Web Share Target POST requests - redirect to home page with query params
+async function handleShareRequest(request: Request): Promise<Response> {
+  try {
+    const formData = await request.formData();
+
+    let url = formData.get("url")?.toString() || "";
+    const title = formData.get("title")?.toString() || "";
+    let text = formData.get("text")?.toString() || "";
+
+    // Sometimes the URL comes in the 'text' field instead of 'url'
+    if (!url && text) {
+      try {
+        new URL(text);
+        url = text;
+        text = "";
+      } catch {
+        // text is not a URL, keep it as is
+      }
+    }
+
+    // Build redirect URL
+    const redirectUrl = new URL("/", self.location.origin);
+    if (url) redirectUrl.searchParams.set("url", url);
+    if (title) redirectUrl.searchParams.set("title", title);
+    if (text) redirectUrl.searchParams.set("text", text);
+
+    // Return redirect response (303 See Other for POST-redirect-GET pattern)
+    return Response.redirect(redirectUrl.toString(), 303);
+  } catch (error) {
+    console.error("SW: Error handling share request:", error);
+    // Fallback: redirect to home page
+    return Response.redirect(new URL("/", self.location.origin).toString(), 303);
+  }
+}
 
 async function handleBookmarkRequest(event: FetchEvent): Promise<Response> {
   const request = event.request.clone();

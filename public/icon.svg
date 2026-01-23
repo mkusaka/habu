@@ -4,7 +4,4 @@
 
   <!-- Bookmark icon -->
   <path d="M160 112C160 94.3269 174.327 80 192 80H320C337.673 80 352 94.3269 352 112V432L256 368L160 432V112Z" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="16" stroke-linejoin="round"/>
-
-  <!-- "H" letter for habu -->
-  <text x="256" y="310" font-family="Arial, sans-serif" font-size="160" font-weight="bold" fill="#000000" text-anchor="middle">H</text>
 </svg>

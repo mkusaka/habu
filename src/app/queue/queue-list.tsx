@@ -227,9 +227,22 @@ export function CopyAllUrlsButton() {
 // Estimated height for each queue item (used for virtualization)
 const ITEM_HEIGHT_ESTIMATE = 120;
 
+// Sort items by status priority (sending > queued > error > done), then by updatedAt descending
+function sortQueueItems(items: BookmarkQueue[]): BookmarkQueue[] {
+  const statusOrder: Record<string, number> = { sending: 0, queued: 1, error: 2, done: 3 };
+  return [...items].sort((a, b) => {
+    const statusDiff = statusOrder[a.status] - statusOrder[b.status];
+    if (statusDiff !== 0) return statusDiff;
+    return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+  });
+}
+
 export function QueueList() {
   const [deleteTarget, setDeleteTarget] = useState<{ id: number; title: string } | null>(null);
-  const items = useLiveQuery(() => db.bookmarks.orderBy("createdAt").reverse().toArray(), []);
+  const items = useLiveQuery(async () => {
+    const allItems = await db.bookmarks.toArray();
+    return sortQueueItems(allItems);
+  }, []);
   const parentRef = useRef<HTMLDivElement>(null);
 
   // Attempt to recover error/queued items by checking if bookmarks already exist on Hatena

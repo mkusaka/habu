@@ -500,7 +500,7 @@ async function processQueue(forceRetry = false): Promise<void> {
 
   console.log(`SW: Processing ${items.length} queued items in parallel`);
 
-  // Mark all items as sending first
+  // Mark all items as sending first and reset error state
   await Promise.all(
     items
       .filter((item) => item.id)
@@ -508,6 +508,9 @@ async function processQueue(forceRetry = false): Promise<void> {
         db.bookmarks.update(item.id!, {
           status: "sending",
           updatedAt: new Date(),
+          lastError: undefined,
+          nextRetryAt: undefined,
+          retryCount: 0,
         }),
       ),
   );

@@ -147,7 +147,6 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
     };
     webContext?: string;
   } | null>(null);
-  const [showRawContent, setShowRawContent] = useState(false);
   const [draftRestored, setDraftRestored] = useState(false);
   const [isCheckingBookmark, setIsCheckingBookmark] = useState(false);
   const [existingBookmark, setExistingBookmark] = useState<{
@@ -593,7 +592,6 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
     setWorkflowRunId(null);
     setWorkflowSteps(initBookmarkSuggestionSteps());
     setGeneratedResult(null);
-    setShowRawContent(false);
     clearDraft();
     setIsSaving(false);
 
@@ -628,7 +626,6 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
       setWorkflowRunId(null);
       setWorkflowSteps(initBookmarkSuggestionSteps());
       setGeneratedResult(null);
-      setShowRawContent(false);
       clearDraft();
 
       // Close the window immediately - SW handles the rest
@@ -829,43 +826,37 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
             generatedResult.metadata ||
             generatedResult.webContext) && (
             <div className="p-3 bg-muted rounded-md text-sm">
-              <button
-                type="button"
-                onClick={() => setShowRawContent(!showRawContent)}
-                className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground w-full"
-              >
-                {showRawContent ? (
-                  <ChevronUp className="w-3 h-3" />
-                ) : (
-                  <ChevronDown className="w-3 h-3" />
-                )}
-                <span>Raw content (debug)</span>
-              </button>
+              <details className="mt-1 group">
+                <summary className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground cursor-pointer list-none">
+                  <ChevronDown className="w-3 h-3 transition-transform group-open:rotate-180" />
+                  <span>Raw content (debug)</span>
+                </summary>
 
-              {showRawContent && (
                 <div className="mt-2 space-y-3">
                   {/* Metadata */}
                   {generatedResult.metadata && Object.keys(generatedResult.metadata).length > 0 && (
-                    <div>
-                      <div className="flex items-center justify-between text-xs font-medium mb-1">
+                    <details className="rounded border border-border/50 bg-background/40 p-2">
+                      <summary className="flex items-center justify-between text-xs font-medium cursor-pointer list-none">
                         <div className="flex items-center gap-1">
                           <Info className="w-3 h-3" />
                           Metadata
                         </div>
                         <button
                           type="button"
-                          onClick={() =>
+                          onClick={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
                             handleCopy(
                               JSON.stringify(generatedResult.metadata, null, 2),
                               "Metadata",
-                            )
-                          }
+                            );
+                          }}
                           className="text-muted-foreground hover:text-foreground"
                         >
                           <Copy className="w-3 h-3" />
                         </button>
-                      </div>
-                      <div className="bg-background p-2 rounded text-xs space-y-1">
+                      </summary>
+                      <div className="mt-2 bg-background p-2 rounded text-xs space-y-1">
                         {generatedResult.metadata.title && (
                           <div>
                             <span className="text-muted-foreground">title:</span>{" "}
@@ -909,75 +900,85 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
                           </div>
                         )}
                       </div>
-                    </div>
+                    </details>
                   )}
 
                   {/* Web Context */}
                   {generatedResult.webContext && (
-                    <div>
-                      <div className="flex items-center justify-between text-xs font-medium mb-1">
+                    <details className="rounded border border-border/50 bg-background/40 p-2">
+                      <summary className="flex items-center justify-between text-xs font-medium cursor-pointer list-none">
                         <div className="flex items-center gap-1">
                           <Info className="w-3 h-3" />
                           Web Search Context
                         </div>
                         <button
                           type="button"
-                          onClick={() => handleCopy(generatedResult.webContext!, "Web Context")}
+                          onClick={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            handleCopy(generatedResult.webContext!, "Web Context");
+                          }}
                           className="text-muted-foreground hover:text-foreground"
                         >
                           <Copy className="w-3 h-3" />
                         </button>
-                      </div>
-                      <pre className="bg-background p-2 rounded text-xs overflow-auto max-h-48 whitespace-pre-wrap break-all">
+                      </summary>
+                      <pre className="mt-2 bg-background p-2 rounded text-xs overflow-auto max-h-48 whitespace-pre-wrap break-all">
                         {generatedResult.webContext}
                       </pre>
-                    </div>
+                    </details>
                   )}
 
                   {/* Markdown */}
                   {generatedResult.markdown ? (
-                    <div>
-                      <div className="flex items-center justify-between text-xs font-medium mb-1">
+                    <details className="rounded border border-border/50 bg-background/40 p-2">
+                      <summary className="flex items-center justify-between text-xs font-medium cursor-pointer list-none">
                         <div className="flex items-center gap-1">
                           <FileText className="w-3 h-3" />
                           Markdown ({generatedResult.markdown.length.toLocaleString()} chars)
                         </div>
                         <button
                           type="button"
-                          onClick={() => handleCopy(generatedResult.markdown!, "Markdown")}
+                          onClick={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            handleCopy(generatedResult.markdown!, "Markdown");
+                          }}
                           className="text-muted-foreground hover:text-foreground"
                         >
                           <Copy className="w-3 h-3" />
                         </button>
-                      </div>
-                      <pre className="bg-background p-2 rounded text-xs overflow-auto whitespace-pre-wrap break-all">
+                      </summary>
+                      <pre className="mt-2 bg-background p-2 rounded text-xs overflow-auto whitespace-pre-wrap break-all">
                         {generatedResult.markdown}
                       </pre>
-                    </div>
+                    </details>
                   ) : generatedResult.markdownError ? (
-                    <div>
-                      <div className="flex items-center justify-between text-xs font-medium mb-1 text-yellow-600">
+                    <details className="rounded border border-yellow-200/60 bg-yellow-50/60 dark:border-yellow-900/50 dark:bg-yellow-900/20 p-2">
+                      <summary className="flex items-center justify-between text-xs font-medium cursor-pointer list-none text-yellow-700 dark:text-yellow-200">
                         <div className="flex items-center gap-1">
                           <AlertCircle className="w-3 h-3" />
                           Markdown fetch error
                         </div>
                         <button
                           type="button"
-                          onClick={() =>
-                            handleCopy(generatedResult.markdownError!, "Markdown error")
-                          }
-                          className="text-muted-foreground hover:text-foreground"
+                          onClick={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            handleCopy(generatedResult.markdownError!, "Markdown error");
+                          }}
+                          className="text-yellow-600 hover:text-yellow-900 dark:text-yellow-200 dark:hover:text-yellow-100"
                         >
                           <Copy className="w-3 h-3" />
                         </button>
-                      </div>
-                      <pre className="bg-yellow-50 dark:bg-yellow-900/20 p-2 rounded text-xs text-yellow-800 dark:text-yellow-200 overflow-auto max-h-24 whitespace-pre-wrap break-all">
+                      </summary>
+                      <pre className="mt-2 p-2 rounded text-xs text-yellow-800 dark:text-yellow-200 overflow-auto max-h-24 whitespace-pre-wrap break-all">
                         {generatedResult.markdownError}
                       </pre>
-                    </div>
+                    </details>
                   ) : null}
                 </div>
-              )}
+              </details>
             </div>
           )}
 

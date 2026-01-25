@@ -372,9 +372,10 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
                 keywords?: string;
                 author?: string;
               };
+              summary?: string;
+              tags?: string[];
             };
 
-            // Update debug info as soon as it's available
             if (payload.stage === "fetch_markdown_done") {
               setGeneratedResult((prev) => ({
                 ...prev,
@@ -387,6 +388,20 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
               setGeneratedResult((prev) => ({
                 ...prev,
                 metadata: payload.metadata,
+              }));
+            }
+
+            if (payload.stage === "generate_summary_done" && payload.summary) {
+              setGeneratedResult((prev) => ({
+                ...prev,
+                summary: payload.summary,
+              }));
+            }
+
+            if (payload.stage === "generate_tags_done" && payload.tags) {
+              setGeneratedResult((prev) => ({
+                ...prev,
+                tags: payload.tags,
               }));
             }
           } catch {
@@ -824,7 +839,9 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
           (generatedResult.markdown ||
             generatedResult.markdownError ||
             generatedResult.metadata ||
-            generatedResult.webContext) && (
+            generatedResult.webContext ||
+            generatedResult.summary ||
+            generatedResult.tags) && (
             <div className="p-3 bg-muted rounded-md text-sm">
               <details className="mt-1 group">
                 <summary className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground cursor-pointer list-none">
@@ -899,6 +916,65 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
                             {generatedResult.metadata.author}
                           </div>
                         )}
+                      </div>
+                    </details>
+                  )}
+
+                  {/* Generated Summary */}
+                  {generatedResult.summary && (
+                    <details className="rounded border border-border/50 bg-background/40 p-2">
+                      <summary className="flex items-center justify-between text-xs font-medium cursor-pointer list-none">
+                        <div className="flex items-center gap-1">
+                          <Info className="w-3 h-3" />
+                          Generated summary ({generatedResult.summary.length} chars)
+                        </div>
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            handleCopy(generatedResult.summary!, "Summary");
+                          }}
+                          className="text-muted-foreground hover:text-foreground"
+                        >
+                          <Copy className="w-3 h-3" />
+                        </button>
+                      </summary>
+                      <pre className="mt-2 bg-background p-2 rounded text-xs overflow-auto whitespace-pre-wrap break-all">
+                        {generatedResult.summary}
+                      </pre>
+                    </details>
+                  )}
+
+                  {/* Generated Tags */}
+                  {generatedResult.tags && generatedResult.tags.length > 0 && (
+                    <details className="rounded border border-border/50 bg-background/40 p-2">
+                      <summary className="flex items-center justify-between text-xs font-medium cursor-pointer list-none">
+                        <div className="flex items-center gap-1">
+                          <Info className="w-3 h-3" />
+                          Generated tags ({generatedResult.tags.length} tags)
+                        </div>
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            handleCopy(generatedResult.tags!.join(", "), "Tags");
+                          }}
+                          className="text-muted-foreground hover:text-foreground"
+                        >
+                          <Copy className="w-3 h-3" />
+                        </button>
+                      </summary>
+                      <div className="mt-2 bg-background p-2 rounded text-xs flex flex-wrap gap-1">
+                        {generatedResult.tags.map((tag, i) => (
+                          <span
+                            key={i}
+                            className="px-2 py-0.5 bg-primary/10 text-primary rounded"
+                          >
+                            {tag}
+                          </span>
+                        ))}
                       </div>
                     </details>
                   )}

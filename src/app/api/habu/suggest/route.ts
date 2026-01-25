@@ -476,6 +476,22 @@ export async function POST(request: NextRequest) {
                   } else {
                     send("workflow", value);
                   }
+
+                  if (v.type === "step-result" && payload) {
+                    const output = payload.output as Record<string, unknown> | undefined;
+                    if (stepId === "generate-summary" && output?.summary) {
+                      send("preflight", {
+                        stage: "generate_summary_done",
+                        summary: output.summary,
+                      });
+                    }
+                    if (stepId === "generate-tags" && output?.tags) {
+                      send("preflight", {
+                        stage: "generate_tags_done",
+                        tags: output.tags,
+                      });
+                    }
+                  }
                 } else {
                   send("workflow", value);
                 }

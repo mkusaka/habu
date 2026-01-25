@@ -38,6 +38,19 @@ const TRACKING_PARAMS = new Set([
   "ttclid",
   // LinkedIn
   "li_fat_id",
+  // Pinterest
+  "epik",
+  // Snapchat
+  "sclid",
+  // Reddit
+  "rdt_cid",
+  // Taboola
+  "tblci",
+  // Outbrain
+  "obOrigUrl",
+  "dicbo",
+  // Klaviyo
+  "_kx",
   // Mailchimp
   "mc_eid",
   "mc_cid",
@@ -98,10 +111,12 @@ const TRACKING_PARAM_PATTERNS = [
   /^_gl$/i,
   /^cx_/i,
   /^__hs/i,
+  /^hsa_/i,
   /^sfmc_/i,
   /^sc_/i,
   /^trk/i,
   /^ref[_-]?$/i,
+  /^rdt_/i,
 ];
 
 /**

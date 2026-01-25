@@ -266,8 +266,8 @@ export function QueueList() {
 
       await deleteQueueItem(id);
 
-      // Pass empty comment to trigger AI regeneration
-      const result = await saveBookmark(item.url, item.title, undefined);
+      // Pass empty comment to trigger AI regeneration, but preserve userContext
+      const result = await saveBookmark(item.url, item.title, undefined, false, item.userContext);
 
       if (result.success) {
         toast.success(result.queued ? "Queued for regeneration" : "Bookmark regenerated!");
@@ -292,7 +292,7 @@ export function QueueList() {
       await deleteQueueItem(id);
 
       // Pass skipAiGeneration=true to preserve existing comment and skip AI
-      const result = await saveBookmark(item.url, item.title, item.comment, true);
+      const result = await saveBookmark(item.url, item.title, item.comment, true, item.userContext);
 
       if (result.success) {
         toast.success(result.queued ? "Queued for retry" : "Bookmark saved!");

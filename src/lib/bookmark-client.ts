@@ -16,6 +16,7 @@ import { cleanUrl } from "@/lib/url-cleaner";
  * @param title - Optional title
  * @param comment - Optional comment
  * @param skipAiGeneration - Skip AI generation even when no comment is provided
+ * @param userContext - User-provided context for AI generation
  * @returns The API response or synthetic response from SW
  */
 export async function saveBookmark(
@@ -23,6 +24,7 @@ export async function saveBookmark(
   title?: string,
   comment?: string,
   skipAiGeneration?: boolean,
+  userContext?: string,
 ): Promise<BookmarkResponse & { queued?: boolean }> {
   const cleanedUrl = cleanUrl(url);
   const response = await fetch("/api/habu/bookmark", {
@@ -36,6 +38,7 @@ export async function saveBookmark(
       title,
       comment,
       skipAiGeneration,
+      userContext,
     } as BookmarkRequest),
     keepalive: true, // Allow request to complete even if page is closed
   });
@@ -54,12 +57,14 @@ export async function saveBookmark(
  * @param title - Optional title
  * @param comment - Optional comment
  * @param skipAiGeneration - Skip AI generation even when no comment is provided
+ * @param userContext - User-provided context for AI generation
  */
 export function queueBookmark(
   url: string,
   title?: string,
   comment?: string,
   skipAiGeneration?: boolean,
+  userContext?: string,
 ): void {
   const cleanedUrl = cleanUrl(url);
   fetch("/api/habu/bookmark", {
@@ -73,6 +78,7 @@ export function queueBookmark(
       title,
       comment,
       skipAiGeneration,
+      userContext,
     } as BookmarkRequest),
     keepalive: true,
   });

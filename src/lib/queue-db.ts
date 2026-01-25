@@ -21,6 +21,7 @@ export async function addToQueue(
   title?: string,
   comment?: string,
   skipAiGeneration?: boolean,
+  userContext?: string,
 ): Promise<number> {
   const now = new Date();
   const id = await db.bookmarks.add({
@@ -32,6 +33,7 @@ export async function addToQueue(
     updatedAt: now,
     retryCount: 0,
     skipAiGeneration,
+    userContext,
   });
   return id as number;
 }

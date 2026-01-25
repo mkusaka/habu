@@ -33,6 +33,8 @@ export interface BookmarkQueue {
   generatedTags?: string[];
   // Skip AI generation even when no comment is provided
   skipAiGeneration?: boolean;
+  // User-provided context for AI generation (e.g., page content, supplementary info)
+  userContext?: string;
 }
 
 // API types

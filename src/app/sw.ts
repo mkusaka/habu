@@ -101,6 +101,8 @@ interface BookmarkQueueItem {
   generatedTags?: string[];
   // Skip AI generation even when no comment is provided
   skipAiGeneration?: boolean;
+  // User-provided context for AI generation
+  userContext?: string;
 }
 
 // API response type
@@ -190,6 +192,7 @@ async function handleBookmarkRequest(event: FetchEvent): Promise<Response> {
       title?: string;
       comment?: string;
       skipAiGeneration?: boolean;
+      userContext?: string;
     };
 
     // Check if URL already exists in IndexedDB
@@ -204,6 +207,7 @@ async function handleBookmarkRequest(event: FetchEvent): Promise<Response> {
         title: body.title ?? existingItem.title,
         comment: body.comment ?? existingItem.comment,
         skipAiGeneration: body.skipAiGeneration,
+        userContext: body.userContext ?? existingItem.userContext,
         status: "sending",
         updatedAt: new Date(),
         lastError: undefined,
@@ -218,6 +222,7 @@ async function handleBookmarkRequest(event: FetchEvent): Promise<Response> {
         title: body.title,
         comment: body.comment,
         skipAiGeneration: body.skipAiGeneration,
+        userContext: body.userContext,
         status: "sending",
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -533,6 +538,7 @@ async function processQueue(forceRetry = false): Promise<void> {
               title: item.title,
               comment: item.comment,
               skipAiGeneration: item.skipAiGeneration,
+              userContext: item.userContext,
             }),
           });
 

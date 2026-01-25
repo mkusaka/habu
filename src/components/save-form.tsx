@@ -575,7 +575,7 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
     const skipAiGeneration = !aiGenerateEnabled;
 
     // Fire-and-forget: queue the bookmark
-    queueBookmark(url, title, commentToSave, skipAiGeneration);
+    queueBookmark(url, title, commentToSave, skipAiGeneration, context || undefined);
 
     toast.success("Bookmark saved!", {
       description:
@@ -616,7 +616,7 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
       const aiGenerateEnabled = localStorage.getItem("habu-ai-generate") === "true";
       const skipAiGeneration = !aiGenerateEnabled;
 
-      // Fire-and-forget: queue the bookmark
+      // Fire-and-forget: queue the bookmark (no context available for auto-save)
       queueBookmark(initialUrl, initialTitle, initialComment, skipAiGeneration);
 
       // Clear form fields and draft since we're auto-saving

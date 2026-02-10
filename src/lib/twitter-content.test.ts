@@ -54,6 +54,7 @@ describe("fetchTwitterMarkdown", () => {
             id: "124",
             text: "https://t.co/short",
             article: {
+              title: "Claude Code Guide for Designers",
               plain_text: "article body",
             },
           },
@@ -63,6 +64,7 @@ describe("fetchTwitterMarkdown", () => {
 
     const result = await fetchTwitterMarkdown("https://x.com/someone/status/124");
     expect(result?.source).toBe("x-api");
+    expect(result?.markdown).toContain("# Claude Code Guide for Designers");
     expect(result?.markdown).toContain("article body");
   });
 

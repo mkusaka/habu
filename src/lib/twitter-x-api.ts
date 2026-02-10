@@ -9,6 +9,7 @@ type XApiTweet = {
     text?: string;
   };
   article?: {
+    title?: string;
     plain_text?: string;
   };
 };
@@ -20,6 +21,7 @@ type XApiTweetResponse = {
 export type XApiTweetContent = {
   id: string;
   url: string;
+  articleTitle?: string;
   text: string;
   createdAt?: string;
   authorId?: string;
@@ -93,6 +95,7 @@ export async function fetchTwitterStatusViaXApi(
     return {
       id,
       url: url.toString(),
+      articleTitle: data.data?.article?.title?.trim() || undefined,
       text,
       createdAt: data.data?.created_at,
       authorId: data.data?.author_id,
@@ -105,6 +108,7 @@ export async function fetchTwitterStatusViaXApi(
 
 export function formatTwitterStatusMarkdown(data: XApiTweetContent): string {
   const lines: string[] = [];
+  if (data.articleTitle) lines.push(`# ${data.articleTitle}`);
   lines.push(data.text.trim());
   if (data.createdAt) lines.push(data.createdAt);
   lines.push(data.url);

@@ -694,10 +694,7 @@ export function BookmarkEditForm({
                     </summary>
                     <div className="mt-2 bg-background p-2 rounded text-xs flex flex-wrap gap-1">
                       {generatedResult.tags.map((tag, i) => (
-                        <span
-                          key={i}
-                          className="px-2 py-0.5 bg-primary/10 text-primary rounded"
-                        >
+                        <span key={i} className="px-2 py-0.5 bg-primary/10 text-primary rounded">
                           {tag}
                         </span>
                       ))}

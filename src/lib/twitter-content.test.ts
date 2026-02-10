@@ -12,10 +12,61 @@ beforeAll(() => {
 
 afterEach(() => {
   fetchMock.assertNoPendingInterceptors();
+  (globalThis as unknown as { __X_BEARER_TOKEN__?: string }).__X_BEARER_TOKEN__ = undefined;
 });
 
 describe("fetchTwitterMarkdown", () => {
-  it("prefers Grok thread content when available", async () => {
+  it("prefers X API content when available", async () => {
+    (globalThis as unknown as { __X_BEARER_TOKEN__?: string }).__X_BEARER_TOKEN__ = "test-x-bearer";
+
+    fetchMock
+      .get("https://api.x.com")
+      .intercept({ path: /\/2\/tweets\/123\?/, method: "GET" })
+      .reply(
+        200,
+        JSON.stringify({
+          data: {
+            id: "123",
+            text: "standard tweet",
+            created_at: "2026-02-10T19:52:55.000Z",
+            author_id: "113419064",
+          },
+        }),
+        { headers: { "content-type": "application/json; charset=utf-8" } },
+      );
+
+    const result = await fetchTwitterMarkdown("https://x.com/someone/status/123");
+    expect(result?.source).toBe("x-api");
+    expect(result?.markdown).toContain("standard tweet");
+    expect(result?.markdown).toContain("https://x.com/someone/status/123");
+  });
+
+  it("uses X API article plain_text when present", async () => {
+    (globalThis as unknown as { __X_BEARER_TOKEN__?: string }).__X_BEARER_TOKEN__ = "test-x-bearer";
+
+    fetchMock
+      .get("https://api.x.com")
+      .intercept({ path: /\/2\/tweets\/124\?/, method: "GET" })
+      .reply(
+        200,
+        JSON.stringify({
+          data: {
+            id: "124",
+            text: "https://t.co/short",
+            article: {
+              plain_text: "article body",
+            },
+          },
+        }),
+        { headers: { "content-type": "application/json; charset=utf-8" } },
+      );
+
+    const result = await fetchTwitterMarkdown("https://x.com/someone/status/124");
+    expect(result?.source).toBe("x-api");
+    expect(result?.markdown).toContain("article body");
+  });
+
+  it("prefers Grok thread content when X API is not configured", async () => {
     fetchMock
       .get("https://api.x.ai")
       .intercept({ path: "/v1/chat/completions", method: "POST" })

@@ -1,9 +1,10 @@
 import { fetchTwitterOEmbed, formatTwitterMarkdown, isTwitterStatusUrl } from "./twitter-oembed";
 import { fetchTwitterThreadViaGrok, formatTwitterThreadMarkdown } from "./twitter-grok";
+import { fetchTwitterStatusViaXApi, formatTwitterStatusMarkdown } from "./twitter-x-api";
 
 export type TwitterMarkdownResult = {
   markdown: string;
-  source: "grok" | "oembed";
+  source: "x-api" | "grok" | "oembed";
 };
 
 export async function fetchTwitterMarkdown(
@@ -17,6 +18,12 @@ export async function fetchTwitterMarkdown(
   }
 
   if (!isTwitterStatusUrl(url)) return null;
+
+  const xApi = await fetchTwitterStatusViaXApi(url);
+  if (xApi) {
+    const markdown = formatTwitterStatusMarkdown(xApi);
+    if (markdown) return { markdown, source: "x-api" };
+  }
 
   const thread = await fetchTwitterThreadViaGrok(url);
   if (thread) {

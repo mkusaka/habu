@@ -74,7 +74,9 @@ export function isTwitterStatusUrl(input: string | URL): boolean {
     host !== "twitter.com" &&
     host !== "x.com" &&
     host !== "www.twitter.com" &&
-    host !== "www.x.com"
+    host !== "www.x.com" &&
+    host !== "mobile.twitter.com" &&
+    host !== "mobile.x.com"
   ) {
     return false;
   }

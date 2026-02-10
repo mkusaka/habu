@@ -15,6 +15,8 @@ describe("isTwitterStatusUrl", () => {
   it("matches x.com and twitter.com status URLs", () => {
     expect(isTwitterStatusUrl("https://x.com/i/status/123")).toBe(true);
     expect(isTwitterStatusUrl("https://twitter.com/user/status/123?s=20")).toBe(true);
+    expect(isTwitterStatusUrl("https://mobile.x.com/user/status/123")).toBe(true);
+    expect(isTwitterStatusUrl("https://mobile.twitter.com/user/status/123")).toBe(true);
     expect(isTwitterStatusUrl("https://x.com/home")).toBe(false);
   });
 });

@@ -344,6 +344,15 @@ export async function POST(request: NextRequest) {
                 }
               : { provider: "xAI", model: grokModel(), api: "chat/completions" };
           }
+          if (src === "twitter-x-api") {
+            return didModerate
+              ? {
+                  provider: "X API + OpenAI",
+                  model: "omni-moderation-latest",
+                  api: "tweets lookup + moderations",
+                }
+              : { provider: "X API", api: "tweets lookup" };
+          }
           if (src === "twitter-oembed") {
             return didModerate
               ? {

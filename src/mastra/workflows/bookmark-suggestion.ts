@@ -348,7 +348,9 @@ const MarkdownOutputSchema = z.object({
   url: z.string(),
   existingTags: z.array(z.string()),
   markdown: z.string(),
-  markdownSource: z.enum(["twitter-grok", "twitter-oembed", "cloudflare", "none"]).optional(),
+  markdownSource: z
+    .enum(["twitter-x-api", "twitter-grok", "twitter-oembed", "cloudflare", "none"])
+    .optional(),
   didModerate: z.boolean(),
 });
 
@@ -408,8 +410,13 @@ const fetchMarkdownAndModerateStep = createStep({
     const cfApiToken = process.env.BROWSER_RENDERING_API_TOKEN;
 
     let markdown = "";
-    let markdownSource: "twitter-grok" | "twitter-oembed" | "cloudflare" | "none" | undefined =
-      undefined;
+    let markdownSource:
+      | "twitter-x-api"
+      | "twitter-grok"
+      | "twitter-oembed"
+      | "cloudflare"
+      | "none"
+      | undefined = undefined;
 
     // X/Twitter status pages often return an interstitial error page when rendered headlessly.
     // Prefer oEmbed as a reliable, login-free content source for tweet text.
@@ -418,7 +425,9 @@ const fetchMarkdownAndModerateStep = createStep({
         const twitter = await fetchTwitterMarkdown(url);
         if (twitter?.markdown) {
           markdown = twitter.markdown.slice(0, MAX_MARKDOWN_CHARS);
-          markdownSource = twitter.source === "grok" ? "twitter-grok" : "twitter-oembed";
+          if (twitter.source === "x-api") markdownSource = "twitter-x-api";
+          else if (twitter.source === "grok") markdownSource = "twitter-grok";
+          else markdownSource = "twitter-oembed";
         }
       } catch (error) {
         console.warn("Failed to fetch Twitter content, falling back to rendering:", error);
@@ -494,6 +503,7 @@ const fetchMarkdownAndModerateStep = createStep({
     }
 
     const finalMarkdownSource:
+      | "twitter-x-api"
       | "twitter-grok"
       | "twitter-oembed"
       | "cloudflare"

@@ -12,7 +12,7 @@ import type {
   PageMetadata,
 } from "@/types/habu";
 import { mastra } from "@/mastra";
-import { RuntimeContext } from "@mastra/core/di";
+import { RequestContext } from "@mastra/core/di";
 import { fetchPageMeta, isMetaExtractionResult } from "@/lib/page-meta";
 import { isTwitterStatusUrl } from "@/lib/twitter-oembed";
 import { fetchTwitterMarkdown } from "@/lib/twitter-content";
@@ -446,20 +446,20 @@ export async function POST(request: NextRequest) {
 
             // Run the bookmark suggestion workflow
             const workflow = mastra.getWorkflow("bookmark-suggestion");
-            const run = await workflow.createRunAsync();
+            const run = await workflow.createRun();
 
-            // Create RuntimeContext with metadata for tracing
-            const runtimeContext = new RuntimeContext();
-            runtimeContext.set("userId", session.user.id);
-            runtimeContext.set("hatenaId", user.hatenaId || "");
-            runtimeContext.set("url", url);
-            runtimeContext.set("gitSha", process.env.NEXT_PUBLIC_GIT_SHA || "");
+            // RequestContext: トレーシング用のメタデータを設定
+            const requestContext = new RequestContext();
+            requestContext.set("userId", session.user.id);
+            requestContext.set("hatenaId", user.hatenaId || "");
+            requestContext.set("url", url);
+            requestContext.set("gitSha", process.env.NEXT_PUBLIC_GIT_SHA || "");
 
             send("workflow", { type: "run-created", payload: { runId: run.runId } });
 
             const { stream, getWorkflowState } = run.streamLegacy({
               inputData: { url, existingTags, userContext },
-              runtimeContext,
+              requestContext,
             });
 
             const reader = stream.getReader();
@@ -568,16 +568,14 @@ export async function POST(request: NextRequest) {
     const markdown = markdownResult.markdown;
     const markdownError = markdownResult.error;
 
-    // Run the bookmark suggestion workflow
     const workflow = mastra.getWorkflow("bookmark-suggestion");
-    const run = await workflow.createRunAsync();
+    const run = await workflow.createRun();
 
-    // Create RuntimeContext with metadata for tracing
-    const runtimeContext = new RuntimeContext();
-    runtimeContext.set("userId", session.user.id);
-    runtimeContext.set("hatenaId", user.hatenaId || "");
-    runtimeContext.set("url", url);
-    runtimeContext.set("gitSha", process.env.NEXT_PUBLIC_GIT_SHA || "");
+    const requestContext = new RequestContext();
+    requestContext.set("userId", session.user.id);
+    requestContext.set("hatenaId", user.hatenaId || "");
+    requestContext.set("url", url);
+    requestContext.set("gitSha", process.env.NEXT_PUBLIC_GIT_SHA || "");
 
     const result = await run.start({
       inputData: {
@@ -585,7 +583,7 @@ export async function POST(request: NextRequest) {
         existingTags,
         userContext,
       },
-      runtimeContext,
+      requestContext,
     });
 
     if (result.status !== "success" || !result.result) {

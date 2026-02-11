@@ -7,7 +7,7 @@ import { eq } from "drizzle-orm";
 import { createAuth } from "@/lib/auth";
 import type { BookmarkRequest, BookmarkResponse, HatenaTagsResponse } from "@/types/habu";
 import { mastra } from "@/mastra";
-import { RuntimeContext } from "@mastra/core/di";
+import { RequestContext } from "@mastra/core/di";
 
 const HATENA_BOOKMARK_API_URL = "https://bookmark.hatenaapis.com/rest/1/my/bookmark";
 const HATENA_TAGS_API_URL = "https://bookmark.hatenaapis.com/rest/1/my/tags";
@@ -316,16 +316,14 @@ export async function POST(request: NextRequest) {
           consumerSecret,
         );
 
-        // Run the bookmark suggestion workflow
         const workflow = mastra.getWorkflow("bookmark-suggestion");
-        const run = await workflow.createRunAsync();
+        const run = await workflow.createRun();
 
-        // Create RuntimeContext with metadata for tracing
-        const runtimeContext = new RuntimeContext();
-        runtimeContext.set("userId", session.user.id);
-        runtimeContext.set("hatenaId", user.hatenaId || "");
-        runtimeContext.set("url", url);
-        runtimeContext.set("gitSha", process.env.NEXT_PUBLIC_GIT_SHA || "");
+        const requestContext = new RequestContext();
+        requestContext.set("userId", session.user.id);
+        requestContext.set("hatenaId", user.hatenaId || "");
+        requestContext.set("url", url);
+        requestContext.set("gitSha", process.env.NEXT_PUBLIC_GIT_SHA || "");
 
         const result = await run.start({
           inputData: {
@@ -333,7 +331,7 @@ export async function POST(request: NextRequest) {
             existingTags,
             userContext,
           },
-          runtimeContext,
+          requestContext,
         });
 
         if (result.status !== "success" || !result.result) {

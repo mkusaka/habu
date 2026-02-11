@@ -3,7 +3,7 @@ import { createSignedRequest } from "@/lib/hatena-oauth";
 import type { McpContext, ToolResult } from "../types";
 import { hasScope } from "../types";
 import { mastra } from "@/mastra";
-import { RuntimeContext } from "@mastra/core/di";
+import { RequestContext } from "@mastra/core/di";
 
 const HATENA_TAGS_API_URL = "https://bookmark.hatenaapis.com/rest/1/my/tags";
 
@@ -89,12 +89,12 @@ export async function suggestComment(
 
     // Run the bookmark suggestion workflow
     const workflow = mastra.getWorkflow("bookmark-suggestion");
-    const run = await workflow.createRunAsync();
+    const run = await workflow.createRun();
 
-    // Create RuntimeContext with metadata for tracing
-    const runtimeContext = new RuntimeContext();
-    runtimeContext.set("userId", context.userId);
-    runtimeContext.set("url", input.url);
+    // Create RequestContext with metadata for tracing
+    const requestContext = new RequestContext();
+    requestContext.set("userId", context.userId);
+    requestContext.set("url", input.url);
 
     const result = await run.start({
       inputData: {
@@ -102,7 +102,7 @@ export async function suggestComment(
         existingTags,
         userContext: input.userContext,
       },
-      runtimeContext,
+      requestContext,
     });
 
     if (result.status !== "success" || !result.result) {

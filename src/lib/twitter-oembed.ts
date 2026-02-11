@@ -1,3 +1,7 @@
+import { extractTwitterHandle, isTwitterStatusUrl } from "./twitter-url";
+
+export { isTwitterStatusUrl } from "./twitter-url";
+
 export type TwitterOEmbedResponse = {
   url?: string;
   author_name?: string;
@@ -39,17 +43,6 @@ function decodeHtmlEntities(text: string): string {
     .replace(/&ndash;/g, "–");
 }
 
-function extractTwitterHandle(authorUrl?: string): string | undefined {
-  if (!authorUrl) return undefined;
-  try {
-    const u = new URL(authorUrl);
-    const parts = u.pathname.split("/").filter(Boolean);
-    return parts[0] ? `@${parts[0]}` : undefined;
-  } catch {
-    return undefined;
-  }
-}
-
 function extractTweetTextFromOEmbedHtml(html: string): string | undefined {
   const match = html.match(/<p[^>]*>([\s\S]*?)<\/p>/i);
   if (!match?.[1]) return undefined;
@@ -59,29 +52,6 @@ function extractTweetTextFromOEmbedHtml(html: string): string | undefined {
   const decoded = decodeHtmlEntities(stripped);
   const normalized = decoded.replace(/\s+/g, " ").trim();
   return normalized || undefined;
-}
-
-export function isTwitterStatusUrl(input: string | URL): boolean {
-  let url: URL;
-  try {
-    url = typeof input === "string" ? new URL(input) : input;
-  } catch {
-    return false;
-  }
-
-  const host = url.hostname.toLowerCase();
-  if (
-    host !== "twitter.com" &&
-    host !== "x.com" &&
-    host !== "www.twitter.com" &&
-    host !== "www.x.com" &&
-    host !== "mobile.twitter.com" &&
-    host !== "mobile.x.com"
-  ) {
-    return false;
-  }
-
-  return /\/status\/\d+/.test(url.pathname);
 }
 
 export async function fetchTwitterOEmbed(input: string | URL): Promise<TwitterOEmbed | null> {

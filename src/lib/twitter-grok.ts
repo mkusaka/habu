@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { grokChatCompletionText } from "./grok-client";
+import { extractTwitterStatusId } from "./twitter-url";
 
 const ThreadTweetSchema = z.object({
   id: z.string().min(1),
@@ -26,17 +27,6 @@ const TwitterThreadResponseSchema = z.union([TwitterThreadResultSchema, TwitterT
 
 export type TwitterThreadTweet = z.infer<typeof ThreadTweetSchema>;
 export type TwitterThreadData = z.infer<typeof TwitterThreadResultSchema>;
-
-export function extractTwitterStatusId(input: string | URL): string | null {
-  let url: URL;
-  try {
-    url = typeof input === "string" ? new URL(input) : input;
-  } catch {
-    return null;
-  }
-  const match = url.pathname.match(/\/status\/(\d+)/);
-  return match?.[1] ?? null;
-}
 
 function extractFirstJsonObject(text: string): string | null {
   const start = text.indexOf("{");

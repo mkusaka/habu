@@ -1,4 +1,4 @@
-import { isTwitterStatusUrl } from "./twitter-oembed";
+import { extractTwitterStatusId, isTwitterStatusUrl } from "./twitter-url";
 
 type XApiTweet = {
   id?: string;
@@ -33,17 +33,6 @@ function getXBearerToken(): string | undefined {
   return fromEnv || fromGlobal;
 }
 
-function extractStatusId(input: string | URL): string | null {
-  let url: URL;
-  try {
-    url = typeof input === "string" ? new URL(input) : input;
-  } catch {
-    return null;
-  }
-  const match = url.pathname.match(/\/status\/(\d+)/);
-  return match?.[1] ?? null;
-}
-
 function pickTweetText(data?: XApiTweet): string | null {
   if (!data) return null;
   const articleText = data.article?.plain_text?.trim();
@@ -65,7 +54,7 @@ export async function fetchTwitterStatusViaXApi(
   }
 
   if (!isTwitterStatusUrl(url)) return null;
-  const statusId = extractStatusId(url);
+  const statusId = extractTwitterStatusId(url);
   if (!statusId) return null;
 
   const token = getXBearerToken();

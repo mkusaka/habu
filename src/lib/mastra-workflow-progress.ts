@@ -1,3 +1,5 @@
+import { isTwitterStatusUrl } from "./twitter-url";
+
 export type WorkflowStepStatus =
   | "pending"
   | "running"
@@ -80,24 +82,6 @@ export const BOOKMARK_SUGGESTION_STEP_ORDER: Array<Pick<WorkflowStepState, "id" 
 
 /** Internal steps that should be hidden from UI */
 export const INTERNAL_STEP_IDS = new Set(["merge-content", "merge-results"]);
-
-/** Check if URL is a Twitter/X status URL (simplified check for UI purposes) */
-function isTwitterStatusUrl(url: string): boolean {
-  try {
-    const parsed = new URL(url);
-    const isTwitterHost =
-      parsed.hostname === "twitter.com" ||
-      parsed.hostname === "www.twitter.com" ||
-      parsed.hostname === "x.com" ||
-      parsed.hostname === "www.x.com" ||
-      parsed.hostname === "mobile.twitter.com" ||
-      parsed.hostname === "mobile.x.com";
-    // Check for status pattern: /<user>/status/<id>
-    return isTwitterHost && /^\/[^/]+\/status\/\d+/.test(parsed.pathname);
-  } catch {
-    return false;
-  }
-}
 
 /** Get step metadata based on URL characteristics */
 function getStepMeta(stepId: string, url?: string): WorkflowStepMeta | undefined {

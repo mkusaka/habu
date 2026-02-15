@@ -84,6 +84,9 @@ export interface SuggestResponse {
   markdownError?: string;
   metadata?: PageMetadata;
   webContext?: string;
+  // Body size info for Hatena API limit validation
+  bodySize?: number;
+  exceedsLimit?: boolean;
 }
 
 // Hatena API types

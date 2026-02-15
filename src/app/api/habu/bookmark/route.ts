@@ -8,6 +8,7 @@ import { createAuth } from "@/lib/auth";
 import type { BookmarkRequest, BookmarkResponse, HatenaTagsResponse } from "@/types/habu";
 import { mastra } from "@/mastra";
 import { RequestContext } from "@mastra/core/di";
+import { isBodyWithinLimit, maxEncodedCommentLength } from "@/lib/hatena-body-limit";
 
 const HATENA_BOOKMARK_API_URL = "https://bookmark.hatenaapis.com/rest/1/my/bookmark";
 const HATENA_TAGS_API_URL = "https://bookmark.hatenaapis.com/rest/1/my/tags";
@@ -207,6 +208,37 @@ function formatCommentWithTags(summary: string, tags: string[]): string {
   return `${tagPart}${summary}`;
 }
 
+/**
+ * Fit AI-generated comment within Hatena's body size limit by removing
+ * least-important tags (tags are ordered by importance, most important first).
+ * Returns the adjusted comment and remaining tags.
+ */
+function fitCommentToBodyLimit(
+  url: string,
+  summary: string,
+  tags: string[],
+): { comment: string; tags: string[] } {
+  const budget = maxEncodedCommentLength(url);
+
+  // Try with all tags + full summary
+  let comment = formatCommentWithTags(summary, tags);
+  if (encodeURIComponent(comment).length <= budget) {
+    return { comment, tags };
+  }
+
+  // Remove tags from end (least important) one by one
+  for (let i = tags.length - 1; i >= 0; i--) {
+    const remainingTags = tags.slice(0, i);
+    comment = formatCommentWithTags(summary, remainingTags);
+    if (encodeURIComponent(comment).length <= budget) {
+      return { comment, tags: remainingTags };
+    }
+  }
+
+  // Even summary alone exceeds budget (URL is very long)
+  return { comment: summary, tags: [] };
+}
+
 export async function POST(request: NextRequest) {
   try {
     // CSRF protection: verify Origin/Referer
@@ -358,10 +390,11 @@ export async function POST(request: NextRequest) {
 
         // Store generated content
         generatedSummary = summary;
-        generatedTags = tags;
 
-        // Format comment with tags
-        finalComment = formatCommentWithTags(summary, tags);
+        // Fit comment within Hatena's body size limit (remove least-important tags if needed)
+        const fitted = fitCommentToBodyLimit(url, summary, tags);
+        finalComment = fitted.comment;
+        generatedTags = fitted.tags;
         generatedComment = finalComment;
       } catch (aiError) {
         console.error("AI suggestion failed:", aiError);
@@ -373,6 +406,17 @@ export async function POST(request: NextRequest) {
           { status: 500 },
         );
       }
+    }
+
+    // Validate body size before sending to Hatena
+    if (finalComment && !isBodyWithinLimit(url, finalComment)) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Comment is too long for this URL. Please shorten your comment.",
+        } as BookmarkResponse,
+        { status: 400 },
+      );
     }
 
     // Prepare request body parameters

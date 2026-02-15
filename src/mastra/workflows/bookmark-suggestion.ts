@@ -203,6 +203,7 @@ Pass if ALL of the following are true:
 4. NO_DUPLICATES: No redundant or near-duplicate tags
 5. COUNT: 3-10 tags total
 6. LENGTH: Each tag must be 10 characters or less. See <tag_length_analysis> for pre-calculated lengths.
+7. ORDER: Tags are ordered by importance (most relevant first). Less important tags may be removed to fit API body size limits.
 </evaluation_criteria>
 ${
   hasUserContext
@@ -897,6 +898,7 @@ You are a bookmark curator for Hatena Bookmark. Generate relevant tags.
 - Match content language for non-technical terms: Japanese content → Japanese, English → English
 - STRONGLY prefer reusing existing tags when they fit
 - Include both topic tags (what) and type tags (tutorial, news, tool, etc.)
+- Order tags by importance: most relevant/important tag first, least important last. Tags at the end may be removed to fit body size limits.
 </rules>
 
 <existing_tags>

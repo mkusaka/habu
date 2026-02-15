@@ -17,6 +17,7 @@ import { fetchPageMeta, isMetaExtractionResult } from "@/lib/page-meta";
 import { isTwitterStatusUrl } from "@/lib/twitter-oembed";
 import { fetchTwitterMarkdown } from "@/lib/twitter-content";
 import type { WorkflowStepMeta } from "@/lib/mastra-workflow-progress";
+import { calculateBodySize, HATENA_BODY_LIMIT } from "@/lib/hatena-body-limit";
 
 const HATENA_TAGS_API_URL = "https://bookmark.hatenaapis.com/rest/1/my/tags";
 const MAX_MARKDOWN_CHARS = 800000;
@@ -526,6 +527,8 @@ export async function POST(request: NextRequest) {
             const markdownResult = await markdownPromise;
             const metadata = await metadataPromise;
 
+            const bodySize = calculateBodySize(url, formattedComment);
+
             send("result", {
               success: true,
               summary,
@@ -535,6 +538,8 @@ export async function POST(request: NextRequest) {
               markdownError: markdownResult.error,
               metadata,
               webContext,
+              bodySize,
+              exceedsLimit: bodySize > HATENA_BODY_LIMIT,
             } satisfies SuggestResponse);
 
             send("done", { ok: true });
@@ -596,6 +601,8 @@ export async function POST(request: NextRequest) {
     const tagPart = tags.map((t: string) => `[${t}]`).join("");
     const formattedComment = `${tagPart}${summary}`;
 
+    const bodySize = calculateBodySize(url, formattedComment);
+
     return NextResponse.json({
       success: true,
       summary,
@@ -605,6 +612,8 @@ export async function POST(request: NextRequest) {
       markdownError,
       metadata,
       webContext,
+      bodySize,
+      exceedsLimit: bodySize > HATENA_BODY_LIMIT,
     } as SuggestResponse);
   } catch (error) {
     console.error("Suggest API error:", error);

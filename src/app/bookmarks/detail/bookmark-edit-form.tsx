@@ -31,6 +31,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { deleteBookmark } from "@/lib/bookmark-client";
+import { isBodyWithinLimit } from "@/lib/hatena-body-limit";
 import { useRouter } from "next/navigation";
 import { WorkflowProgress } from "@/components/workflow-progress";
 import {
@@ -432,6 +433,7 @@ export function BookmarkEditForm({
 
   const currentTags = extractTags(comment);
   const currentCommentText = extractCommentText(comment);
+  const isCommentTooLong = comment && !isBodyWithinLimit(bookmarkUrl, comment);
 
   return (
     <>
@@ -457,6 +459,11 @@ export function BookmarkEditForm({
           placeholder="Your comment"
           rows={3}
         />
+        {isCommentTooLong && (
+          <p className="text-sm text-red-500">
+            Comment is too long for this URL. Please shorten your comment.
+          </p>
+        )}
         {currentTags.length > 0 && (
           <div className="flex flex-wrap gap-1">
             {currentTags.map((tag, i) => (
@@ -803,7 +810,12 @@ export function BookmarkEditForm({
           )}
         </Button>
 
-        <Button onClick={handleUpdate} disabled={isUpdating} className="flex-1" size="lg">
+        <Button
+          onClick={handleUpdate}
+          disabled={isUpdating || !!isCommentTooLong}
+          className="flex-1"
+          size="lg"
+        >
           {isUpdating ? (
             <>
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />

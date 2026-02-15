@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { isBodyWithinLimit } from "@/lib/hatena-body-limit";
 import { WorkflowProgress } from "@/components/workflow-progress";
 import {
   formatWorkflowStepMeta,
@@ -318,6 +319,7 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
   };
 
   const isUrlValid = url && isValidUrl(url);
+  const isCommentTooLong = isUrlValid && comment && !isBodyWithinLimit(url, comment);
 
   const handleGenerate = async () => {
     if (!url) {
@@ -727,6 +729,11 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
             placeholder="Your comment"
             rows={3}
           />
+          {isCommentTooLong && (
+            <p className="text-sm text-red-500">
+              Comment is too long for this URL. Please shorten your comment.
+            </p>
+          )}
         </div>
 
         {/* Context Toggle */}
@@ -1079,7 +1086,7 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
 
           <Button
             onClick={handleSave}
-            disabled={!isUrlValid || isSaving}
+            disabled={!isUrlValid || isSaving || !!isCommentTooLong}
             className="flex-1"
             size="lg"
           >

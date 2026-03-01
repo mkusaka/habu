@@ -30,10 +30,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport = {
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#0d0d0d" },
-  ],
+  themeColor: [{ media: "(prefers-color-scheme: light)", color: "#ffffff" }, { color: "#0d0d0d" }],
 };
 
 export default function RootLayout({
@@ -72,27 +69,27 @@ export default function RootLayout({
               '(function(){try{if(!globalThis.__name){var d=Object.defineProperty;globalThis.__name=function(t,v){return d(t,"name",{value:v,configurable:true});};}var t=localStorage.getItem("habu-theme");var m=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches;var r=(t==="dark"||t==="light")?t:(m?"dark":"light");var el=document.documentElement;el.classList.toggle("dark",r==="dark");el.style.colorScheme=r;var meta=document.querySelector(\'meta[name="theme-color"]\');if(meta) meta.content=(r==="dark")?"#0d0d0d":"#ffffff";}catch(e){}})();',
           }}
         />
-        <link rel="manifest" href={`/manifest.json?v=${manifestVersion}`} />
+        <link rel="manifest" href={`/manifest-dark.json?v=${manifestVersion}`} />
         <link
           rel="manifest"
-          href={`/manifest-dark.json?v=${manifestVersion}`}
-          media="(prefers-color-scheme: dark)"
+          href={`/manifest.json?v=${manifestVersion}`}
+          media="(prefers-color-scheme: light)"
         />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        {appleSplashScreens.map(({ w, h, pr, file }) => (
+          <link
+            key={`${file}-dark`}
+            rel="apple-touch-startup-image"
+            href={`/apple-splash/splash-${file}-dark.png`}
+            media={`(device-width: ${w}px) and (device-height: ${h}px) and (-webkit-device-pixel-ratio: ${pr}) and (orientation: portrait)`}
+          />
+        ))}
         {appleSplashScreens.map(({ w, h, pr, file }) => (
           <link
             key={`${file}-light`}
             rel="apple-touch-startup-image"
             href={`/apple-splash/splash-${file}-light.png`}
             media={`(prefers-color-scheme: light) and (device-width: ${w}px) and (device-height: ${h}px) and (-webkit-device-pixel-ratio: ${pr}) and (orientation: portrait)`}
-          />
-        ))}
-        {appleSplashScreens.map(({ w, h, pr, file }) => (
-          <link
-            key={`${file}-dark`}
-            rel="apple-touch-startup-image"
-            href={`/apple-splash/splash-${file}-dark.png`}
-            media={`(prefers-color-scheme: dark) and (device-width: ${w}px) and (device-height: ${h}px) and (-webkit-device-pixel-ratio: ${pr}) and (orientation: portrait)`}
           />
         ))}
         <link rel="icon" href="/favicon.svg" type="image/svg+xml"></link>

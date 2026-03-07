@@ -76,7 +76,7 @@ export function TagCleanupManager() {
   return (
     <div className="space-y-6">
       <div className="rounded-lg border p-4">
-        <div className="mb-4 flex items-start justify-between gap-3">
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex items-center gap-2">
             <WandSparkles className="w-4 h-4 text-muted-foreground" />
             <h2 className="font-medium">Mapping Candidates</h2>
@@ -86,6 +86,7 @@ export function TagCleanupManager() {
             variant="outline"
             onClick={handleGenerateCandidates}
             disabled={isGeneratingCandidates}
+            className="w-full sm:w-auto"
           >
             {isGeneratingCandidates ? (
               <>
@@ -114,14 +115,14 @@ export function TagCleanupManager() {
         {errorMessage && <p className="mt-3 text-sm text-red-500">{errorMessage}</p>}
 
         <div className="mt-4 rounded-lg border bg-muted/20 p-3">
-          <div className="flex flex-wrap items-center gap-3 text-sm">
-            <span>
+          <div className="grid gap-2 text-sm sm:flex sm:flex-wrap sm:items-center sm:gap-3">
+            <span className="min-w-0">
               Tags: <strong>{tagCount}</strong>
             </span>
-            <span>
+            <span className="min-w-0">
               Suggested changes: <strong>{candidates.length}</strong>
             </span>
-            <span>
+            <span className="min-w-0">
               Visible candidates: <strong>{filteredCandidates.length}</strong>
             </span>
           </div>

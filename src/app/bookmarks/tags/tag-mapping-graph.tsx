@@ -136,84 +136,88 @@ export function TagMappingGraph({
   }
 
   return (
-    <div ref={containerRef} className="relative overflow-hidden rounded-lg border bg-muted/20 p-4">
-      <svg className="pointer-events-none absolute inset-0 h-full w-full">
-        {edges.map((edge) => (
-          <path
-            key={`${edge.sourceTag}-${edge.targetKey}`}
-            d={edge.path}
-            fill="none"
-            stroke={
-              edge.action === "delete"
-                ? "rgb(239 68 68 / 0.45)"
-                : edge.action === "update"
-                  ? "rgb(59 130 246 / 0.45)"
-                  : "rgb(148 163 184 / 0.35)"
-            }
-            strokeWidth="2"
-            strokeLinecap="round"
-          />
-        ))}
-      </svg>
-
-      <div className="relative grid gap-10 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-        <div className="space-y-2">
-          <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Before
-          </div>
-          {rows.map((row) => (
-            <a
-              key={row.sourceTag}
-              href={hatenaId ? buildHatenaTagPageUrl(hatenaId, row.sourceTag) : undefined}
-              target={hatenaId ? "_blank" : undefined}
-              rel={hatenaId ? "noopener noreferrer" : undefined}
-              ref={(element) => {
-                sourceRefs.current[row.sourceTag] = element;
-              }}
-              className={cn(
-                "flex min-h-10 items-center justify-between rounded-md border bg-background px-3 py-2 text-sm shadow-sm transition-colors",
-                hatenaId ? "cursor-pointer hover:bg-accent/40" : "cursor-default",
-              )}
-              title={hatenaId ? `Open Hatena bookmarks tagged ${row.sourceTag}` : undefined}
-            >
-              <span className="flex items-center gap-2 font-medium">
-                {row.sourceTag}
-                {hatenaId && <ExternalLink className="size-3 text-muted-foreground" />}
-              </span>
-              <span className="text-xs text-muted-foreground">{row.sourceCount}</span>
-            </a>
+    <div className="overflow-x-auto rounded-lg border">
+      <div ref={containerRef} className="relative min-w-[40rem] bg-muted/20 p-4 sm:min-w-[44rem]">
+        <svg className="pointer-events-none absolute inset-0 h-full w-full">
+          {edges.map((edge) => (
+            <path
+              key={`${edge.sourceTag}-${edge.targetKey}`}
+              d={edge.path}
+              fill="none"
+              stroke={
+                edge.action === "delete"
+                  ? "rgb(239 68 68 / 0.45)"
+                  : edge.action === "update"
+                    ? "rgb(59 130 246 / 0.45)"
+                    : "rgb(148 163 184 / 0.35)"
+              }
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
           ))}
-        </div>
+        </svg>
 
-        <div className="space-y-2">
-          <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            After
+        <div className="relative grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-10">
+          <div className="space-y-2">
+            <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Before
+            </div>
+            {rows.map((row) => (
+              <a
+                key={row.sourceTag}
+                href={hatenaId ? buildHatenaTagPageUrl(hatenaId, row.sourceTag) : undefined}
+                target={hatenaId ? "_blank" : undefined}
+                rel={hatenaId ? "noopener noreferrer" : undefined}
+                ref={(element) => {
+                  sourceRefs.current[row.sourceTag] = element;
+                }}
+                className={cn(
+                  "flex min-h-10 items-center justify-between gap-2 rounded-md border bg-background px-3 py-2 text-sm shadow-sm transition-colors",
+                  hatenaId ? "cursor-pointer hover:bg-accent/40" : "cursor-default",
+                )}
+                title={hatenaId ? `Open Hatena bookmarks tagged ${row.sourceTag}` : undefined}
+              >
+                <span className="flex min-w-0 items-center gap-2 font-medium">
+                  <span className="truncate">{row.sourceTag}</span>
+                  {hatenaId && <ExternalLink className="size-3 shrink-0 text-muted-foreground" />}
+                </span>
+                <span className="shrink-0 text-xs text-muted-foreground">{row.sourceCount}</span>
+              </a>
+            ))}
           </div>
-          {targetNodes.map((target) => (
-            <button
-              type="button"
-              key={target.key}
-              onClick={() => void handleCopyTarget(target.label, target.action)}
-              ref={(element) => {
-                targetRefs.current[target.key] = element;
-              }}
-              className={cn(
-                "flex min-h-10 w-full items-center justify-between rounded-md border px-3 py-2 text-sm shadow-sm transition-colors",
-                target.action === "delete"
-                  ? "border-red-200 bg-red-50 text-red-700 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-200"
-                  : "cursor-pointer bg-background hover:bg-accent/40",
-              )}
-              title={target.action === "delete" ? undefined : `Copy ${target.label}`}
-            >
-              <span className="flex items-center gap-2 font-medium">
-                {target.label}
-                {target.action !== "delete" && <Copy className="size-3 text-muted-foreground" />}
-              </span>
-              {target.action !== "delete" ? (
-                <span className="text-xs text-muted-foreground">{target.count}</span>
-              ) : null}
-            </button>
-          ))}
+
+          <div className="space-y-2">
+            <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              After
+            </div>
+            {targetNodes.map((target) => (
+              <button
+                type="button"
+                key={target.key}
+                onClick={() => void handleCopyTarget(target.label, target.action)}
+                ref={(element) => {
+                  targetRefs.current[target.key] = element;
+                }}
+                className={cn(
+                  "flex min-h-10 w-full items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm shadow-sm transition-colors",
+                  target.action === "delete"
+                    ? "border-red-200 bg-red-50 text-red-700 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-200"
+                    : "cursor-pointer bg-background hover:bg-accent/40",
+                )}
+                title={target.action === "delete" ? undefined : `Copy ${target.label}`}
+              >
+                <span className="flex min-w-0 items-center gap-2 font-medium">
+                  <span className="truncate">{target.label}</span>
+                  {target.action !== "delete" && (
+                    <Copy className="size-3 shrink-0 text-muted-foreground" />
+                  )}
+                </span>
+                {target.action !== "delete" ? (
+                  <span className="shrink-0 text-xs text-muted-foreground">{target.count}</span>
+                ) : null}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
     </div>

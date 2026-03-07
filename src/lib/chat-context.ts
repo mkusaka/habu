@@ -19,9 +19,12 @@ export interface ChatContext {
   metadata?: PageMetadata;
   existingComment?: string;
   existingTags?: string[];
+  tagInventory?: Array<{ tag: string; count: number }>;
 }
 
 const MAX_MARKDOWN_LENGTH = 50000;
+const MAX_TAG_INVENTORY_LENGTH = 4000;
+const MAX_TAG_INVENTORY_ITEMS = 250;
 
 /**
  * Build the system prompt for chat.
@@ -36,6 +39,8 @@ You are a helpful assistant for Hatena Bookmark users. You help users understand
 - Answer questions about the page content
 - Summarize the page or specific sections
 - Suggest bookmark comments or tags
+- Discuss tag cleanup patterns such as "source tag -> target tag"
+- Recommend which current tags to keep, merge, rename, or drop
 - Explain technical concepts mentioned in the page
 - Search the web for additional context using the web_search tool
 - Fetch page content using the fetch_markdown tool when needed
@@ -54,6 +59,7 @@ When answering user questions:
 - Use Japanese if the user writes in Japanese
 - Keep technical terms in their original form (e.g., "API", "Docker", "React")
 - When suggesting tags, keep each tag to 10 characters or less
+- When discussing tag cleanup, prefer existing tags from <tag_inventory> when they fit
 </output_rules>
 
 <safety>
@@ -84,6 +90,29 @@ ${context.existingComment ? `Comment: ${context.existingComment}` : "Comment: No
 </user_bookmark>`
       : "";
 
+  const tagInventorySection = (() => {
+    if (!context.tagInventory?.length) return "";
+
+    const lines: string[] = [];
+    let totalLength = 0;
+
+    for (const tag of context.tagInventory) {
+      const line = `- ${tag.tag} (${tag.count})`;
+      if (
+        lines.length >= MAX_TAG_INVENTORY_ITEMS ||
+        totalLength + line.length + 1 > MAX_TAG_INVENTORY_LENGTH
+      ) {
+        break;
+      }
+      lines.push(line);
+      totalLength += line.length + 1;
+    }
+
+    return `<tag_inventory total="${context.tagInventory.length}" included="${lines.length}" truncated="${lines.length < context.tagInventory.length ? "yes" : "no"}">
+${lines.join("\n")}
+</tag_inventory>`;
+  })();
+
   const metadataSection = [
     `URL: ${context.url}`,
     context.metadata?.title && `Title: ${context.metadata.title}`,
@@ -100,21 +129,5 @@ ${metadataSection}
 
 ${markdownSection}
 
-${bookmarkSection}`.trim();
-}
-
-export function extractTagsFromComment(comment: string): string[] {
-  const tags: string[] = [];
-  const tagRegex = /^\[([^\]]+)\]/;
-  let remaining = comment;
-  let match;
-  while ((match = tagRegex.exec(remaining)) !== null) {
-    tags.push(match[1]);
-    remaining = remaining.slice(match[0].length);
-  }
-  return tags;
-}
-
-export function extractCommentText(comment: string): string {
-  return comment.replace(/^(\[[^\]]+\])+/, "").trim();
+${bookmarkSection}${tagInventorySection ? `\n\n${tagInventorySection}` : ""}`.trim();
 }

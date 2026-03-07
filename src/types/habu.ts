@@ -89,6 +89,33 @@ export interface SuggestResponse {
   exceedsLimit?: boolean;
 }
 
+export interface HatenaTagsListResponse {
+  success: boolean;
+  error?: string;
+  tags?: HatenaTag[];
+}
+
+export interface TidyTagsRequest {
+  url: string;
+  comment?: string;
+  metadata?: PageMetadata;
+}
+
+export interface TidyTagsSuggestion {
+  tags: string[];
+  commentText: string;
+  formattedComment: string;
+  addTags: string[];
+  removeTags: string[];
+  reasoning: string[];
+}
+
+export interface TidyTagsResponse {
+  success: boolean;
+  error?: string;
+  suggestion?: TidyTagsSuggestion;
+}
+
 // Hatena API types
 export interface HatenaBookmarkApiResponse {
   url: string;

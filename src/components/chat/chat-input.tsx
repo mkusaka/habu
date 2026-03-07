@@ -71,7 +71,7 @@ export function ChatInput({
           onKeyDown={handleKeyDown}
           onCompositionStart={() => setIsComposing(true)}
           onCompositionEnd={() => setIsComposing(false)}
-          placeholder={isEditing ? "Edit your message..." : "Ask about this page..."}
+          placeholder={isEditing ? "Edit your message..." : "Ask about this page or tag cleanup..."}
           disabled={disabled}
           rows={2}
           className="resize-none flex-1"

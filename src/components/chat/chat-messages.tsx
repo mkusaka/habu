@@ -48,8 +48,8 @@ export function ChatMessages({
     return (
       <div className="flex-1 flex items-center justify-center p-4">
         <p className="text-muted-foreground text-sm text-center">
-          Ask anything about this page.
-          <br />I can help summarize, explain, or suggest bookmark tags.
+          Ask anything about this page or your bookmark tags.
+          <br />I can help summarize, explain, or discuss tag cleanup patterns.
         </p>
       </div>
     );

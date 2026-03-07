@@ -19,6 +19,23 @@ export function calculateBodySize(url: string, comment: string): number {
   return BODY_OVERHEAD + encodeURIComponent(url).length + encodeURIComponent(comment).length;
 }
 
+/** Calculate URL-encoded body size for a bookmark request with tag params */
+export function calculateBookmarkRequestBodySize(
+  url: string,
+  comment: string,
+  tags: string[] = [],
+  isPrivate = false,
+): number {
+  const body = new URLSearchParams();
+  body.set("url", url);
+  body.set("comment", comment);
+  tags.forEach((tag) => body.append("tags", tag));
+  if (isPrivate) {
+    body.set("private", "1");
+  }
+  return body.toString().length;
+}
+
 /** Calculate max encoded comment length (bytes) for a given URL */
 export function maxEncodedCommentLength(url: string): number {
   return HATENA_BODY_LIMIT - BODY_OVERHEAD - encodeURIComponent(url).length;
@@ -27,6 +44,16 @@ export function maxEncodedCommentLength(url: string): number {
 /** Check if bookmark body fits within Hatena's limit */
 export function isBodyWithinLimit(url: string, comment: string): boolean {
   return calculateBodySize(url, comment) <= HATENA_BODY_LIMIT;
+}
+
+/** Check if bookmark update request body fits within Hatena's limit */
+export function isBookmarkRequestWithinLimit(
+  url: string,
+  comment: string,
+  tags: string[] = [],
+  isPrivate = false,
+): boolean {
+  return calculateBookmarkRequestBodySize(url, comment, tags, isPrivate) <= HATENA_BODY_LIMIT;
 }
 
 /** Calculate remaining bytes available for comment */

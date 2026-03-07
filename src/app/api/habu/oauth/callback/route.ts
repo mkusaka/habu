@@ -117,14 +117,14 @@ export async function GET(request: NextRequest) {
         hatenaId,
         accessToken,
         accessTokenSecret,
-        scope: "read_public,read_private,write_public",
+        scope: "read_public,read_private,write_public,write_private",
       })
       .onConflictDoUpdate({
         target: hatenaTokens.hatenaId,
         set: {
           accessToken,
           accessTokenSecret,
-          scope: "read_public,read_private,write_public",
+          scope: "read_public,read_private,write_public,write_private",
           updatedAt: new Date(),
         },
       });

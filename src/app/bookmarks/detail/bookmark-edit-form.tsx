@@ -31,6 +31,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { deleteBookmark } from "@/lib/bookmark-client";
+import { extractCommentText, extractTagsFromComment } from "@/lib/bookmark-comment";
 import { isBodyWithinLimit } from "@/lib/hatena-body-limit";
 import { useRouter } from "next/navigation";
 import { WorkflowProgress } from "@/components/workflow-progress";
@@ -309,6 +310,23 @@ export function BookmarkEditForm({
     }
   };
 
+  const saveComment = async (nextComment: string, successMessage: string) => {
+    const response = await fetch("/api/habu/bookmark", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ url: bookmarkUrl, comment: nextComment }),
+    });
+
+    const data = (await response.json()) as { success: boolean; error?: string };
+    if (!response.ok || !data.success) {
+      throw new Error(data.error || "Failed to update bookmark");
+    }
+
+    setComment(nextComment);
+    toast.success(successMessage);
+  };
+
   const handleApplyGenerated = () => {
     if (generatedResult?.formattedComment) {
       setComment(generatedResult.formattedComment);
@@ -320,24 +338,10 @@ export function BookmarkEditForm({
     if (!generatedResult?.formattedComment) return;
 
     const newComment = generatedResult.formattedComment;
-    setComment(newComment);
 
     setIsUpdating(true);
     try {
-      const response = await fetch("/api/habu/bookmark", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ url: bookmarkUrl, comment: newComment }),
-      });
-
-      const data = (await response.json()) as { success: boolean; error?: string };
-
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || "Failed to update bookmark");
-      }
-
-      toast.success("Applied and saved!");
+      await saveComment(newComment, "Applied and saved!");
     } catch (error) {
       toast.error("Update failed", {
         description: error instanceof Error ? error.message : "Unknown error",
@@ -356,20 +360,7 @@ export function BookmarkEditForm({
     setIsUpdating(true);
 
     try {
-      const response = await fetch("/api/habu/bookmark", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ url: bookmarkUrl, comment }),
-      });
-
-      const data = (await response.json()) as { success: boolean; error?: string };
-
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || "Failed to update bookmark");
-      }
-
-      toast.success("Bookmark updated!");
+      await saveComment(comment, "Bookmark updated!");
     } catch (error) {
       toast.error("Update failed", {
         description: error instanceof Error ? error.message : "Unknown error",
@@ -414,24 +405,7 @@ export function BookmarkEditForm({
     }
   };
 
-  // Parse tags from comment
-  const extractTags = (commentStr: string): string[] => {
-    const tags: string[] = [];
-    const tagRegex = /^\[([^\]]+)\]/;
-    let remaining = commentStr;
-    let match;
-    while ((match = tagRegex.exec(remaining)) !== null) {
-      tags.push(match[1]);
-      remaining = remaining.slice(match[0].length);
-    }
-    return tags;
-  };
-
-  const extractCommentText = (commentStr: string): string => {
-    return commentStr.replace(/^(\[[^\]]+\])+/, "").trim();
-  };
-
-  const currentTags = extractTags(comment);
+  const currentTags = extractTagsFromComment(comment);
   const currentCommentText = extractCommentText(comment);
   const isCommentTooLong = comment && !isBodyWithinLimit(bookmarkUrl, comment);
 

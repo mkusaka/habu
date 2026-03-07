@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useCallback, type FormEvent, type ChangeEvent } from "react";
 import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport, type UIMessage } from "ai";
+import { DefaultChatTransport } from "ai";
 import {
   Sheet,
   SheetContent,

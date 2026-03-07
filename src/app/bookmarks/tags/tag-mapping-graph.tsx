@@ -46,11 +46,13 @@ export function TagMappingGraph({
   rows: MappingGraphRow[];
   hatenaId?: string;
 }) {
+  const viewportRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const sourceRefs = useRef<Record<string, HTMLElement | null>>({});
   const targetRefs = useRef<Record<string, HTMLElement | null>>({});
   const [edges, setEdges] = useState<EdgePosition[]>([]);
   const [laneWidths, setLaneWidths] = useState({ source: 0, target: 0 });
+  const [viewportWidth, setViewportWidth] = useState(0);
   const [isDesktop, setIsDesktop] = useState(false);
 
   const handleCopyTarget = async (label: string, action: TagMappingAction) => {
@@ -95,6 +97,25 @@ export function TagMappingGraph({
 
     return () => {
       mediaQuery.removeEventListener("change", updateDesktop);
+    };
+  }, []);
+
+  useEffect(() => {
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+
+    const updateViewportWidth = () => {
+      setViewportWidth(Math.floor(viewport.clientWidth));
+    };
+
+    updateViewportWidth();
+    const observer = new ResizeObserver(updateViewportWidth);
+    observer.observe(viewport);
+    window.addEventListener("resize", updateViewportWidth);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", updateViewportWidth);
     };
   }, []);
 
@@ -167,10 +188,15 @@ export function TagMappingGraph({
     laneWidths.source > 0 && laneWidths.target > 0
       ? laneWidths.source + laneWidths.target + columnGap + horizontalPadding
       : undefined;
-  const graphWidth = isDesktop ? 704 : mobileGraphWidth;
+  const desktopGraphWidth = 860;
+  const graphWidth = isDesktop
+    ? desktopGraphWidth
+    : mobileGraphWidth
+      ? Math.max(mobileGraphWidth, viewportWidth)
+      : viewportWidth || undefined;
 
   return (
-    <div className="overflow-x-auto rounded-lg border">
+    <div ref={viewportRef} className="overflow-x-auto rounded-lg border">
       <div
         ref={containerRef}
         className="relative bg-muted/20 p-3 sm:p-4"

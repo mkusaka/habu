@@ -43,6 +43,10 @@ interface HatenaSearchResponse {
   bookmarks?: HatenaSearchBookmarkItem[];
 }
 
+export function buildHatenaSearchUrl(query: string, offset: number, limit: number): string {
+  return `${HATENA_FULLTEXT_SEARCH_API_URL}?q=${encodeURIComponent(query)}&of=${offset}&limit=${limit}`;
+}
+
 function buildFormBody(params: Record<string, string | string[] | undefined>) {
   const body = new URLSearchParams();
 
@@ -134,7 +138,7 @@ async function searchBookmarksPage(
   offset: number,
   limit: number,
 ): Promise<{ total: number; bookmarks: TagCleanupBookmark[] }> {
-  const apiUrl = `${HATENA_FULLTEXT_SEARCH_API_URL}?word=${encodeURIComponent(query)}&of=${offset}&limit=${limit}`;
+  const apiUrl = buildHatenaSearchUrl(query, offset, limit);
   const authHeaders = createSignedRequest(
     apiUrl,
     "GET",

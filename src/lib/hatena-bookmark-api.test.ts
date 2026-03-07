@@ -32,4 +32,19 @@ describe("replaceBookmarkTag", () => {
       matchedSourceTags: ["before1", "before2", "before3", "before4"],
     });
   });
+
+  it("treats case-only variants as distinct source tags", () => {
+    expect(
+      applyTagMappings(
+        ["Agents", "agents"],
+        [
+          { sourceTag: "Agents", action: "update", targetTag: "AI Agents" },
+          { sourceTag: "agents", action: "delete" },
+        ],
+      ),
+    ).toEqual({
+      nextTags: ["AI Agents"],
+      matchedSourceTags: ["Agents", "agents"],
+    });
+  });
 });

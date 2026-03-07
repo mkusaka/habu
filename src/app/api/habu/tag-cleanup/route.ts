@@ -42,11 +42,10 @@ function normalizeMappings(mappings: TagMappingCandidate[]) {
     const sourceTag = mapping.sourceTag?.trim();
     if (!sourceTag) continue;
 
-    const sourceKey = sourceTag.toLowerCase();
-    if (seen.has(sourceKey)) {
+    if (seen.has(sourceTag)) {
       throw new Error(`Duplicate source tag: ${sourceTag}`);
     }
-    seen.add(sourceKey);
+    seen.add(sourceTag);
 
     if (mapping.action === "no_change") continue;
 
@@ -55,7 +54,7 @@ function normalizeMappings(mappings: TagMappingCandidate[]) {
       if (!targetTag) {
         throw new Error(`targetTag is required for ${sourceTag}`);
       }
-      if (targetTag.toLowerCase() === sourceKey) continue;
+      if (targetTag === sourceTag) continue;
       actionable.push({ ...mapping, sourceTag, targetTag });
       continue;
     }

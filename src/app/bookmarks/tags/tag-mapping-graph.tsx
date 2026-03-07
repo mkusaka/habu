@@ -137,7 +137,10 @@ export function TagMappingGraph({
 
   return (
     <div className="overflow-x-auto rounded-lg border">
-      <div ref={containerRef} className="relative min-w-[40rem] bg-muted/20 p-4 sm:min-w-[44rem]">
+      <div
+        ref={containerRef}
+        className="relative min-w-[31rem] bg-muted/20 p-3 sm:min-w-[38rem] sm:p-4 md:min-w-[44rem]"
+      >
         <svg className="pointer-events-none absolute inset-0 h-full w-full">
           {edges.map((edge) => (
             <path
@@ -157,9 +160,9 @@ export function TagMappingGraph({
           ))}
         </svg>
 
-        <div className="relative grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-10">
+        <div className="relative grid grid-cols-[minmax(8.5rem,1fr)_minmax(8.5rem,1fr)] gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] sm:gap-8 md:gap-10">
           <div className="space-y-2">
-            <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            <div className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground sm:text-xs">
               Before
             </div>
             {rows.map((row) => (
@@ -172,22 +175,26 @@ export function TagMappingGraph({
                   sourceRefs.current[row.sourceTag] = element;
                 }}
                 className={cn(
-                  "flex min-h-10 items-center justify-between gap-2 rounded-md border bg-background px-3 py-2 text-sm shadow-sm transition-colors",
+                  "flex min-h-9 items-center justify-between gap-2 rounded-md border bg-background px-2 py-1.5 text-xs shadow-sm transition-colors sm:min-h-10 sm:px-3 sm:py-2 sm:text-sm",
                   hatenaId ? "cursor-pointer hover:bg-accent/40" : "cursor-default",
                 )}
                 title={hatenaId ? `Open Hatena bookmarks tagged ${row.sourceTag}` : undefined}
               >
                 <span className="flex min-w-0 items-center gap-2 font-medium">
                   <span className="truncate">{row.sourceTag}</span>
-                  {hatenaId && <ExternalLink className="size-3 shrink-0 text-muted-foreground" />}
+                  {hatenaId && (
+                    <ExternalLink className="size-2.5 shrink-0 text-muted-foreground sm:size-3" />
+                  )}
                 </span>
-                <span className="shrink-0 text-xs text-muted-foreground">{row.sourceCount}</span>
+                <span className="shrink-0 text-[11px] text-muted-foreground sm:text-xs">
+                  {row.sourceCount}
+                </span>
               </a>
             ))}
           </div>
 
           <div className="space-y-2">
-            <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            <div className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground sm:text-xs">
               After
             </div>
             {targetNodes.map((target) => (
@@ -199,7 +206,7 @@ export function TagMappingGraph({
                   targetRefs.current[target.key] = element;
                 }}
                 className={cn(
-                  "flex min-h-10 w-full items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm shadow-sm transition-colors",
+                  "flex min-h-9 w-full items-center justify-between gap-2 rounded-md border px-2 py-1.5 text-xs shadow-sm transition-colors sm:min-h-10 sm:px-3 sm:py-2 sm:text-sm",
                   target.action === "delete"
                     ? "border-red-200 bg-red-50 text-red-700 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-200"
                     : "cursor-pointer bg-background hover:bg-accent/40",
@@ -209,11 +216,13 @@ export function TagMappingGraph({
                 <span className="flex min-w-0 items-center gap-2 font-medium">
                   <span className="truncate">{target.label}</span>
                   {target.action !== "delete" && (
-                    <Copy className="size-3 shrink-0 text-muted-foreground" />
+                    <Copy className="size-2.5 shrink-0 text-muted-foreground sm:size-3" />
                   )}
                 </span>
                 {target.action !== "delete" ? (
-                  <span className="shrink-0 text-xs text-muted-foreground">{target.count}</span>
+                  <span className="shrink-0 text-[11px] text-muted-foreground sm:text-xs">
+                    {target.count}
+                  </span>
                 ) : null}
               </button>
             ))}

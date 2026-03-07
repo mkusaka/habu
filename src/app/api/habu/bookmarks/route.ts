@@ -7,6 +7,7 @@ import { eq } from "drizzle-orm";
 import { createAuth } from "@/lib/auth";
 
 const HATENA_MY_API_URL = "https://bookmark.hatenaapis.com/rest/1/my";
+const PAGE_SIZE = 20;
 
 interface HatenaMyResponse {
   name: string;
@@ -49,13 +50,18 @@ export interface BookmarksResponse {
 
 /**
  * Get user's bookmarks list
- * GET /api/habu/bookmarks?limit=20&offset=0
+ * GET /api/habu/bookmarks?page=1&tag=article
  */
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const limit = Math.min(parseInt(searchParams.get("limit") || "20", 10), 100);
     const offset = parseInt(searchParams.get("offset") || "0", 10);
+    const pageParam = parseInt(searchParams.get("page") || "", 10);
+    const page =
+      Number.isFinite(pageParam) && pageParam > 0
+        ? pageParam
+        : Math.floor(Math.max(offset, 0) / PAGE_SIZE) + 1;
+    const tag = searchParams.get("tag")?.trim() || undefined;
 
     // Get DB connection for auth
     const { env } = getCloudflareContext();
@@ -133,8 +139,12 @@ export async function GET(request: NextRequest) {
     const myData = (await myResponse.json()) as HatenaMyResponse;
     const username = myData.name;
 
-    // Fetch bookmarks using unofficial API (supports proper pagination)
-    const bookmarksApiUrl = `https://b.hatena.ne.jp/api/users/${username}/bookmarks?limit=${limit}&offset=${offset}`;
+    // Hatena's public JSON endpoint exposes fixed-size page-based pagination.
+    const bookmarkParams = new URLSearchParams({ page: String(page) });
+    if (tag) {
+      bookmarkParams.set("tag", tag);
+    }
+    const bookmarksApiUrl = `https://b.hatena.ne.jp/api/users/${username}/bookmarks?${bookmarkParams.toString()}`;
 
     const bookmarksResponse = await fetch(bookmarksApiUrl, {
       headers: {

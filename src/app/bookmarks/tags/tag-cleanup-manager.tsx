@@ -4,8 +4,6 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Loader2, Sparkles, WandSparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { TagMappingGraph, type MappingGraphRow } from "./tag-mapping-graph";
 import type { TagCleanupCandidatesResponse, TagMappingCandidate } from "@/types/habu";
 
@@ -14,7 +12,6 @@ export function TagCleanupManager() {
   const [hatenaId, setHatenaId] = useState("");
   const [isGeneratingCandidates, setIsGeneratingCandidates] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [filterText, setFilterText] = useState("");
   const [candidates, setCandidates] = useState<TagMappingCandidate[]>([]);
 
   const handleGenerateCandidates = async () => {
@@ -48,29 +45,16 @@ export function TagCleanupManager() {
     }
   };
 
-  const filteredCandidates = useMemo(() => {
-    const normalizedFilter = filterText.trim().toLowerCase();
-    if (!normalizedFilter) return candidates;
-
-    return candidates.filter((candidate) => {
-      return (
-        candidate.sourceTag.toLowerCase().includes(normalizedFilter) ||
-        candidate.targetTag?.toLowerCase().includes(normalizedFilter) ||
-        candidate.reason?.toLowerCase().includes(normalizedFilter)
-      );
-    });
-  }, [candidates, filterText]);
-
   const graphRows = useMemo<MappingGraphRow[]>(
     () =>
-      filteredCandidates.map((candidate) => ({
+      candidates.map((candidate) => ({
         sourceTag: candidate.sourceTag,
         sourceCount: candidate.sourceCount ?? 0,
         action: candidate.action,
         targetTag: candidate.targetTag,
         targetCount: candidate.targetCount ?? 0,
       })),
-    [filteredCandidates],
+    [candidates],
   );
 
   return (
@@ -102,16 +86,6 @@ export function TagCleanupManager() {
           </Button>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="tag-filter">Filter candidates</Label>
-          <Input
-            id="tag-filter"
-            value={filterText}
-            onChange={(event) => setFilterText(event.target.value)}
-            placeholder="Search before/after tags..."
-          />
-        </div>
-
         {errorMessage && <p className="mt-3 text-sm text-red-500">{errorMessage}</p>}
 
         <div className="mt-4 rounded-lg border bg-muted/20 p-3">
@@ -121,9 +95,6 @@ export function TagCleanupManager() {
             </span>
             <span className="min-w-0">
               Suggested changes: <strong>{candidates.length}</strong>
-            </span>
-            <span className="min-w-0">
-              Visible candidates: <strong>{filteredCandidates.length}</strong>
             </span>
           </div>
         </div>

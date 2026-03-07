@@ -19,7 +19,9 @@ const CandidateSchema = z.object({
       z.object({
         sourceTag: z.string().min(1).max(40),
         action: z.enum(["update", "delete"]),
-        targetTag: z.string().min(1).max(40).optional(),
+        // OpenAI structured outputs require every property to be listed in `required`.
+        // Use `null` when there is no replacement target.
+        targetTag: z.string().min(1).max(40).nullable(),
         reason: z.string().min(1).max(160),
       }),
     )
@@ -46,7 +48,7 @@ function validateSameOrigin(request: NextRequest) {
   return null;
 }
 
-function normalizeAction(value: TagMappingAction, sourceTag: string, targetTag?: string) {
+function normalizeAction(value: TagMappingAction, targetTag?: string | null) {
   if (value === "update" && targetTag?.trim()) return value;
   return "delete";
 }
@@ -115,7 +117,7 @@ Suggest cleanup candidates for this tag inventory. Return only tags that should 
       usedSources.add(sourceKey);
 
       const targetTag = item.targetTag?.trim();
-      const action = normalizeAction(item.action, sourceTag, targetTag);
+      const action = normalizeAction(item.action, targetTag);
       const targetMeta = targetTag ? inventoryMap.get(targetTag.toLowerCase()) : undefined;
 
       candidates.push({

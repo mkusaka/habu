@@ -15,6 +15,7 @@ import type {
 
 export function TagCleanupManager() {
   const [tagCount, setTagCount] = useState(0);
+  const [hatenaId, setHatenaId] = useState("");
   const [isLoadingTags, setIsLoadingTags] = useState(true);
   const [isGeneratingCandidates, setIsGeneratingCandidates] = useState(false);
   const [inventoryError, setInventoryError] = useState<string | null>(null);
@@ -37,6 +38,7 @@ export function TagCleanupManager() {
       }
 
       setTagCount(data.tags?.length ?? 0);
+      setHatenaId(data.hatenaId ?? "");
       setMissingWritePrivate(data.missingWritePrivate ?? false);
     } catch (error) {
       setInventoryError(error instanceof Error ? error.message : "Failed to load tags");
@@ -182,7 +184,7 @@ export function TagCleanupManager() {
       </div>
 
       {graphRows.length > 0 ? (
-        <TagMappingGraph rows={graphRows} />
+        <TagMappingGraph rows={graphRows} hatenaId={hatenaId} />
       ) : (
         <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
           No candidate edges yet. Generate candidates to visualize the mapping graph.

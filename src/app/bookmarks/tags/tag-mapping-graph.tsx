@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Copy, ExternalLink } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { TagMappingAction } from "@/types/habu";
 
@@ -33,11 +35,32 @@ function getTargetMeta(row: MappingGraphRow) {
   };
 }
 
-export function TagMappingGraph({ rows }: { rows: MappingGraphRow[] }) {
+function buildHatenaTagPageUrl(hatenaId: string, tag: string) {
+  return `https://b.hatena.ne.jp/${encodeURIComponent(hatenaId)}/${encodeURIComponent(tag)}/`;
+}
+
+export function TagMappingGraph({
+  rows,
+  hatenaId,
+}: {
+  rows: MappingGraphRow[];
+  hatenaId?: string;
+}) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const sourceRefs = useRef<Record<string, HTMLDivElement | null>>({});
-  const targetRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const sourceRefs = useRef<Record<string, HTMLElement | null>>({});
+  const targetRefs = useRef<Record<string, HTMLElement | null>>({});
   const [edges, setEdges] = useState<EdgePosition[]>([]);
+
+  const handleCopyTarget = async (label: string, action: TagMappingAction) => {
+    if (action === "delete") return;
+
+    try {
+      await navigator.clipboard.writeText(label);
+      toast.success("Tag copied", { description: label });
+    } catch {
+      toast.error("Failed to copy");
+    }
+  };
 
   const targetNodes = useMemo(() => {
     const deduped = new Map<
@@ -139,16 +162,26 @@ export function TagMappingGraph({ rows }: { rows: MappingGraphRow[] }) {
             Before
           </div>
           {rows.map((row) => (
-            <div
+            <a
               key={row.sourceTag}
+              href={hatenaId ? buildHatenaTagPageUrl(hatenaId, row.sourceTag) : undefined}
+              target={hatenaId ? "_blank" : undefined}
+              rel={hatenaId ? "noopener noreferrer" : undefined}
               ref={(element) => {
                 sourceRefs.current[row.sourceTag] = element;
               }}
-              className="flex min-h-10 items-center justify-between rounded-md border bg-background px-3 py-2 text-sm shadow-sm"
+              className={cn(
+                "flex min-h-10 items-center justify-between rounded-md border bg-background px-3 py-2 text-sm shadow-sm transition-colors",
+                hatenaId ? "cursor-pointer hover:bg-accent/40" : "cursor-default",
+              )}
+              title={hatenaId ? `Open Hatena bookmarks tagged ${row.sourceTag}` : undefined}
             >
-              <span className="font-medium">{row.sourceTag}</span>
+              <span className="flex items-center gap-2 font-medium">
+                {row.sourceTag}
+                {hatenaId && <ExternalLink className="size-3 text-muted-foreground" />}
+              </span>
               <span className="text-xs text-muted-foreground">{row.sourceCount}</span>
-            </div>
+            </a>
           ))}
         </div>
 
@@ -157,23 +190,29 @@ export function TagMappingGraph({ rows }: { rows: MappingGraphRow[] }) {
             After
           </div>
           {targetNodes.map((target) => (
-            <div
+            <button
+              type="button"
               key={target.key}
+              onClick={() => void handleCopyTarget(target.label, target.action)}
               ref={(element) => {
                 targetRefs.current[target.key] = element;
               }}
               className={cn(
-                "flex min-h-10 items-center justify-between rounded-md border px-3 py-2 text-sm shadow-sm",
+                "flex min-h-10 w-full items-center justify-between rounded-md border px-3 py-2 text-sm shadow-sm transition-colors",
                 target.action === "delete"
                   ? "border-red-200 bg-red-50 text-red-700 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-200"
-                  : "bg-background",
+                  : "cursor-pointer bg-background hover:bg-accent/40",
               )}
+              title={target.action === "delete" ? undefined : `Copy ${target.label}`}
             >
-              <span className="font-medium">{target.label}</span>
-              {target.action !== "delete" && (
+              <span className="flex items-center gap-2 font-medium">
+                {target.label}
+                {target.action !== "delete" && <Copy className="size-3 text-muted-foreground" />}
+              </span>
+              {target.action !== "delete" ? (
                 <span className="text-xs text-muted-foreground">{target.count}</span>
-              )}
-            </div>
+              ) : null}
+            </button>
           ))}
         </div>
       </div>

@@ -11,7 +11,7 @@ export default function BookmarkTagsPage() {
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Tag Cleanup</h1>
             <p className="text-sm text-muted-foreground">
-              Rename a tag globally by previewing and updating matching bookmarks.
+              Generate candidate mappings and review them as a graph.
             </p>
           </div>
         </div>

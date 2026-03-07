@@ -93,6 +93,7 @@ export interface HatenaTagsListResponse {
   success: boolean;
   error?: string;
   tags?: HatenaTag[];
+  hatenaId?: string;
   missingWritePrivate?: boolean;
 }
 

@@ -18,6 +18,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       tags,
+      hatenaId: authResult.context.hatenaId,
       missingWritePrivate: !authResult.context.scopes.includes("write_private"),
     } as HatenaTagsListResponse);
   } catch (error) {

@@ -11,13 +11,14 @@ import { cleanUrl } from "@/lib/url-cleaner";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { BookmarksResponse } from "@/app/api/habu/bookmarks/route";
+import { appendTagFilters } from "@/lib/bookmark-tag-filter";
 
 interface BulkRegenerateButtonProps {
   page: number;
-  tag?: string;
+  tags: string[];
 }
 
-export function BulkRegenerateButton({ page, tag }: BulkRegenerateButtonProps) {
+export function BulkRegenerateButton({ page, tags }: BulkRegenerateButtonProps) {
   const router = useRouter();
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [bookmarkUrls, setBookmarkUrls] = useState<string[]>([]);
@@ -27,9 +28,7 @@ export function BulkRegenerateButton({ page, tag }: BulkRegenerateButtonProps) {
     const fetchUrls = async () => {
       try {
         const params = new URLSearchParams({ page: String(page) });
-        if (tag) {
-          params.set("tag", tag);
-        }
+        appendTagFilters(params, tags);
         const response = await fetch(`/api/habu/bookmarks?${params.toString()}`);
         if (response.ok) {
           const data = (await response.json()) as BookmarksResponse;
@@ -43,7 +42,7 @@ export function BulkRegenerateButton({ page, tag }: BulkRegenerateButtonProps) {
       }
     };
     fetchUrls();
-  }, [page, tag]);
+  }, [page, tags]);
 
   // Watch IndexedDB for queue status of all URLs on this page
   const queueItems = useLiveQuery(
@@ -64,9 +63,7 @@ export function BulkRegenerateButton({ page, tag }: BulkRegenerateButtonProps) {
     try {
       // Fetch bookmarks for this page
       const params = new URLSearchParams({ page: String(page) });
-      if (tag) {
-        params.set("tag", tag);
-      }
+      appendTagFilters(params, tags);
       const response = await fetch(`/api/habu/bookmarks?${params.toString()}`);
 
       if (!response.ok) {

@@ -5,7 +5,12 @@ import {
   sanitizeBookmarkTags,
 } from "./bookmark-comment";
 import { isBookmarkRequestWithinLimit } from "./hatena-body-limit";
-import type { HatenaTag, HatenaTagsResponse, TagCleanupBookmark } from "../types/habu";
+import type {
+  HatenaTag,
+  HatenaTagsResponse,
+  TagCleanupBookmark,
+  TagMappingCandidate,
+} from "../types/habu";
 
 const HATENA_TAGS_API_URL = "https://bookmark.hatenaapis.com/rest/1/my/tags";
 const HATENA_BOOKMARK_API_URL = "https://bookmark.hatenaapis.com/rest/1/my/bookmark";
@@ -60,6 +65,40 @@ export function replaceBookmarkTag(tags: string[], sourceTag: string, targetTag:
     .filter((tag) => tag.trim().length > 0);
 
   return sanitizeBookmarkTags(next);
+}
+
+export function applyTagMappings(tags: string[], mappings: TagMappingCandidate[]) {
+  const mappingMap = new Map(
+    mappings.map((mapping) => [mapping.sourceTag.toLowerCase(), mapping] as const),
+  );
+  const matchedSourceTags: string[] = [];
+  const nextTags: string[] = [];
+
+  for (const tag of tags) {
+    const mapping = mappingMap.get(tag.toLowerCase());
+    if (!mapping) {
+      nextTags.push(tag);
+      continue;
+    }
+
+    matchedSourceTags.push(mapping.sourceTag);
+
+    if (mapping.action === "delete") {
+      continue;
+    }
+
+    if (mapping.action === "update" && mapping.targetTag?.trim()) {
+      nextTags.push(mapping.targetTag.trim());
+      continue;
+    }
+
+    nextTags.push(tag);
+  }
+
+  return {
+    nextTags: sanitizeBookmarkTags(nextTags),
+    matchedSourceTags: [...new Set(matchedSourceTags)],
+  };
 }
 
 export async function fetchHatenaTags(credentials: HatenaApiCredentials): Promise<HatenaTag[]> {

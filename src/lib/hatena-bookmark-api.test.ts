@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { replaceBookmarkTag } from "./hatena-bookmark-api";
+import { applyTagMappings, replaceBookmarkTag } from "./hatena-bookmark-api";
 
 describe("replaceBookmarkTag", () => {
   it("replaces the source tag and preserves order", () => {
@@ -14,5 +14,22 @@ describe("replaceBookmarkTag", () => {
       "frontend",
       "TypeScript",
     ]);
+  });
+
+  it("applies mixed update, delete, and no-change mappings in one pass", () => {
+    expect(
+      applyTagMappings(
+        ["before1", "before2", "before3", "before4"],
+        [
+          { sourceTag: "before1", action: "no_change" },
+          { sourceTag: "before2", action: "update", targetTag: "after1" },
+          { sourceTag: "before3", action: "update", targetTag: "before1" },
+          { sourceTag: "before4", action: "delete" },
+        ],
+      ),
+    ).toEqual({
+      nextTags: ["before1", "after1"],
+      matchedSourceTags: ["before1", "before2", "before3", "before4"],
+    });
   });
 });

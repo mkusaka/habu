@@ -104,12 +104,31 @@ export interface TagCleanupBookmark {
   nextTags: string[];
   isPrivate: boolean;
   bookmarkedAt?: string;
+  matchedSourceTags?: string[];
+}
+
+export type TagMappingAction = "update" | "delete" | "no_change";
+
+export interface TagMappingCandidate {
+  sourceTag: string;
+  action: TagMappingAction;
+  targetTag?: string;
+  reason?: string;
+  sourceCount?: number;
+  targetCount?: number;
+  suggested?: boolean;
 }
 
 export interface TagCleanupRequest {
   mode: "preview" | "apply";
-  sourceTag: string;
-  targetTag: string;
+  mappings: TagMappingCandidate[];
+}
+
+export interface TagCleanupCandidatesResponse {
+  success: boolean;
+  error?: string;
+  candidates?: TagMappingCandidate[];
+  missingWritePrivate?: boolean;
 }
 
 export interface TagCleanupFailure {
@@ -121,8 +140,7 @@ export interface TagCleanupFailure {
 export interface TagCleanupResponse {
   success: boolean;
   error?: string;
-  sourceTag?: string;
-  targetTag?: string;
+  mappings?: TagMappingCandidate[];
   totalMatched?: number;
   preview?: TagCleanupBookmark[];
   updatedCount?: number;

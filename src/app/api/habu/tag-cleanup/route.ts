@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getHatenaRouteContext } from "@/lib/hatena-route-auth";
 import {
+  applyTagMappings,
   findBookmarksByTag,
-  replaceBookmarkTag,
   updateBookmarkTags,
 } from "@/lib/hatena-bookmark-api";
-import type { TagCleanupFailure, TagCleanupRequest, TagCleanupResponse } from "@/types/habu";
+import type {
+  TagCleanupFailure,
+  TagCleanupRequest,
+  TagCleanupResponse,
+  TagMappingCandidate,
+} from "@/types/habu";
 
 const MAX_PREVIEW_ITEMS = 50;
 
@@ -29,6 +34,38 @@ function validateSameOrigin(request: NextRequest) {
   return null;
 }
 
+function normalizeMappings(mappings: TagMappingCandidate[]) {
+  const actionable: TagMappingCandidate[] = [];
+  const seen = new Set<string>();
+
+  for (const mapping of mappings) {
+    const sourceTag = mapping.sourceTag?.trim();
+    if (!sourceTag) continue;
+
+    const sourceKey = sourceTag.toLowerCase();
+    if (seen.has(sourceKey)) {
+      throw new Error(`Duplicate source tag: ${sourceTag}`);
+    }
+    seen.add(sourceKey);
+
+    if (mapping.action === "no_change") continue;
+
+    if (mapping.action === "update") {
+      const targetTag = mapping.targetTag?.trim();
+      if (!targetTag) {
+        throw new Error(`targetTag is required for ${sourceTag}`);
+      }
+      if (targetTag.toLowerCase() === sourceKey) continue;
+      actionable.push({ ...mapping, sourceTag, targetTag });
+      continue;
+    }
+
+    actionable.push({ ...mapping, sourceTag, targetTag: undefined });
+  }
+
+  return actionable;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const csrfError = validateSameOrigin(request);
@@ -46,38 +83,52 @@ export async function POST(request: NextRequest) {
     }
 
     const body = (await request.json()) as TagCleanupRequest;
-    const sourceTag = body.sourceTag?.trim();
-    const targetTag = body.targetTag?.trim();
-
-    if (!sourceTag || !targetTag) {
-      return NextResponse.json(
-        { success: false, error: "sourceTag and targetTag are required" } as TagCleanupResponse,
-        { status: 400 },
-      );
-    }
-
-    if (sourceTag.toLowerCase() === targetTag.toLowerCase()) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "sourceTag and targetTag must be different",
-        } as TagCleanupResponse,
-        { status: 400 },
-      );
-    }
+    const mappings = normalizeMappings(body.mappings ?? []);
 
     const missingWritePrivate = !authResult.context.scopes.includes("write_private");
-    const matchedBookmarks = await findBookmarksByTag(authResult.context, sourceTag);
-    const preview = matchedBookmarks.map((bookmark) => ({
-      ...bookmark,
-      nextTags: replaceBookmarkTag(bookmark.currentTags, sourceTag, targetTag),
-    }));
+    if (mappings.length === 0) {
+      return NextResponse.json({
+        success: true,
+        mappings: [],
+        totalMatched: 0,
+        preview: [],
+        missingWritePrivate,
+      } as TagCleanupResponse);
+    }
+
+    const bookmarksByUrl = new Map<string, NonNullable<TagCleanupResponse["preview"]>[number]>();
+
+    for (const mapping of mappings) {
+      const matchedBookmarks = await findBookmarksByTag(authResult.context, mapping.sourceTag);
+      for (const bookmark of matchedBookmarks) {
+        const existing = bookmarksByUrl.get(bookmark.url);
+        if (!existing) {
+          bookmarksByUrl.set(bookmark.url, {
+            ...bookmark,
+            nextTags: bookmark.currentTags,
+            matchedSourceTags: [],
+          });
+        }
+      }
+    }
+
+    const preview = [...bookmarksByUrl.values()]
+      .map((bookmark) => {
+        const applied = applyTagMappings(bookmark.currentTags, mappings);
+        return {
+          ...bookmark,
+          nextTags: applied.nextTags,
+          matchedSourceTags: applied.matchedSourceTags,
+        };
+      })
+      .filter(
+        (bookmark) => bookmark.currentTags.join("\u0000") !== bookmark.nextTags.join("\u0000"),
+      );
 
     if (body.mode === "preview") {
       return NextResponse.json({
         success: true,
-        sourceTag,
-        targetTag,
+        mappings,
         totalMatched: preview.length,
         preview: preview.slice(0, MAX_PREVIEW_ITEMS),
         missingWritePrivate,
@@ -107,8 +158,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      sourceTag,
-      targetTag,
+      mappings,
       totalMatched: preview.length,
       updatedCount,
       failed: failures,

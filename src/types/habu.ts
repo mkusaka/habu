@@ -89,14 +89,6 @@ export interface SuggestResponse {
   exceedsLimit?: boolean;
 }
 
-export interface HatenaTagsListResponse {
-  success: boolean;
-  error?: string;
-  tags?: HatenaTag[];
-  hatenaId?: string;
-  missingWritePrivate?: boolean;
-}
-
 export interface TagCleanupBookmark {
   url: string;
   title: string;
@@ -129,7 +121,8 @@ export interface TagCleanupCandidatesResponse {
   success: boolean;
   error?: string;
   candidates?: TagMappingCandidate[];
-  missingWritePrivate?: boolean;
+  tagCount?: number;
+  hatenaId?: string;
 }
 
 export interface TagCleanupFailure {

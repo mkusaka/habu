@@ -8,12 +8,7 @@ export default function BookmarkTagsPage() {
       <header className="mb-8 flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <Tags className="w-6 h-6" />
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">Tag Cleanup</h1>
-            <p className="text-sm text-muted-foreground">
-              Generate candidate mappings and review them as a graph.
-            </p>
-          </div>
+          <h1 className="text-2xl font-bold tracking-tight">Tag Cleanup</h1>
         </div>
         <LinkButton href="/bookmarks" variant="outline" size="sm">
           <ArrowLeft className="w-4 h-4 mr-2" />

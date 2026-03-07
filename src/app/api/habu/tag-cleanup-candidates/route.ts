@@ -134,7 +134,8 @@ Suggest cleanup candidates for this tag inventory. Return only tags that should 
     return NextResponse.json({
       success: true,
       candidates,
-      missingWritePrivate: !authResult.context.scopes.includes("write_private"),
+      tagCount: tagInventory.length,
+      hatenaId: authResult.context.hatenaId,
     } as TagCleanupCandidatesResponse);
   } catch (error) {
     console.error("Tag cleanup candidates API error:", error);

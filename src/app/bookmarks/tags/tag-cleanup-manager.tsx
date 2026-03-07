@@ -19,6 +19,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { TagMappingGraph, type MappingGraphRow } from "./tag-mapping-graph";
+import { TagTargetCombobox } from "./tag-target-combobox";
 import type {
   HatenaTag,
   HatenaTagsListResponse,
@@ -539,13 +540,13 @@ export function TagCleanupManager() {
                     <div className="font-medium">{row.sourceTag}</div>
                   ) : (
                     <div className="space-y-2">
-                      <Input
-                        list="hatena-tag-options"
+                      <TagTargetCombobox
                         value={row.targetTag}
-                        onChange={(event) =>
+                        options={tagInventory}
+                        onChange={(value) =>
                           updateRow(row.sourceTag, {
                             action: "update",
-                            targetTag: event.target.value,
+                            targetTag: value,
                           })
                         }
                         placeholder="Target tag"
@@ -568,12 +569,6 @@ export function TagCleanupManager() {
           )}
         </div>
       </div>
-
-      <datalist id="hatena-tag-options">
-        {tagInventory.map((tag) => (
-          <option key={tag.tag} value={tag.tag} />
-        ))}
-      </datalist>
 
       {previewResult && (
         <div className="rounded-lg border p-4">

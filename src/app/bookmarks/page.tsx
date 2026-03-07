@@ -87,7 +87,30 @@ interface FetchBookmarksResult {
   username?: string;
 }
 
-async function fetchBookmarks(page: number): Promise<FetchBookmarksResult> {
+function normalizeTag(tag?: string) {
+  const trimmed = tag?.trim();
+  return trimmed ? trimmed : undefined;
+}
+
+function buildBookmarksHref(page: number, tag?: string) {
+  const params = new URLSearchParams({ page: String(page) });
+  const normalizedTag = normalizeTag(tag);
+  if (normalizedTag) {
+    params.set("tag", normalizedTag);
+  }
+  return `/bookmarks?${params.toString()}`;
+}
+
+function buildBookmarkDetailHref(url: string, page: number, tag?: string) {
+  const params = new URLSearchParams({ url, page: String(page) });
+  const normalizedTag = normalizeTag(tag);
+  if (normalizedTag) {
+    params.set("tag", normalizedTag);
+  }
+  return `/bookmarks/detail?${params.toString()}`;
+}
+
+async function fetchBookmarks(page: number, tag?: string): Promise<FetchBookmarksResult> {
   const cookieStore = await cookies();
   const { env } = getCloudflareContext();
   const auth = createAuth(env.DB);
@@ -149,7 +172,12 @@ async function fetchBookmarks(page: number): Promise<FetchBookmarksResult> {
   const username = myData.name;
 
   // Fetch bookmarks using unofficial API (uses page parameter)
-  const bookmarksApiUrl = `https://b.hatena.ne.jp/api/users/${username}/bookmarks?page=${page}`;
+  const bookmarkParams = new URLSearchParams({ page: String(page) });
+  const normalizedTag = normalizeTag(tag);
+  if (normalizedTag) {
+    bookmarkParams.set("tag", normalizedTag);
+  }
+  const bookmarksApiUrl = `https://b.hatena.ne.jp/api/users/${username}/bookmarks?${bookmarkParams.toString()}`;
 
   const bookmarksResponse = await fetch(bookmarksApiUrl, {
     headers: {
@@ -196,7 +224,7 @@ function extractComment(comment: string) {
   return comment.replace(/^(\[[^\]]+\])+/, "").trim();
 }
 
-function BookmarkListLoading({ page }: { page: number }) {
+function BookmarkListLoading({ page, tag }: { page: number; tag?: string }) {
   return (
     <div className="flex flex-col flex-1 min-h-0">
       <div className="h-full overflow-auto space-y-2">
@@ -225,13 +253,14 @@ function BookmarkListLoading({ page }: { page: number }) {
         ))}
       </div>
       {/* Pagination (footer) - show during loading to keep layout stable */}
-      <Pagination page={page} hasMore={true} />
+      <Pagination page={page} hasMore={true} tag={tag} />
     </div>
   );
 }
 
-async function BookmarkList({ page }: { page: number }) {
-  const result = await fetchBookmarks(page);
+async function BookmarkList({ page, tag }: { page: number; tag?: string }) {
+  const result = await fetchBookmarks(page, tag);
+  const normalizedTag = normalizeTag(tag);
 
   if (!result.success) {
     return (
@@ -248,7 +277,9 @@ async function BookmarkList({ page }: { page: number }) {
   if (bookmarks.length === 0) {
     return (
       <div className="text-center py-8 text-muted-foreground">
-        <p>No bookmarks found</p>
+        <p>
+          {normalizedTag ? `No bookmarks found for tag "${normalizedTag}"` : "No bookmarks found"}
+        </p>
       </div>
     );
   }
@@ -262,7 +293,7 @@ async function BookmarkList({ page }: { page: number }) {
             className="relative w-full text-left p-3 rounded-md border hover:bg-muted/50 transition-colors"
           >
             <Link
-              href={`/bookmarks/detail?url=${encodeURIComponent(bookmark.url)}`}
+              href={buildBookmarkDetailHref(bookmark.url, page, normalizedTag)}
               className="absolute inset-0"
               aria-label={`Edit bookmark: ${bookmark.title || bookmark.url}`}
             />
@@ -296,14 +327,19 @@ async function BookmarkList({ page }: { page: number }) {
             {/* Body: Tags, Comment, Date */}
             <div className="mt-1">
               {bookmark.tags.length > 0 && (
-                <div className="flex flex-wrap gap-1 mt-1">
+                <div className="relative z-10 flex flex-wrap gap-1 mt-1">
                   {bookmark.tags.map((tag, i) => (
-                    <span
+                    <Link
                       key={i}
-                      className="px-1.5 py-0.5 bg-primary/10 text-primary rounded text-xs"
+                      href={buildBookmarksHref(1, tag)}
+                      className={`px-1.5 py-0.5 rounded text-xs transition-colors ${
+                        normalizedTag === tag
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-primary/10 text-primary hover:bg-primary/20"
+                      }`}
                     >
                       {tag}
-                    </span>
+                    </Link>
                   ))}
                 </div>
               )}
@@ -321,16 +357,16 @@ async function BookmarkList({ page }: { page: number }) {
       </div>
 
       {/* Pagination (footer) */}
-      <Pagination page={page} hasMore={hasMore} />
+      <Pagination page={page} hasMore={hasMore} tag={normalizedTag} />
     </div>
   );
 }
 
-function Pagination({ page, hasMore }: { page: number; hasMore: boolean }) {
+function Pagination({ page, hasMore, tag }: { page: number; hasMore: boolean; tag?: string }) {
   return (
     <div className="flex items-center justify-between shrink-0 pt-2">
       {page > 1 ? (
-        <LinkButton href={`/bookmarks?page=${page - 1}`} variant="outline" size="sm">
+        <LinkButton href={buildBookmarksHref(page - 1, tag)} variant="outline" size="sm">
           <ChevronLeft className="w-4 h-4 mr-1" />
           Prev
         </LinkButton>
@@ -342,7 +378,7 @@ function Pagination({ page, hasMore }: { page: number; hasMore: boolean }) {
       )}
       <span className="text-sm text-muted-foreground">Page {page}</span>
       {hasMore ? (
-        <LinkButton href={`/bookmarks?page=${page + 1}`} variant="outline" size="sm">
+        <LinkButton href={buildBookmarksHref(page + 1, tag)} variant="outline" size="sm">
           Next
           <ChevronRight className="w-4 h-4 ml-1" />
         </LinkButton>
@@ -357,12 +393,13 @@ function Pagination({ page, hasMore }: { page: number; hasMore: boolean }) {
 }
 
 interface BookmarksPageProps {
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{ page?: string; tag?: string }>;
 }
 
 export default async function BookmarksPage({ searchParams }: BookmarksPageProps) {
   const params = await searchParams;
   const page = Math.max(1, parseInt(params.page || "1", 10));
+  const tag = normalizeTag(params.tag);
   const hasHatena = await getHatenaStatus();
 
   return (
@@ -374,7 +411,7 @@ export default async function BookmarksPage({ searchParams }: BookmarksPageProps
         </div>
         <div className="flex items-center gap-1">
           <TooltipProvider>
-            <BulkRegenerateButton page={page} />
+            <BulkRegenerateButton page={page} tag={tag} />
           </TooltipProvider>
           <RefreshButton />
           <LinkButton href="/" variant="ghost" size="icon">
@@ -383,6 +420,19 @@ export default async function BookmarksPage({ searchParams }: BookmarksPageProps
         </div>
       </header>
       <div className="flex flex-1 min-h-0 flex-col gap-6">
+        {tag && (
+          <div className="flex items-center justify-between gap-3 rounded-md border bg-muted/40 px-3 py-2 text-sm">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="text-muted-foreground shrink-0">Filtering by tag</span>
+              <span className="truncate rounded bg-primary px-2 py-0.5 text-xs text-primary-foreground">
+                {tag}
+              </span>
+            </div>
+            <LinkButton href="/bookmarks" variant="outline" size="sm">
+              Clear
+            </LinkButton>
+          </div>
+        )}
         {/* Connect to Hatena (only when not connected) */}
         {!hasHatena && (
           <LinkButton href="/settings" variant="outline" size="sm" className="w-full shrink-0">
@@ -391,8 +441,11 @@ export default async function BookmarksPage({ searchParams }: BookmarksPageProps
           </LinkButton>
         )}
         <div className="flex-1 min-h-0 flex flex-col">
-          <Suspense key={page} fallback={<BookmarkListLoading page={page} />}>
-            <BookmarkList page={page} />
+          <Suspense
+            key={`${page}:${tag ?? ""}`}
+            fallback={<BookmarkListLoading page={page} tag={tag} />}
+          >
+            <BookmarkList page={page} tag={tag} />
           </Suspense>
         </div>
       </div>

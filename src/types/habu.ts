@@ -93,27 +93,41 @@ export interface HatenaTagsListResponse {
   success: boolean;
   error?: string;
   tags?: HatenaTag[];
+  missingWritePrivate?: boolean;
 }
 
-export interface TidyTagsRequest {
+export interface TagCleanupBookmark {
   url: string;
-  comment?: string;
-  metadata?: PageMetadata;
-}
-
-export interface TidyTagsSuggestion {
-  tags: string[];
+  title: string;
   commentText: string;
-  formattedComment: string;
-  addTags: string[];
-  removeTags: string[];
-  reasoning: string[];
+  currentTags: string[];
+  nextTags: string[];
+  isPrivate: boolean;
+  bookmarkedAt?: string;
 }
 
-export interface TidyTagsResponse {
+export interface TagCleanupRequest {
+  mode: "preview" | "apply";
+  sourceTag: string;
+  targetTag: string;
+}
+
+export interface TagCleanupFailure {
+  url: string;
+  title: string;
+  error: string;
+}
+
+export interface TagCleanupResponse {
   success: boolean;
   error?: string;
-  suggestion?: TidyTagsSuggestion;
+  sourceTag?: string;
+  targetTag?: string;
+  totalMatched?: number;
+  preview?: TagCleanupBookmark[];
+  updatedCount?: number;
+  failed?: TagCleanupFailure[];
+  missingWritePrivate?: boolean;
 }
 
 // Hatena API types

@@ -224,4 +224,19 @@ describe("createSignedRequest", () => {
     expect(headers).toHaveProperty("Authorization");
     expect(headers.Authorization).toMatch(/^OAuth /);
   });
+
+  it("accepts multi-value params such as repeated tags", () => {
+    const headers = createSignedRequest(
+      "https://bookmark.hatenaapis.com/rest/1/my/bookmark",
+      "POST",
+      "access-token",
+      "access-secret",
+      CONSUMER_KEY,
+      CONSUMER_SECRET,
+      { url: "https://example.com", comment: "", tags: ["React", "frontend"] },
+    );
+
+    expect(headers).toHaveProperty("Authorization");
+    expect(headers.Authorization).toMatch(/^OAuth /);
+  });
 });

@@ -33,8 +33,8 @@ export async function getRequestToken(
   // Scopes:
   // - read_public: Read public bookmarks
   // - read_private: Read private bookmarks and tags list
-  // - write_public: Create/edit public bookmarks
-  const scope = "read_public,read_private,write_public";
+  // - write_public/write_private: Create/edit public or private bookmarks
+  const scope = "read_public,read_private,write_public,write_private";
   const requestData = {
     url: HATENA_REQUEST_TOKEN_URL,
     method: "POST",
@@ -212,7 +212,7 @@ export function createSignedRequest(
   accessTokenSecret: string,
   consumerKey: string,
   consumerSecret: string,
-  data?: Record<string, string>,
+  data?: Record<string, string | string[]>,
 ): Record<string, string> {
   const oauth = createOAuthClient(consumerKey, consumerSecret);
 

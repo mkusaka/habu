@@ -15,6 +15,7 @@ import {
   ChevronRight,
   ExternalLink,
   Settings,
+  Tags,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LinkButton } from "@/components/ui/link-button";
@@ -373,6 +374,10 @@ export default async function BookmarksPage({ searchParams }: BookmarksPageProps
           <h1 className="text-2xl font-bold tracking-tight">Bookmarks</h1>
         </div>
         <div className="flex items-center gap-1">
+          <LinkButton href="/bookmarks/tags" variant="outline" size="sm">
+            <Tags className="w-4 h-4 mr-2" />
+            Tag Cleanup
+          </LinkButton>
           <TooltipProvider>
             <BulkRegenerateButton page={page} />
           </TooltipProvider>

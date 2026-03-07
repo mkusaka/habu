@@ -173,7 +173,7 @@ export function ChatPanel({ isOpen, onClose, context }: ChatPanelProps) {
     <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <SheetContent side="right" className="w-full sm:max-w-lg flex flex-col p-0">
         <SheetHeader className="px-4 pt-4 pb-0">
-          <SheetTitle>Chat about this page and tags</SheetTitle>
+          <SheetTitle>Chat about this page</SheetTitle>
           <SheetDescription className="text-xs truncate">
             {context.metadata?.title || context.url}
           </SheetDescription>

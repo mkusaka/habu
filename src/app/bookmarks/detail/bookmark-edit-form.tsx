@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -16,16 +16,9 @@ import {
   Copy,
   MessageCircle,
   Trash2,
-  Tags,
 } from "lucide-react";
 import { ChatPanel } from "@/components/chat/chat-panel";
 import type { ChatContext, PageMetadata } from "@/lib/chat-context";
-import type {
-  HatenaTag,
-  HatenaTagsListResponse,
-  TidyTagsResponse,
-  TidyTagsSuggestion,
-} from "@/types/habu";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -90,50 +83,11 @@ export function BookmarkEditForm({
   const [isGenerating, setIsGenerating] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [isLoadingTagInventory, setIsLoadingTagInventory] = useState(true);
-  const [tagInventoryError, setTagInventoryError] = useState<string | null>(null);
-  const [tagInventory, setTagInventory] = useState<HatenaTag[]>([]);
-  const [isTidyingTags, setIsTidyingTags] = useState(false);
-  const [tidyTagsSuggestion, setTidyTagsSuggestion] = useState<TidyTagsSuggestion | null>(null);
   const [generatedResult, setGeneratedResult] = useState<GeneratedResult | null>(null);
   const [workflowRunId, setWorkflowRunId] = useState<string | null>(null);
   const [workflowSteps, setWorkflowSteps] = useState<Record<string, WorkflowStepState>>(
     initBookmarkSuggestionSteps(),
   );
-
-  useEffect(() => {
-    const controller = new AbortController();
-
-    const loadTagInventory = async () => {
-      setIsLoadingTagInventory(true);
-      setTagInventoryError(null);
-
-      try {
-        const response = await fetch("/api/habu/tags", {
-          credentials: "include",
-          signal: controller.signal,
-        });
-        const data = (await response.json()) as HatenaTagsListResponse;
-
-        if (!response.ok || !data.success) {
-          throw new Error(data.error || "Failed to load tags");
-        }
-
-        setTagInventory(data.tags ?? []);
-      } catch (error) {
-        if (controller.signal.aborted) return;
-        setTagInventoryError(error instanceof Error ? error.message : "Failed to load tags");
-      } finally {
-        if (!controller.signal.aborted) {
-          setIsLoadingTagInventory(false);
-        }
-      }
-    };
-
-    loadTagInventory();
-
-    return () => controller.abort();
-  }, []);
 
   const handleGenerate = async () => {
     if (!bookmarkUrl) {
@@ -451,68 +405,9 @@ export function BookmarkEditForm({
     }
   };
 
-  const handleTidyTags = async () => {
-    if (!bookmarkUrl) {
-      toast.error("URL is required");
-      return;
-    }
-
-    setIsTidyingTags(true);
-
-    try {
-      const response = await fetch("/api/habu/tidyup-tags", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          url: bookmarkUrl,
-          comment,
-          metadata: pageMetadata,
-        }),
-      });
-
-      const data = (await response.json()) as TidyTagsResponse;
-      if (!response.ok || !data.success || !data.suggestion) {
-        throw new Error(data.error || "Failed to tidy tags");
-      }
-
-      setTidyTagsSuggestion(data.suggestion);
-      toast.success("Tag suggestions are ready");
-    } catch (error) {
-      toast.error("Tidy up failed", {
-        description: error instanceof Error ? error.message : "Unknown error",
-      });
-    } finally {
-      setIsTidyingTags(false);
-    }
-  };
-
-  const handleApplyTidied = () => {
-    if (!tidyTagsSuggestion) return;
-    setComment(tidyTagsSuggestion.formattedComment);
-    toast.success("Applied tidied tags");
-  };
-
-  const handleApplyTidiedAndSave = async () => {
-    if (!tidyTagsSuggestion) return;
-
-    setIsUpdating(true);
-    try {
-      await saveComment(tidyTagsSuggestion.formattedComment, "Tidied tags saved!");
-    } catch (error) {
-      toast.error("Update failed", {
-        description: error instanceof Error ? error.message : "Unknown error",
-      });
-    } finally {
-      setIsUpdating(false);
-    }
-  };
-
   const currentTags = extractTagsFromComment(comment);
   const currentCommentText = extractCommentText(comment);
   const isCommentTooLong = comment && !isBodyWithinLimit(bookmarkUrl, comment);
-  const hasTagInventory = tagInventory.length > 0;
-  const currentTagKeys = new Set(currentTags.map((tag) => tag.toLowerCase()));
 
   return (
     <>
@@ -554,146 +449,6 @@ export function BookmarkEditForm({
         )}
         {currentCommentText && (
           <p className="text-xs text-muted-foreground">{currentCommentText}</p>
-        )}
-      </div>
-
-      {/* Tag Inventory + Tidy Up */}
-      <div className="space-y-3 rounded-md border p-3">
-        <div className="flex items-start justify-between gap-3">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <Tags className="w-4 h-4 text-muted-foreground" />
-              <Label>Your tag inventory</Label>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Tidy Up suggests a cleaner tag set using your Hatena tags where possible.
-            </p>
-          </div>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={handleTidyTags}
-            disabled={isTidyingTags || isLoadingTagInventory || !hasTagInventory}
-          >
-            {isTidyingTags ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Tidying...
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-4 h-4" />
-                Tidy Up
-              </>
-            )}
-          </Button>
-        </div>
-
-        {isLoadingTagInventory ? (
-          <p className="text-xs text-muted-foreground">Loading your Hatena tags...</p>
-        ) : tagInventoryError ? (
-          <p className="text-xs text-red-500">{tagInventoryError}</p>
-        ) : hasTagInventory ? (
-          <details className="space-y-2">
-            <summary className="cursor-pointer text-xs text-muted-foreground">
-              Show all tags ({tagInventory.length})
-            </summary>
-            <div className="flex max-h-44 flex-wrap gap-1 overflow-y-auto rounded-md bg-muted/60 p-2">
-              {tagInventory.map((tag) => {
-                const isCurrentTag = currentTagKeys.has(tag.tag.toLowerCase());
-                return (
-                  <span
-                    key={tag.tag}
-                    className={
-                      isCurrentTag
-                        ? "rounded bg-primary px-2 py-0.5 text-xs text-primary-foreground"
-                        : "rounded bg-background px-2 py-0.5 text-xs text-muted-foreground"
-                    }
-                  >
-                    {tag.tag} ({tag.count})
-                  </span>
-                );
-              })}
-            </div>
-          </details>
-        ) : (
-          <p className="text-xs text-muted-foreground">No Hatena tags found yet.</p>
-        )}
-
-        {tidyTagsSuggestion && (
-          <div className="space-y-3 rounded-md bg-muted p-3 text-sm">
-            <div className="font-medium flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-primary" />
-              Tag tidy up suggestion
-            </div>
-
-            <div className="flex flex-wrap gap-1">
-              {tidyTagsSuggestion.tags.map((tag) => (
-                <span key={tag} className="rounded bg-primary/10 px-2 py-0.5 text-xs text-primary">
-                  {tag}
-                </span>
-              ))}
-            </div>
-
-            {tidyTagsSuggestion.reasoning.length > 0 && (
-              <ul className="list-disc space-y-1 pl-5 text-xs text-muted-foreground">
-                {tidyTagsSuggestion.reasoning.map((reason) => (
-                  <li key={reason}>{reason}</li>
-                ))}
-              </ul>
-            )}
-
-            {(tidyTagsSuggestion.addTags.length > 0 ||
-              tidyTagsSuggestion.removeTags.length > 0) && (
-              <div className="grid gap-2 text-xs md:grid-cols-2">
-                <div>
-                  <p className="mb-1 font-medium text-foreground">Add</p>
-                  <p className="text-muted-foreground">
-                    {tidyTagsSuggestion.addTags.length > 0
-                      ? tidyTagsSuggestion.addTags.join(", ")
-                      : "(none)"}
-                  </p>
-                </div>
-                <div>
-                  <p className="mb-1 font-medium text-foreground">Remove</p>
-                  <p className="text-muted-foreground">
-                    {tidyTagsSuggestion.removeTags.length > 0
-                      ? tidyTagsSuggestion.removeTags.join(", ")
-                      : "(none)"}
-                  </p>
-                </div>
-              </div>
-            )}
-
-            <div className="border-t pt-2">
-              <p className="mb-1 text-xs text-muted-foreground">Formatted comment:</p>
-              <code className="block break-all rounded bg-background p-2 text-xs">
-                {tidyTagsSuggestion.formattedComment || "(tags only)"}
-              </code>
-            </div>
-
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleApplyTidied}
-                className="flex-1"
-              >
-                Apply
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                onClick={handleApplyTidiedAndSave}
-                disabled={isUpdating}
-                className="flex-1"
-              >
-                {isUpdating ? "Saving..." : "Apply & Save"}
-              </Button>
-            </div>
-          </div>
         )}
       </div>
 
@@ -1049,7 +804,7 @@ export function BookmarkEditForm({
       {/* Chat Button */}
       <Button onClick={() => setIsChatOpen(true)} variant="outline" className="w-full" size="lg">
         <MessageCircle className="w-4 h-4 mr-2" />
-        Chat about this page and tags
+        Chat about this page
       </Button>
 
       {/* Delete Button */}
@@ -1093,7 +848,6 @@ export function BookmarkEditForm({
             metadata: pageMetadata,
             existingComment: comment,
             existingTags: currentTags,
-            tagInventory,
           } satisfies ChatContext
         }
       />

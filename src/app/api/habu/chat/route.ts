@@ -132,7 +132,6 @@ interface ChatRequestBody {
     metadata?: PageMetadata;
     existingComment?: string;
     existingTags?: string[];
-    tagInventory?: Array<{ tag: string; count: number }>;
   };
 }
 
@@ -188,7 +187,6 @@ export async function POST(request: NextRequest) {
       metadata: context.metadata,
       existingComment: context.existingComment,
       existingTags: context.existingTags,
-      tagInventory: context.tagInventory,
     };
 
     // Build system prompt (AI instructions only, no user content)

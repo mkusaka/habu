@@ -50,6 +50,7 @@ export function TagMappingGraph({
   const sourceRefs = useRef<Record<string, HTMLElement | null>>({});
   const targetRefs = useRef<Record<string, HTMLElement | null>>({});
   const [edges, setEdges] = useState<EdgePosition[]>([]);
+  const [laneWidths, setLaneWidths] = useState({ source: 0, target: 0 });
 
   const handleCopyTarget = async (label: string, action: TagMappingAction) => {
     if (action === "delete") return;
@@ -91,6 +92,8 @@ export function TagMappingGraph({
 
       const bounds = container.getBoundingClientRect();
       const nextEdges: EdgePosition[] = [];
+      let nextSourceWidth = 0;
+      let nextTargetWidth = 0;
 
       for (const row of rows) {
         const sourceEl = sourceRefs.current[row.sourceTag];
@@ -100,6 +103,8 @@ export function TagMappingGraph({
 
         const sourceBounds = sourceEl.getBoundingClientRect();
         const targetBounds = targetEl.getBoundingClientRect();
+        nextSourceWidth = Math.max(nextSourceWidth, Math.ceil(sourceBounds.width));
+        nextTargetWidth = Math.max(nextTargetWidth, Math.ceil(targetBounds.width));
         const startX = sourceBounds.right - bounds.left;
         const startY = sourceBounds.top + sourceBounds.height / 2 - bounds.top;
         const endX = targetBounds.left - bounds.left;
@@ -116,6 +121,14 @@ export function TagMappingGraph({
       }
 
       setEdges(nextEdges);
+      setLaneWidths((current) => {
+        const source = Math.max(nextSourceWidth, 136);
+        const target = Math.max(nextTargetWidth, 136);
+        if (current.source === source && current.target === target) {
+          return current;
+        }
+        return { source, target };
+      });
     };
 
     computeEdges();
@@ -135,11 +148,19 @@ export function TagMappingGraph({
     return null;
   }
 
+  const horizontalPadding = 24;
+  const columnGap = 16;
+  const graphWidth =
+    laneWidths.source > 0 && laneWidths.target > 0
+      ? laneWidths.source + laneWidths.target + columnGap + horizontalPadding
+      : undefined;
+
   return (
     <div className="overflow-x-auto rounded-lg border">
       <div
         ref={containerRef}
-        className="relative min-w-[31rem] bg-muted/20 p-3 sm:min-w-[38rem] sm:p-4 md:min-w-[44rem]"
+        className="relative bg-muted/20 p-3 sm:p-4"
+        style={graphWidth ? { width: `${graphWidth}px`, minWidth: `${graphWidth}px` } : undefined}
       >
         <svg className="pointer-events-none absolute inset-0 h-full w-full">
           {edges.map((edge) => (
@@ -160,9 +181,17 @@ export function TagMappingGraph({
           ))}
         </svg>
 
-        <div className="relative grid grid-cols-[minmax(8.5rem,1fr)_minmax(8.5rem,1fr)] gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] sm:gap-8 md:gap-10">
+        <div
+          className="relative grid gap-4"
+          style={{
+            gridTemplateColumns: `${Math.max(laneWidths.source, 136)}px ${Math.max(
+              laneWidths.target,
+              136,
+            )}px`,
+          }}
+        >
           <div className="space-y-2">
-            <div className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground sm:text-xs">
+            <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
               Before
             </div>
             {rows.map((row) => (
@@ -175,26 +204,22 @@ export function TagMappingGraph({
                   sourceRefs.current[row.sourceTag] = element;
                 }}
                 className={cn(
-                  "flex min-h-9 items-center justify-between gap-2 rounded-md border bg-background px-2 py-1.5 text-xs shadow-sm transition-colors sm:min-h-10 sm:px-3 sm:py-2 sm:text-sm",
+                  "flex min-h-10 items-center justify-between gap-2 rounded-md border bg-background px-3 py-2 text-sm shadow-sm transition-colors",
                   hatenaId ? "cursor-pointer hover:bg-accent/40" : "cursor-default",
                 )}
                 title={hatenaId ? `Open Hatena bookmarks tagged ${row.sourceTag}` : undefined}
               >
                 <span className="flex min-w-0 items-center gap-2 font-medium">
                   <span className="truncate">{row.sourceTag}</span>
-                  {hatenaId && (
-                    <ExternalLink className="size-2.5 shrink-0 text-muted-foreground sm:size-3" />
-                  )}
+                  {hatenaId && <ExternalLink className="size-3 shrink-0 text-muted-foreground" />}
                 </span>
-                <span className="shrink-0 text-[11px] text-muted-foreground sm:text-xs">
-                  {row.sourceCount}
-                </span>
+                <span className="shrink-0 text-xs text-muted-foreground">{row.sourceCount}</span>
               </a>
             ))}
           </div>
 
           <div className="space-y-2">
-            <div className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground sm:text-xs">
+            <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
               After
             </div>
             {targetNodes.map((target) => (
@@ -206,7 +231,7 @@ export function TagMappingGraph({
                   targetRefs.current[target.key] = element;
                 }}
                 className={cn(
-                  "flex min-h-9 w-full items-center justify-between gap-2 rounded-md border px-2 py-1.5 text-xs shadow-sm transition-colors sm:min-h-10 sm:px-3 sm:py-2 sm:text-sm",
+                  "flex min-h-10 w-full items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm shadow-sm transition-colors",
                   target.action === "delete"
                     ? "border-red-200 bg-red-50 text-red-700 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-200"
                     : "cursor-pointer bg-background hover:bg-accent/40",
@@ -216,13 +241,11 @@ export function TagMappingGraph({
                 <span className="flex min-w-0 items-center gap-2 font-medium">
                   <span className="truncate">{target.label}</span>
                   {target.action !== "delete" && (
-                    <Copy className="size-2.5 shrink-0 text-muted-foreground sm:size-3" />
+                    <Copy className="size-3 shrink-0 text-muted-foreground" />
                   )}
                 </span>
                 {target.action !== "delete" ? (
-                  <span className="shrink-0 text-[11px] text-muted-foreground sm:text-xs">
-                    {target.count}
-                  </span>
+                  <span className="shrink-0 text-xs text-muted-foreground">{target.count}</span>
                 ) : null}
               </button>
             ))}

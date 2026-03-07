@@ -46,14 +46,10 @@ export function TagMappingGraph({
   rows: MappingGraphRow[];
   hatenaId?: string;
 }) {
-  const viewportRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const sourceRefs = useRef<Record<string, HTMLElement | null>>({});
   const targetRefs = useRef<Record<string, HTMLElement | null>>({});
   const [edges, setEdges] = useState<EdgePosition[]>([]);
-  const [laneWidths, setLaneWidths] = useState({ source: 0, target: 0 });
-  const [viewportWidth, setViewportWidth] = useState(0);
-  const [isDesktop, setIsDesktop] = useState(false);
 
   const handleCopyTarget = async (label: string, action: TagMappingAction) => {
     if (action === "delete") return;
@@ -89,45 +85,12 @@ export function TagMappingGraph({
   }, [rows]);
 
   useEffect(() => {
-    const mediaQuery = window.matchMedia("(min-width: 768px)");
-    const updateDesktop = () => setIsDesktop(mediaQuery.matches);
-
-    updateDesktop();
-    mediaQuery.addEventListener("change", updateDesktop);
-
-    return () => {
-      mediaQuery.removeEventListener("change", updateDesktop);
-    };
-  }, []);
-
-  useEffect(() => {
-    const viewport = viewportRef.current;
-    if (!viewport) return;
-
-    const updateViewportWidth = () => {
-      setViewportWidth(Math.floor(viewport.clientWidth));
-    };
-
-    updateViewportWidth();
-    const observer = new ResizeObserver(updateViewportWidth);
-    observer.observe(viewport);
-    window.addEventListener("resize", updateViewportWidth);
-
-    return () => {
-      observer.disconnect();
-      window.removeEventListener("resize", updateViewportWidth);
-    };
-  }, []);
-
-  useEffect(() => {
     const computeEdges = () => {
       const container = containerRef.current;
       if (!container) return;
 
       const bounds = container.getBoundingClientRect();
       const nextEdges: EdgePosition[] = [];
-      let nextSourceWidth = 0;
-      let nextTargetWidth = 0;
 
       for (const row of rows) {
         const sourceEl = sourceRefs.current[row.sourceTag];
@@ -137,8 +100,6 @@ export function TagMappingGraph({
 
         const sourceBounds = sourceEl.getBoundingClientRect();
         const targetBounds = targetEl.getBoundingClientRect();
-        nextSourceWidth = Math.max(nextSourceWidth, Math.ceil(sourceBounds.width));
-        nextTargetWidth = Math.max(nextTargetWidth, Math.ceil(targetBounds.width));
         const startX = sourceBounds.right - bounds.left;
         const startY = sourceBounds.top + sourceBounds.height / 2 - bounds.top;
         const endX = targetBounds.left - bounds.left;
@@ -155,14 +116,6 @@ export function TagMappingGraph({
       }
 
       setEdges(nextEdges);
-      setLaneWidths((current) => {
-        const source = Math.max(nextSourceWidth, 136);
-        const target = Math.max(nextTargetWidth, 136);
-        if (current.source === source && current.target === target) {
-          return current;
-        }
-        return { source, target };
-      });
     };
 
     computeEdges();
@@ -182,25 +135,11 @@ export function TagMappingGraph({
     return null;
   }
 
-  const horizontalPadding = 24;
-  const columnGap = 16;
-  const mobileGraphWidth =
-    laneWidths.source > 0 && laneWidths.target > 0
-      ? laneWidths.source + laneWidths.target + columnGap + horizontalPadding
-      : undefined;
-  const desktopGraphWidth = 860;
-  const graphWidth = isDesktop
-    ? desktopGraphWidth
-    : mobileGraphWidth
-      ? Math.max(mobileGraphWidth, viewportWidth)
-      : viewportWidth || undefined;
-
   return (
-    <div ref={viewportRef} className="overflow-x-auto rounded-lg border">
+    <div className="overflow-x-auto rounded-lg border">
       <div
         ref={containerRef}
-        className="relative bg-muted/20 p-3 sm:p-4"
-        style={graphWidth ? { width: `${graphWidth}px`, minWidth: `${graphWidth}px` } : undefined}
+        className="relative w-max min-w-full bg-muted/20 p-3 md:w-[860px] md:min-w-[860px] md:p-4"
       >
         <svg className="pointer-events-none absolute inset-0 h-full w-full">
           {edges.map((edge) => (
@@ -221,14 +160,7 @@ export function TagMappingGraph({
           ))}
         </svg>
 
-        <div
-          className="relative grid gap-4"
-          style={{
-            gridTemplateColumns: isDesktop
-              ? "minmax(0, 1fr) minmax(0, 1fr)"
-              : `${Math.max(laneWidths.source, 136)}px ${Math.max(laneWidths.target, 136)}px`,
-          }}
-        >
+        <div className="relative grid grid-cols-[minmax(8rem,max-content)_minmax(8rem,max-content)] justify-between gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] md:gap-10">
           <div className="space-y-2">
             <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
               Before

@@ -51,6 +51,7 @@ export function TagMappingGraph({
   const targetRefs = useRef<Record<string, HTMLElement | null>>({});
   const [edges, setEdges] = useState<EdgePosition[]>([]);
   const [laneWidths, setLaneWidths] = useState({ source: 0, target: 0 });
+  const [isDesktop, setIsDesktop] = useState(false);
 
   const handleCopyTarget = async (label: string, action: TagMappingAction) => {
     if (action === "delete") return;
@@ -84,6 +85,18 @@ export function TagMappingGraph({
 
     return [...deduped.values()].sort((a, b) => a.order - b.order);
   }, [rows]);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(min-width: 768px)");
+    const updateDesktop = () => setIsDesktop(mediaQuery.matches);
+
+    updateDesktop();
+    mediaQuery.addEventListener("change", updateDesktop);
+
+    return () => {
+      mediaQuery.removeEventListener("change", updateDesktop);
+    };
+  }, []);
 
   useEffect(() => {
     const computeEdges = () => {
@@ -150,10 +163,11 @@ export function TagMappingGraph({
 
   const horizontalPadding = 24;
   const columnGap = 16;
-  const graphWidth =
+  const mobileGraphWidth =
     laneWidths.source > 0 && laneWidths.target > 0
       ? laneWidths.source + laneWidths.target + columnGap + horizontalPadding
       : undefined;
+  const graphWidth = isDesktop ? 704 : mobileGraphWidth;
 
   return (
     <div className="overflow-x-auto rounded-lg border">
@@ -184,10 +198,9 @@ export function TagMappingGraph({
         <div
           className="relative grid gap-4"
           style={{
-            gridTemplateColumns: `${Math.max(laneWidths.source, 136)}px ${Math.max(
-              laneWidths.target,
-              136,
-            )}px`,
+            gridTemplateColumns: isDesktop
+              ? "minmax(0, 1fr) minmax(0, 1fr)"
+              : `${Math.max(laneWidths.source, 136)}px ${Math.max(laneWidths.target, 136)}px`,
           }}
         >
           <div className="space-y-2">

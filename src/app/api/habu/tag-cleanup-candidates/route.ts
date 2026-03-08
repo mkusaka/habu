@@ -5,11 +5,8 @@ import { z } from "zod";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { fetchHatenaTags } from "@/lib/hatena-bookmark-api";
 import { getHatenaRouteContext } from "@/lib/hatena-route-auth";
-import type {
-  TagCleanupCandidatesResponse,
-  TagMappingAction,
-  TagMappingCandidate,
-} from "@/types/habu";
+import { materializeTagCleanupCandidates } from "@/lib/tag-cleanup-candidates";
+import type { TagCleanupCandidatesResponse } from "@/types/habu";
 
 const MAX_TAGS_IN_PROMPT = 180;
 
@@ -48,11 +45,6 @@ function validateSameOrigin(request: NextRequest) {
   return null;
 }
 
-function normalizeAction(value: TagMappingAction, targetTag?: string | null) {
-  if (value === "update" && targetTag?.trim()) return value;
-  return "delete";
-}
-
 export async function POST(request: NextRequest) {
   try {
     const csrfError = validateSameOrigin(request);
@@ -81,8 +73,6 @@ export async function POST(request: NextRequest) {
 
     const tagInventory = await fetchHatenaTags(authResult.context);
     const tagsForPrompt = tagInventory.slice(0, MAX_TAGS_IN_PROMPT);
-    const inventoryMap = new Map(tagInventory.map((tag) => [tag.tag.toLowerCase(), tag]));
-
     const openai = createOpenAI({ apiKey: env.OPENAI_API_KEY });
     const result = await generateObject({
       model: openai("gpt-5-mini"),
@@ -104,32 +94,7 @@ ${tagsForPrompt.map((tag) => `- ${tag.tag} (${tag.count})`).join("\n")}
 Suggest cleanup candidates for this tag inventory. Return only tags that should change.`,
     });
 
-    const usedSources = new Set<string>();
-    const candidates: TagMappingCandidate[] = [];
-
-    for (const item of result.object.candidates) {
-      const sourceTag = item.sourceTag.trim();
-      const sourceMeta = inventoryMap.get(sourceTag.toLowerCase());
-      if (!sourceMeta) continue;
-
-      const sourceKey = sourceTag.toLowerCase();
-      if (usedSources.has(sourceKey)) continue;
-      usedSources.add(sourceKey);
-
-      const targetTag = item.targetTag?.trim();
-      const action = normalizeAction(item.action, targetTag);
-      const targetMeta = targetTag ? inventoryMap.get(targetTag.toLowerCase()) : undefined;
-
-      candidates.push({
-        sourceTag: sourceMeta.tag,
-        action,
-        targetTag: action === "update" ? targetTag : undefined,
-        reason: item.reason,
-        sourceCount: sourceMeta.count,
-        targetCount: targetMeta?.count ?? 0,
-        suggested: true,
-      });
-    }
+    const candidates = materializeTagCleanupCandidates(result.object.candidates, tagInventory);
 
     return NextResponse.json({
       success: true,

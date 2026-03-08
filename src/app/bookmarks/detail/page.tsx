@@ -8,7 +8,7 @@ import { eq } from "drizzle-orm";
 import { createSignedRequest } from "@/lib/hatena-oauth";
 import { Bookmark, ExternalLink, ArrowLeft, AlertCircle, Home } from "lucide-react";
 import { CopyButton } from "@/components/copy-button";
-import { Label } from "@/components/ui/label";
+import { Field, FieldLabel } from "@/components/ui/field";
 import { LinkButton } from "@/components/ui/link-button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -236,8 +236,8 @@ async function BookmarkDetailContent({
   return (
     <div className="space-y-4">
       {/* URL Display (static) */}
-      <div className="space-y-2">
-        <Label>URL</Label>
+      <Field>
+        <FieldLabel>URL</FieldLabel>
         <div className="flex items-center gap-2 p-2 bg-muted rounded-md">
           <span className="text-sm truncate flex-1">{bookmarkUrl}</span>
           <CopyButton text={bookmarkUrl} label="URL" />
@@ -260,15 +260,15 @@ async function BookmarkDetailContent({
             <Bookmark className="w-4 h-4" />
           </a>
         </div>
-      </div>
+      </Field>
 
       {/* Title Display (static) */}
-      <div className="space-y-2">
-        <Label>Title</Label>
+      <Field>
+        <FieldLabel>Title</FieldLabel>
         <div className="p-2 bg-muted rounded-md text-sm">
           {result.title || <span className="text-muted-foreground">No title</span>}
         </div>
-      </div>
+      </Field>
 
       {/* Interactive Form (client component) */}
       <BookmarkEditForm

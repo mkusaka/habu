@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState, type ChangeEvent, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
@@ -20,6 +20,7 @@ import { SearchPageShell } from "./search-page-shell";
 interface ChatPageClientProps {
   sessionId: string;
   initialQuery?: string;
+  initialPrompt?: string;
   selectedUrl?: string;
   context: ChatContext;
   initialMessages: UIMessage[];
@@ -32,14 +33,17 @@ function ChatConversation({
   sessionId,
   context,
   initialMessages,
+  initialPrompt,
 }: {
   sessionId: string;
   context: ChatContext;
   initialMessages: UIMessage[];
+  initialPrompt?: string;
 }) {
   const router = useRouter();
   const [input, setInput] = useState("");
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [editingText, setEditingText] = useState("");
 
   const transport = useMemo(
     () =>
@@ -88,6 +92,19 @@ function ChatConversation({
   const isLoading = status === "streaming" || status === "submitted";
   const isStreaming = status === "streaming";
 
+  useEffect(() => {
+    if (initialMessages.length > 0 || messages.length > 0 || status !== "ready") {
+      return;
+    }
+
+    const prompt = initialPrompt?.trim();
+    if (!prompt) {
+      return;
+    }
+
+    sendMessage({ text: prompt });
+  }, [initialMessages.length, initialPrompt, messages.length, sendMessage, status]);
+
   const handleInputChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
     setInput(e.target.value);
   };
@@ -95,14 +112,6 @@ function ChatConversation({
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
-
-    if (editingMessageId) {
-      const targetMessageId = editingMessageId;
-      setEditingMessageId(null);
-      sendMessage({ text: input, messageId: targetMessageId });
-      setInput("");
-      return;
-    }
 
     sendMessage({ text: input });
     setInput("");
@@ -112,42 +121,65 @@ function ChatConversation({
     (messageId: string, text: string) => {
       if (isLoading) return;
       setEditingMessageId(messageId);
-      setInput(text);
+      setEditingText(text);
     },
     [isLoading],
   );
 
+  const handleSaveEdit = useCallback(
+    (messageId: string) => {
+      const nextText = editingText.trim();
+      if (!nextText || isLoading) {
+        return;
+      }
+
+      setEditingMessageId(null);
+      setEditingText("");
+      sendMessage({ text: nextText, messageId });
+    },
+    [editingText, isLoading, sendMessage],
+  );
+
   const handleCancelEdit = useCallback(() => {
     setEditingMessageId(null);
-    setInput("");
+    setEditingText("");
   }, []);
 
   return (
     <div className="flex flex-1 min-h-0 flex-col">
-      <ChatMessages
-        messages={messages}
-        isLoading={isLoading}
-        onEditMessage={handleEditMessage}
-        editingMessageId={editingMessageId}
-      />
-
       {error && (
-        <div className="border-t bg-destructive/10 px-4 py-2 text-sm text-destructive">
+        <div className="border-b bg-destructive/10 px-4 py-2 text-sm text-destructive">
           Error: {error.message}
         </div>
       )}
 
-      <ChatInput
-        input={input}
-        onChange={handleInputChange}
-        onSubmit={handleSubmit}
-        disabled={isLoading}
-        isLoading={isLoading}
-        isStreaming={isStreaming}
-        onStop={stop}
-        isEditing={!!editingMessageId}
-        onCancelEdit={handleCancelEdit}
-      />
+      <div className="min-h-0 flex-1 pb-40 md:pb-32">
+        <ChatMessages
+          messages={messages}
+          isLoading={isLoading}
+          onEditMessage={handleEditMessage}
+          editingMessageId={editingMessageId}
+          editingText={editingText}
+          onEditingTextChange={setEditingText}
+          onSaveEdit={handleSaveEdit}
+          onCancelEdit={handleCancelEdit}
+        />
+      </div>
+
+      <div className="fixed inset-x-0 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-40 px-4 md:bottom-6">
+        <div className="mx-auto max-w-4xl">
+          <ChatInput
+            input={input}
+            onChange={handleInputChange}
+            onSubmit={handleSubmit}
+            disabled={isLoading || !!editingMessageId}
+            isLoading={isLoading}
+            isStreaming={isStreaming}
+            onStop={stop}
+            placeholder={editingMessageId ? "Finish editing the message above..." : undefined}
+          />
+        </div>
+      </div>
     </div>
   );
 }
@@ -155,6 +187,7 @@ function ChatConversation({
 export function ChatPageClient({
   sessionId,
   initialQuery,
+  initialPrompt,
   selectedUrl,
   context,
   initialMessages,
@@ -198,9 +231,8 @@ export function ChatPageClient({
       <AlertCircle className="h-4 w-4" />
       <span>{error}</span>
     </div>
-  ) : selectedUrl || initialQuery ? (
+  ) : selectedUrl ? (
     <div className="flex flex-col gap-1 text-sm text-muted-foreground">
-      {initialQuery ? <span className="truncate">Query: {initialQuery}</span> : null}
       {selectedUrl ? <span className="break-all">{selectedUrl}</span> : null}
     </div>
   ) : (
@@ -310,6 +342,7 @@ export function ChatPageClient({
                 sessionId={sessionId}
                 context={context}
                 initialMessages={initialMessages}
+                initialPrompt={initialPrompt}
               />
             </div>
           )}

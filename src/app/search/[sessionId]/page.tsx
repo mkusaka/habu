@@ -84,6 +84,8 @@ export default async function SearchSessionPage({ params, searchParams }: Search
     title = "Invalid URL";
   }
 
+  const shouldAutoStartQuery = !thread && !!query && !error;
+
   const pageContext = await buildChatPageContextForUser({
     userId: session.user.id,
     url: error ? undefined : effectiveUrl,
@@ -96,13 +98,14 @@ export default async function SearchSessionPage({ params, searchParams }: Search
   });
 
   initialMessages = thread?.messages ?? [];
-  title = title || thread?.title || pageContext.title;
+  title = title || thread?.title || (effectiveUrl ? pageContext.title : undefined) || "Search";
 
   return (
     <ChatPageClient
       key={sessionId}
       sessionId={sessionId}
       initialQuery={effectiveQuery ?? pageContext.context.query}
+      initialPrompt={shouldAutoStartQuery ? effectiveQuery : undefined}
       selectedUrl={effectiveUrl ?? pageContext.context.url}
       context={pageContext.context}
       initialMessages={initialMessages}

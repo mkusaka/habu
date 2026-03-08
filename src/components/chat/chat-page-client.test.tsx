@@ -2,24 +2,36 @@
 
 import assert from "node:assert/strict";
 import type { AnchorHTMLAttributes, ReactNode } from "react";
-import { cleanup, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ChatPageClient } from "./chat-page-client";
+
+const { sendMessageMock, stopMock, pushMock, refreshMock, chatState } = vi.hoisted(() => ({
+  sendMessageMock: vi.fn(),
+  stopMock: vi.fn(),
+  pushMock: vi.fn(),
+  refreshMock: vi.fn(),
+  chatState: {
+    messages: [] as unknown[],
+    status: "ready",
+    error: undefined as Error | undefined,
+  },
+}));
 
 vi.mock("@ai-sdk/react", () => ({
   useChat: () => ({
-    messages: [],
-    sendMessage: vi.fn(),
-    stop: vi.fn(),
-    status: "ready",
-    error: undefined,
+    messages: chatState.messages,
+    sendMessage: sendMessageMock,
+    stop: stopMock,
+    status: chatState.status,
+    error: chatState.error,
   }),
 }));
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({
-    push: vi.fn(),
-    refresh: vi.fn(),
+    push: pushMock,
+    refresh: refreshMock,
   }),
 }));
 
@@ -34,6 +46,12 @@ vi.mock("next/link", () => ({
     </a>
   ),
 }));
+
+beforeEach(() => {
+  chatState.messages = [];
+  chatState.status = "ready";
+  chatState.error = undefined;
+});
 
 afterEach(() => {
   cleanup();
@@ -59,5 +77,56 @@ describe("ChatPageClient", () => {
     assert.ok(screen.getByRole("link", { name: "Histories" }));
     assert.ok(screen.getByRole("link", { name: "Open Bookmark Detail" }));
     assert.ok(screen.getByRole("link", { name: "Open Page" }));
+  });
+
+  it("auto-submits the initial prompt for a fresh session", () => {
+    render(
+      <ChatPageClient
+        sessionId="session-1"
+        initialQuery="golden ratio ui library"
+        initialPrompt="golden ratio ui library"
+        context={{ query: "golden ratio ui library" }}
+        initialMessages={[]}
+        historyThreads={[]}
+        title="Search"
+      />,
+    );
+
+    expect(sendMessageMock).toHaveBeenCalledWith({ text: "golden ratio ui library" });
+    expect(screen.queryByText(/^Query:/)).toBeNull();
+  });
+
+  it("edits a user message inline", () => {
+    chatState.messages = [
+      {
+        id: "message-1",
+        role: "user",
+        parts: [{ type: "text", text: "Original question" }],
+      },
+    ];
+
+    render(
+      <ChatPageClient
+        sessionId="session-1"
+        context={{ query: "Original question" }}
+        initialMessages={chatState.messages as never[]}
+        historyThreads={[]}
+        title="Search"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /Original question/i }));
+
+    assert.ok(
+      screen.getByPlaceholderText("Finish editing the message above...").hasAttribute("disabled"),
+    );
+    const inlineEditor = screen.getByDisplayValue("Original question");
+    fireEvent.change(inlineEditor, { target: { value: "Edited question" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    expect(sendMessageMock).toHaveBeenCalledWith({
+      text: "Edited question",
+      messageId: "message-1",
+    });
   });
 });

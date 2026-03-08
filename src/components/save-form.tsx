@@ -30,7 +30,10 @@ import {
   Info,
   Copy,
   Pencil,
+  Search,
+  Settings,
 } from "lucide-react";
+import { LinkButton } from "@/components/ui/link-button";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -661,6 +664,14 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
         <div className="flex items-center gap-3">
           <Bookmark className="w-6 h-6" />
           <h1 className="text-2xl font-bold tracking-tight">habu</h1>
+        </div>
+        <div className="flex items-center gap-2">
+          <LinkButton href="/search" variant="ghost" size="icon">
+            <Search className="w-5 h-5" />
+          </LinkButton>
+          <LinkButton href="/settings" variant="ghost" size="icon">
+            <Settings className="w-5 h-5" />
+          </LinkButton>
         </div>
       </header>
       <div className="space-y-6">

@@ -29,6 +29,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { deleteBookmark } from "@/lib/bookmark-client";
 import { extractCommentText, extractTagsFromComment } from "@/lib/bookmark-comment";
 import { isBodyWithinLimit } from "@/lib/hatena-body-limit";
@@ -646,9 +647,11 @@ export function BookmarkEditForm({
                         <Copy className="w-3 h-3" />
                       </button>
                     </summary>
-                    <pre className="mt-2 bg-background p-2 rounded text-xs overflow-auto whitespace-pre-wrap break-all">
-                      {generatedResult.summary}
-                    </pre>
+                    <ScrollArea className="mt-2 max-h-48 rounded bg-background">
+                      <pre className="p-2 text-xs whitespace-pre-wrap break-all">
+                        {generatedResult.summary}
+                      </pre>
+                    </ScrollArea>
                   </details>
                 )}
 
@@ -702,9 +705,11 @@ export function BookmarkEditForm({
                         <Copy className="w-3 h-3" />
                       </button>
                     </summary>
-                    <pre className="mt-2 bg-background p-2 rounded text-xs overflow-auto max-h-48 whitespace-pre-wrap break-all">
-                      {generatedResult.webContext}
-                    </pre>
+                    <ScrollArea className="mt-2 max-h-48 rounded bg-background">
+                      <pre className="p-2 text-xs whitespace-pre-wrap break-all">
+                        {generatedResult.webContext}
+                      </pre>
+                    </ScrollArea>
                   </details>
                 )}
 
@@ -728,9 +733,11 @@ export function BookmarkEditForm({
                         <Copy className="w-3 h-3" />
                       </button>
                     </summary>
-                    <pre className="mt-2 bg-background p-2 rounded text-xs overflow-auto whitespace-pre-wrap break-all">
-                      {generatedResult.markdown}
-                    </pre>
+                    <ScrollArea className="mt-2 max-h-64 rounded bg-background">
+                      <pre className="p-2 text-xs whitespace-pre-wrap break-all">
+                        {generatedResult.markdown}
+                      </pre>
+                    </ScrollArea>
                   </details>
                 ) : generatedResult.markdownError ? (
                   <details className="rounded border border-yellow-200/60 bg-yellow-50/60 dark:border-yellow-900/50 dark:bg-yellow-900/20 p-2">
@@ -751,9 +758,11 @@ export function BookmarkEditForm({
                         <Copy className="w-3 h-3" />
                       </button>
                     </summary>
-                    <pre className="mt-2 p-2 rounded text-xs text-yellow-800 dark:text-yellow-200 overflow-auto max-h-24 whitespace-pre-wrap break-all">
-                      {generatedResult.markdownError}
-                    </pre>
+                    <ScrollArea className="mt-2 max-h-24 rounded">
+                      <pre className="p-2 text-xs text-yellow-800 dark:text-yellow-200 whitespace-pre-wrap break-all">
+                        {generatedResult.markdownError}
+                      </pre>
+                    </ScrollArea>
                   </details>
                 ) : null}
               </div>

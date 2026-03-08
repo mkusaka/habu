@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Label } from "@/components/ui/label";
+import { Field, FieldContent, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Bell, BellOff } from "lucide-react";
@@ -39,13 +39,15 @@ export function NotificationToggle() {
   // Show skeleton while checking support on client
   if (permission === null) {
     return (
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Skeleton className="w-4 h-4 rounded" />
-          <Skeleton className="h-3.5 w-28" />
-        </div>
+      <Field orientation="horizontal">
+        <FieldContent>
+          <div className="flex items-center gap-2">
+            <Skeleton className="w-4 h-4 rounded" />
+            <Skeleton className="h-3.5 w-28" />
+          </div>
+        </FieldContent>
         <Skeleton className="h-[1.15rem] w-8 rounded-full" />
-      </div>
+      </Field>
     );
   }
 
@@ -58,17 +60,20 @@ export function NotificationToggle() {
   const isDenied = permission === "denied";
 
   return (
-    <div className="flex items-center justify-between">
-      <div className="flex items-center gap-2">
-        {isEnabled ? (
-          <Bell className="w-4 h-4 text-muted-foreground" />
-        ) : (
-          <BellOff className="w-4 h-4 text-muted-foreground" />
-        )}
-        <Label htmlFor="notification-toggle" className="text-sm">
+    <Field orientation="horizontal">
+      <FieldContent>
+        <FieldLabel htmlFor="notification-toggle" className="items-center">
+          {isEnabled ? (
+            <Bell className="w-4 h-4 text-muted-foreground" />
+          ) : (
+            <BellOff className="w-4 h-4 text-muted-foreground" />
+          )}
           Error notifications
-        </Label>
-      </div>
+        </FieldLabel>
+        <FieldDescription>
+          Receive browser notifications when a queued bookmark fails to save.
+        </FieldDescription>
+      </FieldContent>
       <div className="flex items-center gap-2">
         {isDenied && <span className="text-xs text-muted-foreground">Blocked in browser</span>}
         <Switch
@@ -78,6 +83,6 @@ export function NotificationToggle() {
           disabled={isDenied || isRequesting}
         />
       </div>
-    </div>
+    </Field>
   );
 }

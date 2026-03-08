@@ -8,6 +8,7 @@ import { fetchTwitterMarkdown } from "@/lib/twitter-content";
 import { isTwitterStatusUrl } from "@/lib/twitter-oembed";
 import { fetchGrokWebContext } from "@/lib/grok-context";
 import { resolveCanonicalUrl } from "@/lib/url-cleaner";
+import { runJudgedGenerationLoop, throwIfAborted } from "@/lib/judged-generation";
 
 // Lazy-initialized OpenAI client for moderation API
 let openaiClient: OpenAI | null = null;
@@ -23,7 +24,6 @@ const openai = createOpenAI();
 
 // Constants
 const MAX_MARKDOWN_CHARS = 800000;
-const MAX_JUDGE_ATTEMPTS = 3;
 const PARALLEL_GENERATION_COUNT = 3;
 const MAX_SCHEMA_RETRIES = 5;
 
@@ -750,60 +750,49 @@ ${webContext ? `\n<web_search_reference>\nThe following is supplementary context
 ${markdown}
 </content>`;
 
-  let lastSummary = "";
-  let feedback = "";
+  const summary = await runJudgedGenerationLoop({
+    label: "Summary",
+    runnerId,
+    signal,
+    runAttempt: async ({ feedback, isLastAttempt, signal: attemptSignal }) => {
+      const prompt = feedback
+        ? `${basePrompt}\n\n<previous_feedback>\nYour previous summary was rejected: ${feedback}\nPlease generate an improved summary addressing this feedback.\n</previous_feedback>`
+        : basePrompt;
 
-  for (let attempt = 0; attempt < MAX_JUDGE_ATTEMPTS; attempt++) {
-    // Check if aborted (another runner already won)
-    if (signal.aborted) {
-      throw new DOMException("Aborted", "AbortError");
-    }
+      const result = await generateObjectWithRetry({
+        model: openai("gpt-5-mini"),
+        schema: SummaryGenerationSchema,
+        system: baseSystemPrompt,
+        prompt,
+        abortSignal: attemptSignal,
+      });
 
-    const prompt = feedback
-      ? `${basePrompt}\n\n<previous_feedback>\nYour previous summary was rejected: ${feedback}\nPlease generate an improved summary addressing this feedback.\n</previous_feedback>`
-      : basePrompt;
+      if (isLastAttempt) {
+        return { type: "final", value: result.summary };
+      }
 
-    const result = await generateObjectWithRetry({
-      model: openai("gpt-5-mini"),
-      schema: SummaryGenerationSchema,
-      system: baseSystemPrompt,
-      prompt,
-      abortSignal: signal,
-    });
+      throwIfAborted(attemptSignal);
+      const judgeResult = await judgeSummary(
+        result.summary,
+        {
+          title: metadata.title,
+          description: metadata.description,
+          markdown,
+          webContext,
+          userContext,
+        },
+        attemptSignal,
+      );
 
-    lastSummary = result.summary;
+      if (judgeResult.passed) {
+        return { type: "accepted", value: result.summary };
+      }
 
-    // Skip judge on last attempt - just return what we have
-    if (attempt === MAX_JUDGE_ATTEMPTS - 1) break;
+      return { type: "rejected", feedback: judgeResult.reason };
+    },
+  });
 
-    // Check if aborted before judge
-    if (signal.aborted) {
-      throw new DOMException("Aborted", "AbortError");
-    }
-
-    // Judge the summary
-    const judgeResult = await judgeSummary(
-      lastSummary,
-      {
-        title: metadata.title,
-        description: metadata.description,
-        markdown,
-        webContext,
-        userContext,
-      },
-      signal,
-    );
-
-    if (judgeResult.passed) {
-      console.log(`[Summary] Runner ${runnerId} passed on attempt ${attempt + 1}`);
-      break;
-    }
-
-    feedback = judgeResult.reason;
-    console.log(`[Summary] Runner ${runnerId} attempt ${attempt + 1} rejected: ${feedback}`);
-  }
-
-  return { summary: lastSummary, webContext };
+  return { summary, webContext };
 }
 
 // Step 3a: Generate summary with parallel racing (first to pass judge wins)
@@ -920,90 +909,91 @@ ${userContext ? `\n<user_provided_context>\nThe following is context provided by
 ${markdown.slice(0, 10000)}
 </content>`;
 
-  let lastTags: string[] = [];
-  let feedback = "";
+  const lastTags = await runJudgedGenerationLoop({
+    label: "Tags",
+    runnerId,
+    signal,
+    runAttempt: async ({ feedback, isLastAttempt, signal: outerSignal }) => {
+      const attemptAbortController = new AbortController();
+      const onOuterAbort = () => attemptAbortController.abort();
+      if (outerSignal.aborted) {
+        attemptAbortController.abort();
+      } else {
+        outerSignal.addEventListener("abort", onOuterAbort, { once: true });
+      }
 
-  for (let attempt = 0; attempt < MAX_JUDGE_ATTEMPTS; attempt++) {
-    // Check if aborted (another runner already won)
-    if (signal.aborted) {
-      throw new DOMException("Aborted", "AbortError");
-    }
+      const attemptSignal = attemptAbortController.signal;
+      const promptBase = feedback
+        ? `${basePrompt}\n\n<previous_feedback>\nYour previous tags were rejected: ${feedback}\nPlease generate improved tags addressing this feedback.\n</previous_feedback>`
+        : basePrompt;
 
-    const attemptAbortController = new AbortController();
-    const onOuterAbort = () => attemptAbortController.abort();
-    if (signal.aborted) {
-      attemptAbortController.abort();
-    } else {
-      signal.addEventListener("abort", onOuterAbort, { once: true });
-    }
+      const candidates = Array.from({ length: PARALLEL_GENERATION_COUNT }, (_, i) => {
+        const candidateId = i + 1;
+        return (async () => {
+          throwIfAborted(attemptSignal);
 
-    const attemptSignal = attemptAbortController.signal;
-    const promptBase = feedback
-      ? `${basePrompt}\n\n<previous_feedback>\nYour previous tags were rejected: ${feedback}\nPlease generate improved tags addressing this feedback.\n</previous_feedback>`
-      : basePrompt;
+          const prompt = `${promptBase}\n\n<candidate>\nrunner=${runnerId} candidate=${candidateId}\n</candidate>`;
+          const result = await generateObjectWithRetry({
+            model: openai("gpt-5-mini"),
+            schema: TagsOutputSchema,
+            system: baseSystemPrompt,
+            prompt,
+            abortSignal: attemptSignal,
+          });
 
-    const isLastAttempt = attempt === MAX_JUDGE_ATTEMPTS - 1;
-    const candidates = Array.from({ length: PARALLEL_GENERATION_COUNT }, (_, i) => {
-      const candidateId = i + 1;
-      return (async () => {
-        if (attemptSignal.aborted) throw new DOMException("Aborted", "AbortError");
+          const tags = sanitizeGeneratedTags(result.tags);
+          if (isLastAttempt) return tags;
 
-        const prompt = `${promptBase}\n\n<candidate>\nrunner=${runnerId} candidate=${candidateId}\n</candidate>`;
-        const result = await generateObjectWithRetry({
-          model: openai("gpt-5-mini"),
-          schema: TagsOutputSchema,
-          system: baseSystemPrompt,
-          prompt,
-          abortSignal: attemptSignal,
-        });
+          throwIfAborted(attemptSignal);
+          const judgeResult = await judgeTags(
+            tags,
+            {
+              title: metadata.title,
+              keywords: metadata.keywords,
+              markdown,
+              userContext,
+            },
+            attemptSignal,
+          );
 
-        const tags = sanitizeGeneratedTags(result.tags);
-        if (isLastAttempt) return tags;
+          if (!judgeResult.passed) {
+            throw new Error(judgeResult.reason);
+          }
 
-        if (attemptSignal.aborted) throw new DOMException("Aborted", "AbortError");
+          return tags;
+        })();
+      });
 
-        const judgeResult = await judgeTags(
-          tags,
-          {
-            title: metadata.title,
-            keywords: metadata.keywords,
-            markdown,
-            userContext,
-          },
-          attemptSignal,
-        );
-
-        if (!judgeResult.passed) {
-          throw new Error(judgeResult.reason);
+      try {
+        const tags = await Promise.any(candidates);
+        attemptAbortController.abort();
+        if (isLastAttempt) {
+          return { type: "final", value: tags };
         }
 
-        return tags;
-      })();
-    });
+        return {
+          type: "accepted",
+          value: tags,
+          successMessage: "(parallel candidates)",
+        };
+      } catch (error) {
+        attemptAbortController.abort();
+        if (error instanceof AggregateError) {
+          const reasons = (error.errors as unknown[])
+            .map((e) => (e instanceof Error ? e.message : String(e)))
+            .filter(Boolean);
+          return {
+            type: "rejected",
+            feedback: reasons.slice(0, 3).join("\n").slice(0, 600),
+          };
+        }
 
-    try {
-      // First candidate to pass judge wins (within this attempt)
-      lastTags = await Promise.any(candidates);
-      console.log(
-        `[Tags] Runner ${runnerId} passed on attempt ${attempt + 1} (parallel candidates)`,
-      );
-      attemptAbortController.abort();
-      break;
-    } catch (error) {
-      attemptAbortController.abort();
-      if (error instanceof AggregateError) {
-        const reasons = (error.errors as unknown[])
-          .map((e) => (e instanceof Error ? e.message : String(e)))
-          .filter(Boolean);
-        feedback = reasons.slice(0, 3).join("\n").slice(0, 600);
-        console.log(`[Tags] Runner ${runnerId} attempt ${attempt + 1} rejected: ${feedback}`);
-        continue;
+        throw error;
+      } finally {
+        outerSignal.removeEventListener("abort", onOuterAbort);
       }
-      throw error;
-    } finally {
-      signal.removeEventListener("abort", onOuterAbort);
-    }
-  }
+    },
+  });
 
   return { tags: ["AI要約", ...lastTags] };
 }

@@ -5,6 +5,7 @@ import { z } from "zod";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { fetchHatenaTags } from "@/lib/hatena-bookmark-api";
 import { getHatenaRouteContext } from "@/lib/hatena-route-auth";
+import { validateSameOrigin } from "@/lib/same-origin";
 import { materializeTagCleanupCandidates } from "@/lib/tag-cleanup-candidates";
 import type { TagCleanupCandidatesResponse } from "@/types/habu";
 
@@ -24,26 +25,6 @@ const CandidateSchema = z.object({
     )
     .max(40),
 });
-
-function validateSameOrigin(request: NextRequest) {
-  const origin = request.headers.get("origin");
-  const referer = request.headers.get("referer");
-  const requestUrl = new URL(request.url);
-  const expectedOrigin = requestUrl.origin;
-
-  if (origin && origin !== expectedOrigin) {
-    return "Invalid origin";
-  }
-
-  if (!origin && referer) {
-    const refererUrl = new URL(referer);
-    if (refererUrl.origin !== expectedOrigin) {
-      return "Invalid referer";
-    }
-  }
-
-  return null;
-}
 
 export async function POST(request: NextRequest) {
   try {

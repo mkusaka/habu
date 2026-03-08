@@ -27,29 +27,8 @@ import { RegenerateButton } from "./regenerate-button";
 import { BulkRegenerateButton } from "./bulk-regenerate-button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { appendTagFilters, normalizeTagFilters } from "@/lib/bookmark-tag-filter";
-
-async function getHatenaStatus(): Promise<boolean> {
-  const cookieStore = await cookies();
-  const { env } = getCloudflareContext();
-  const auth = createAuth(env.DB);
-
-  const session = await auth.api.getSession({
-    headers: {
-      cookie: cookieStore.toString(),
-    },
-  });
-
-  if (!session?.user) {
-    return false;
-  }
-
-  const db = getDb(env.DB);
-  const user = await db.query.users.findFirst({
-    where: eq(users.id, session.user.id),
-  });
-
-  return !!user?.hatenaId;
-}
+import { buildBookmarkDetailHref, buildBookmarksHref } from "@/lib/bookmark-paths";
+import { getHatenaConnectionStatus } from "@/lib/hatena-status";
 
 const PAGE_SIZE = 20;
 const HATENA_MY_API_URL = "https://bookmark.hatenaapis.com/rest/1/my";
@@ -98,30 +77,6 @@ function addTagFilter(tags: readonly string[], tag: string) {
 
 function removeTagFilter(tags: readonly string[], tag: string) {
   return tags.filter((currentTag) => currentTag !== tag);
-}
-
-function buildBookmarksHref(page: number, tags: readonly string[]) {
-  const params = new URLSearchParams();
-  if (page > 1) {
-    params.set("page", String(page));
-  }
-
-  appendTagFilters(params, tags);
-
-  if (params.size === 0) {
-    return "/bookmarks";
-  }
-
-  return `/bookmarks?${params.toString()}`;
-}
-
-function buildBookmarkDetailHref(url: string, page: number, tags: readonly string[]) {
-  const params = new URLSearchParams({ url });
-  if (page > 1) {
-    params.set("page", String(page));
-  }
-  appendTagFilters(params, tags);
-  return `/bookmarks/detail?${params.toString()}`;
 }
 
 async function fetchBookmarks(page: number, tags: string[]): Promise<FetchBookmarksResult> {
@@ -408,7 +363,7 @@ export default async function BookmarksPage({ searchParams }: BookmarksPageProps
   const params = await searchParams;
   const page = Math.max(1, parseInt(params.page || "1", 10));
   const tags = normalizeTagFilters(params.tag);
-  const hasHatena = await getHatenaStatus();
+  const hasHatena = await getHatenaConnectionStatus();
 
   return (
     <div className="h-full w-full py-8">

@@ -13,7 +13,8 @@ import { LinkButton } from "@/components/ui/link-button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BookmarkEditForm } from "./bookmark-edit-form";
 import { fetchPageMeta, isMetaExtractionResult } from "@/lib/page-meta";
-import { appendTagFilters, normalizeTagFilters } from "@/lib/bookmark-tag-filter";
+import { normalizeTagFilters } from "@/lib/bookmark-tag-filter";
+import { buildBookmarksHref } from "@/lib/bookmark-paths";
 
 export const dynamic = "force-dynamic";
 
@@ -39,20 +40,6 @@ interface FetchResult {
   bookmark?: HatenaBookmarkGetResponse;
   title?: string;
   metadata?: PageMetadata;
-}
-
-function buildBookmarksHref(page: number, tags: readonly string[]) {
-  const params = new URLSearchParams();
-  if (page > 1) {
-    params.set("page", String(page));
-  }
-  appendTagFilters(params, tags);
-
-  if (params.size === 0) {
-    return "/bookmarks";
-  }
-
-  return `/bookmarks?${params.toString()}`;
 }
 
 async function fetchBookmarkData(bookmarkUrl: string): Promise<FetchResult> {

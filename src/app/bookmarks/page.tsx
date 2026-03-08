@@ -7,21 +7,28 @@ import { getDb } from "@/db/client";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { createSignedRequest } from "@/lib/hatena-oauth";
-import {
-  Bookmark,
-  Home,
-  AlertCircle,
-  ChevronLeft,
-  ChevronRight,
-  ExternalLink,
-  Search,
-  Settings,
-  Tags,
-} from "lucide-react";
+import { Bookmark, Home, AlertCircle, ExternalLink, Search, Settings, Tags } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LinkButton } from "@/components/ui/link-button";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Pagination as UIPagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import { RefreshButton } from "./refresh-button";
 import { RegenerateButton } from "./regenerate-button";
 import { BulkRegenerateButton } from "./bulk-regenerate-button";
@@ -193,31 +200,33 @@ function extractComment(comment: string) {
 function BookmarkListLoading({ page, tags }: { page: number; tags: string[] }) {
   return (
     <div className="flex flex-col flex-1 min-h-0">
-      <div className="h-full overflow-auto space-y-2">
-        {Array.from({ length: 20 }).map((_, i) => (
-          <div key={i} className="w-full p-3 rounded-md border">
-            {/* Header skeleton */}
-            <div className="flex items-center gap-2">
-              <Skeleton className="h-4 flex-1" />
-              <div className="flex items-center gap-1 flex-shrink-0">
-                <Skeleton className="h-6 w-6 rounded" />
-                <Skeleton className="h-6 w-6 rounded" />
-                <Skeleton className="h-6 w-6 rounded" />
+      <ScrollArea className="h-full">
+        <div className="space-y-2">
+          {Array.from({ length: 20 }).map((_, i) => (
+            <div key={i} className="w-full p-3 rounded-md border">
+              {/* Header skeleton */}
+              <div className="flex items-center gap-2">
+                <Skeleton className="h-4 flex-1" />
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  <Skeleton className="h-6 w-6 rounded" />
+                  <Skeleton className="h-6 w-6 rounded" />
+                  <Skeleton className="h-6 w-6 rounded" />
+                </div>
+              </div>
+              {/* Body skeleton */}
+              <div className="mt-1 space-y-1">
+                <div className="flex gap-1">
+                  <Skeleton className="h-5 w-12 rounded" />
+                  <Skeleton className="h-5 w-16 rounded" />
+                  <Skeleton className="h-5 w-10 rounded" />
+                </div>
+                <Skeleton className="h-3 w-full" />
+                <Skeleton className="h-3 w-24" />
               </div>
             </div>
-            {/* Body skeleton */}
-            <div className="mt-1 space-y-1">
-              <div className="flex gap-1">
-                <Skeleton className="h-5 w-12 rounded" />
-                <Skeleton className="h-5 w-16 rounded" />
-                <Skeleton className="h-5 w-10 rounded" />
-              </div>
-              <Skeleton className="h-3 w-full" />
-              <Skeleton className="h-3 w-24" />
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      </ScrollArea>
       {/* Pagination (footer) - show during loading to keep layout stable */}
       <Pagination page={page} hasMore={true} tags={tags} />
     </div>
@@ -229,10 +238,11 @@ async function BookmarkList({ page, tags }: { page: number; tags: string[] }) {
 
   if (!result.success) {
     return (
-      <div className="flex items-center gap-2 p-4 bg-red-50 dark:bg-red-900/20 rounded-md text-sm text-red-800 dark:text-red-200">
-        <AlertCircle className="w-4 h-4 flex-shrink-0" />
-        <span>{result.error}</span>
-      </div>
+      <Alert variant="destructive">
+        <AlertCircle />
+        <AlertTitle>Failed to load bookmarks</AlertTitle>
+        <AlertDescription>{result.error}</AlertDescription>
+      </Alert>
     );
   }
 
@@ -241,83 +251,87 @@ async function BookmarkList({ page, tags }: { page: number; tags: string[] }) {
 
   if (bookmarks.length === 0) {
     return (
-      <div className="text-center py-8 text-muted-foreground">
-        <p>{tags.length > 0 ? "No bookmarks found for the selected tags" : "No bookmarks found"}</p>
-      </div>
+      <Empty className="border-dashed">
+        <EmptyHeader>
+          <EmptyMedia variant="icon">
+            <Bookmark />
+          </EmptyMedia>
+          <EmptyTitle>No bookmarks found</EmptyTitle>
+          <EmptyDescription>
+            {tags.length > 0
+              ? "No bookmarks matched the selected tags. Clear filters or try different tags."
+              : "Connect Hatena and start saving bookmarks to build your list."}
+          </EmptyDescription>
+        </EmptyHeader>
+      </Empty>
     );
   }
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
-      <div className="h-full overflow-auto space-y-2">
-        {bookmarks.map((bookmark, index) => (
-          <div
-            key={`${bookmark.url}-${index}`}
-            className="relative w-full text-left p-3 rounded-md border hover:bg-muted/50 transition-colors"
-          >
-            <Link
-              href={buildBookmarkDetailHref(bookmark.url, page, tags)}
-              className="absolute inset-0"
-              aria-label={`Edit bookmark: ${bookmark.title || bookmark.url}`}
-            />
-            {/* Header: Title + Action buttons */}
-            <div className="flex items-center gap-2">
-              <h3 className="font-medium text-sm truncate flex-1 min-w-0">
-                {bookmark.title || bookmark.url}
-              </h3>
-              <div className="relative z-10 flex items-center gap-1 flex-shrink-0">
-                <RegenerateButton url={bookmark.url} title={bookmark.title} />
-                <a
-                  href={bookmark.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="p-1 text-muted-foreground hover:text-foreground cursor-pointer"
-                  title="Open page"
-                >
-                  <ExternalLink className="w-4 h-4" />
-                </a>
-                <a
-                  href={`https://b.hatena.ne.jp/entry/${bookmark.url.startsWith("https://") ? "s/" + bookmark.url.slice(8) : bookmark.url}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="p-1 text-muted-foreground hover:text-foreground cursor-pointer"
-                  title="View on Hatena Bookmark"
-                >
-                  <Bookmark className="w-4 h-4" />
-                </a>
+      <ScrollArea className="h-full">
+        <div className="space-y-2">
+          {bookmarks.map((bookmark, index) => (
+            <div
+              key={`${bookmark.url}-${index}`}
+              className="relative w-full text-left p-3 rounded-md border hover:bg-muted/50 transition-colors"
+            >
+              <Link
+                href={buildBookmarkDetailHref(bookmark.url, page, tags)}
+                className="absolute inset-0"
+                aria-label={`Edit bookmark: ${bookmark.title || bookmark.url}`}
+              />
+              {/* Header: Title + Action buttons */}
+              <div className="flex items-center gap-2">
+                <h3 className="font-medium text-sm truncate flex-1 min-w-0">
+                  {bookmark.title || bookmark.url}
+                </h3>
+                <div className="relative z-10 flex items-center gap-1 flex-shrink-0">
+                  <RegenerateButton url={bookmark.url} title={bookmark.title} />
+                  <a
+                    href={bookmark.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-1 text-muted-foreground hover:text-foreground cursor-pointer"
+                    title="Open page"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                  </a>
+                  <a
+                    href={`https://b.hatena.ne.jp/entry/${bookmark.url.startsWith("https://") ? "s/" + bookmark.url.slice(8) : bookmark.url}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-1 text-muted-foreground hover:text-foreground cursor-pointer"
+                    title="View on Hatena Bookmark"
+                  >
+                    <Bookmark className="w-4 h-4" />
+                  </a>
+                </div>
+              </div>
+              {/* Body: Tags, Comment, Date */}
+              <div className="mt-1">
+                {bookmark.tags.length > 0 && (
+                  <div className="relative z-10 flex flex-wrap gap-1 mt-1">
+                    {bookmark.tags.map((tag, i) => (
+                      <Badge key={i} asChild variant={tags.includes(tag) ? "default" : "secondary"}>
+                        <Link href={buildBookmarksHref(1, addTagFilter(tags, tag))}>{tag}</Link>
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+                {extractComment(bookmark.comment) && (
+                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                    {extractComment(bookmark.comment)}
+                  </p>
+                )}
+                <p className="text-xs text-muted-foreground mt-1">
+                  {formatDate(bookmark.bookmarkedAt)}
+                </p>
               </div>
             </div>
-            {/* Body: Tags, Comment, Date */}
-            <div className="mt-1">
-              {bookmark.tags.length > 0 && (
-                <div className="relative z-10 flex flex-wrap gap-1 mt-1">
-                  {bookmark.tags.map((tag, i) => (
-                    <Link
-                      key={i}
-                      href={buildBookmarksHref(1, addTagFilter(tags, tag))}
-                      className={`px-1.5 py-0.5 rounded text-xs transition-colors ${
-                        tags.includes(tag)
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-primary/10 text-primary hover:bg-primary/20"
-                      }`}
-                    >
-                      {tag}
-                    </Link>
-                  ))}
-                </div>
-              )}
-              {extractComment(bookmark.comment) && (
-                <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                  {extractComment(bookmark.comment)}
-                </p>
-              )}
-              <p className="text-xs text-muted-foreground mt-1">
-                {formatDate(bookmark.bookmarkedAt)}
-              </p>
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      </ScrollArea>
 
       {/* Pagination (footer) */}
       <Pagination page={page} hasMore={hasMore} tags={tags} />
@@ -327,31 +341,33 @@ async function BookmarkList({ page, tags }: { page: number; tags: string[] }) {
 
 function Pagination({ page, hasMore, tags }: { page: number; hasMore: boolean; tags: string[] }) {
   return (
-    <div className="flex items-center justify-between shrink-0 pt-2">
-      {page > 1 ? (
-        <LinkButton href={buildBookmarksHref(page - 1, tags)} variant="outline" size="sm">
-          <ChevronLeft className="w-4 h-4 mr-1" />
-          Prev
-        </LinkButton>
-      ) : (
-        <span className="inline-flex items-center px-3 py-1.5 text-sm text-muted-foreground">
-          <ChevronLeft className="w-4 h-4 mr-1" />
-          Prev
-        </span>
-      )}
-      <span className="text-sm text-muted-foreground">Page {page}</span>
-      {hasMore ? (
-        <LinkButton href={buildBookmarksHref(page + 1, tags)} variant="outline" size="sm">
-          Next
-          <ChevronRight className="w-4 h-4 ml-1" />
-        </LinkButton>
-      ) : (
-        <span className="inline-flex items-center px-3 py-1.5 text-sm text-muted-foreground">
-          Next
-          <ChevronRight className="w-4 h-4 ml-1" />
-        </span>
-      )}
-    </div>
+    <UIPagination className="shrink-0 pt-2">
+      <PaginationContent className="w-full justify-between">
+        <PaginationItem>
+          {page > 1 ? (
+            <PaginationPrevious asChild>
+              <Link href={buildBookmarksHref(page - 1, tags)}>Previous</Link>
+            </PaginationPrevious>
+          ) : (
+            <PaginationPrevious className="pointer-events-none opacity-50" />
+          )}
+        </PaginationItem>
+        <PaginationItem>
+          <PaginationLink asChild isActive size="sm">
+            <Link href={buildBookmarksHref(page, tags)}>Page {page}</Link>
+          </PaginationLink>
+        </PaginationItem>
+        <PaginationItem>
+          {hasMore ? (
+            <PaginationNext asChild>
+              <Link href={buildBookmarksHref(page + 1, tags)}>Next</Link>
+            </PaginationNext>
+          ) : (
+            <PaginationNext className="pointer-events-none opacity-50" />
+          )}
+        </PaginationItem>
+      </PaginationContent>
+    </UIPagination>
   );
 }
 

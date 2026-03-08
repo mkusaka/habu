@@ -74,15 +74,17 @@ function Composer({
     >
       <CardContent className="space-y-3 px-4 py-4">
         {selectedBookmark ? (
-          <button
-            type="button"
-            onClick={onClearSelectedBookmark}
-            className="inline-flex max-w-full items-center gap-2 rounded-full border bg-muted/60 px-3 py-1 text-sm transition-colors hover:bg-accent"
-          >
-            <Bookmark className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-            <span className="truncate">{selectedBookmark.title || selectedBookmark.url}</span>
-            <X className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-          </button>
+          <Badge asChild variant="secondary" className="max-w-full px-3 py-1">
+            <button
+              type="button"
+              onClick={onClearSelectedBookmark}
+              className="inline-flex items-center gap-2 transition-colors hover:bg-accent"
+            >
+              <Bookmark className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+              <span className="truncate">{selectedBookmark.title || selectedBookmark.url}</span>
+              <X className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+            </button>
+          </Badge>
         ) : null}
 
         <form onSubmit={onSubmit} className="flex items-end gap-3">

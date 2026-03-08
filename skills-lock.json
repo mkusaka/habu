@@ -5,6 +5,11 @@
       "source": "shadcn/ui",
       "sourceType": "github",
       "computedHash": "91c02eb706f046fb9d6a061efbb96496e4be751b5b14c283cf82baaa50f3a985"
+    },
+    "simplify": {
+      "source": "mkusaka/ccskills",
+      "sourceType": "github",
+      "computedHash": "a24fd7f0b34ac2ba6a85cb26c1049448411c1261e788438af7bea5cd59cf7f1b"
     }
   }
 }

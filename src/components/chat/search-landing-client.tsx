@@ -8,7 +8,6 @@ import { buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import type { ChatThreadSummary } from "@/lib/chat-history";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -126,33 +125,6 @@ export function SearchLandingClient({
             </CardHeader>
             <CardContent className="space-y-4 px-4 py-4 sm:px-5">
               <form onSubmit={handleStartSearch} className="space-y-4">
-                <div className="space-y-2">
-                  <label className="text-xs font-medium text-muted-foreground">
-                    Page URL (optional)
-                  </label>
-                  <div className="flex gap-2">
-                    <Input
-                      value={urlInput}
-                      onChange={(e: ChangeEvent<HTMLInputElement>) => setUrlInput(e.target.value)}
-                      placeholder="https://example.com/article"
-                      type="url"
-                    />
-                    {urlInput && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        onClick={() => {
-                          setUrlInput("");
-                          setSelectedBookmark(undefined);
-                        }}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                </div>
-
                 <div className="space-y-2">
                   <label className="text-xs font-medium text-muted-foreground">Ask something</label>
                   <Textarea
@@ -291,7 +263,7 @@ export function SearchLandingClient({
             </section>
           )}
 
-          {urlInput && selectedBookmark && (
+          {selectedBookmark && (
             <section className="space-y-3">
               <div className="flex items-center gap-2">
                 <Bookmark className="h-4 w-4 text-muted-foreground" />

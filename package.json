@@ -27,7 +27,8 @@
 	"dependencies": {
 		"@ai-sdk/openai": "^3.0.20",
 		"@ai-sdk/react": "^3.0.57",
-		"@better-auth/oauth-provider": "^1.4.17",
+		"@better-auth/drizzle-adapter": "1.5.4",
+		"@better-auth/oauth-provider": "1.5.4",
 		"@cloudflare/workers-types": "^4.20260127.0",
 		"@mastra/core": "^1.2.0",
 		"@mastra/observability": "^1.2.0",
@@ -44,7 +45,7 @@
 		"@tanstack/react-virtual": "^3.13.13",
 		"@types/crypto-js": "^4.2.2",
 		"ai": "^6.0.55",
-		"better-auth": "^1.4.17",
+		"better-auth": "1.5.4",
 		"class-variance-authority": "^0.7.1",
 		"clsx": "^2.1.1",
 		"crypto-js": "^4.2.0",

@@ -9,8 +9,6 @@ import { LinkButton } from "@/components/ui/link-button";
 import { buildChatPageContextForUser } from "@/lib/chat-page-context";
 import { getChatThreadForHatenaAccount, listChatThreadsForHatenaAccount } from "@/lib/chat-history";
 
-export const dynamic = "force-dynamic";
-
 interface SearchSessionPageProps {
   params: Promise<{ sessionId: string }>;
   searchParams: Promise<{ q?: string; url?: string }>;

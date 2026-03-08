@@ -1,22 +1,13 @@
 import { cookies } from "next/headers";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { AlertCircle } from "lucide-react";
+import { SearchHistoriesClient } from "@/components/chat/search-histories-client";
 import { createAuth } from "@/lib/auth";
-import { SearchLandingClient } from "@/components/chat/search-landing-client";
 import { buildMcpContextForUser } from "@/lib/bookmark-user-context";
-import { buildChatPageContextForUser } from "@/lib/chat-page-context";
 import { LinkButton } from "@/components/ui/link-button";
 import { listChatThreadsForHatenaAccount } from "@/lib/chat-history";
-import { listBookmarks } from "@/mcp/tools/list-bookmarks";
 
-interface SearchPageProps {
-  searchParams: Promise<{ q?: string; url?: string }>;
-}
-
-export default async function SearchPage({ searchParams }: SearchPageProps) {
-  const params = await searchParams;
-  const initialUrl = params.url?.trim() || undefined;
-
+export default async function SearchHistoriesPage() {
   const cookieStore = await cookies();
   const { env } = getCloudflareContext();
   const auth = createAuth(env.DB);
@@ -57,39 +48,6 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   }
 
   const historyThreads = await listChatThreadsForHatenaAccount(mcpContext.hatenaId, env.DB);
-  const recentBookmarksResult = await listBookmarks({ limit: 5, offset: 0 }, mcpContext, {
-    HATENA_CONSUMER_KEY: env.HATENA_CONSUMER_KEY,
-    HATENA_CONSUMER_SECRET: env.HATENA_CONSUMER_SECRET,
-  });
-  const recentBookmarks = recentBookmarksResult.success ? recentBookmarksResult.data.bookmarks : [];
-  const selectedBookmarkContext = initialUrl
-    ? await buildChatPageContextForUser({
-        userId: session.user.id,
-        url: initialUrl,
-        dbBinding: env.DB,
-        env: {
-          HATENA_CONSUMER_KEY: env.HATENA_CONSUMER_KEY,
-          HATENA_CONSUMER_SECRET: env.HATENA_CONSUMER_SECRET,
-        },
-      })
-    : null;
 
-  return (
-    <SearchLandingClient
-      initialUrl={initialUrl}
-      recentBookmarks={recentBookmarks}
-      selectedBookmark={
-        initialUrl
-          ? {
-              url: initialUrl,
-              title: selectedBookmarkContext?.title || initialUrl,
-              comment: selectedBookmarkContext?.context.existingComment || "",
-              tags: selectedBookmarkContext?.context.existingTags || [],
-              bookmarkedAt: "",
-            }
-          : undefined
-      }
-      historyThreads={historyThreads}
-    />
-  );
+  return <SearchHistoriesClient historyThreads={historyThreads} />;
 }

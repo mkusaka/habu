@@ -4,7 +4,7 @@ import { useCallback, useMemo, useState, type ChangeEvent, type FormEvent } from
 import { useRouter } from "next/navigation";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
-import { Bookmark, ExternalLink, AlertCircle, History, Menu, Search } from "lucide-react";
+import { Bookmark, ExternalLink, AlertCircle, History, Menu } from "lucide-react";
 import { ChatMessages } from "./chat-messages";
 import { ChatInput } from "./chat-input";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -202,13 +202,13 @@ export function ChatPageClient({
                 variant="ghost"
                 size="icon"
                 onClick={() => setIsSearchPanelOpen((open) => !open)}
-                aria-label={isSearchPanelOpen ? "Hide search panel" : "Show search panel"}
+                aria-label={isSearchPanelOpen ? "Hide search controls" : "Show search controls"}
               >
                 <Menu className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              {isSearchPanelOpen ? "Hide Search Panel" : "Show Search Panel"}
+              {isSearchPanelOpen ? "Hide Search Controls" : "Show Search Controls"}
             </TooltipContent>
           </Tooltip>
           <Tooltip>
@@ -238,23 +238,25 @@ export function ChatPageClient({
             </Tooltip>
           )}
           {selectedUrl && (
-            <a
-              href={selectedUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={cn(buttonVariants({ variant: "ghost", size: "icon" }))}
-              aria-label="Open Page"
-            >
-              <ExternalLink className="h-4 w-4" />
-              <span className="sr-only">Open Page</span>
-            </a>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <a
+                  href={selectedUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={cn(buttonVariants({ variant: "ghost", size: "icon" }))}
+                  aria-label="Open Page"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  <span className="sr-only">Open Page</span>
+                </a>
+              </TooltipTrigger>
+              <TooltipContent>Open Page</TooltipContent>
+            </Tooltip>
           )}
         </div>
         <div className="mt-3">
-          <div className="flex items-center gap-2">
-            <Search className="h-4 w-4 text-muted-foreground" />
-            <h1 className="text-xl font-semibold">{title || initialQuery || "Search"}</h1>
-          </div>
+          <h1 className="text-xl font-semibold">{title || initialQuery || "Search"}</h1>
           {error ? (
             <div className="mt-2 inline-flex items-center gap-2 rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive">
               <AlertCircle className="h-4 w-4" />

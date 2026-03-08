@@ -2,11 +2,12 @@
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { Home, Bookmark, List, Settings } from "lucide-react";
+import { Home, Search, Bookmark, List, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/", icon: Home, label: "Home" },
+  { href: "/search", icon: Search, label: "Search" },
   { href: "/bookmarks", icon: Bookmark, label: "Bookmarks" },
   { href: "/queue", icon: List, label: "Queue" },
   { href: "/settings", icon: Settings, label: "Settings" },

@@ -74,17 +74,15 @@ afterEach(() => {
 });
 
 describe("SearchLandingClient", () => {
-  it("selects and deselects a recent bookmark card", () => {
+  it("shows and clears an initially selected bookmark card", () => {
     render(
       <SearchLandingClient
-        initialUrl={undefined}
+        initialUrl="https://example.com/recent"
         recentBookmarks={recentBookmarks}
+        selectedBookmark={recentBookmarks[0]}
         historyThreads={historyThreads}
       />,
     );
-
-    assert.ok(screen.getByText("Recent Bookmarks"));
-    fireEvent.click(screen.getByRole("button", { name: /Recent Pick/i }));
 
     assert.ok(screen.getByText("Selected Bookmark"));
     assert.ok(screen.getByText("saved comment"));
@@ -96,7 +94,7 @@ describe("SearchLandingClient", () => {
     assert.ok(screen.getByText("Recent Bookmarks"));
   });
 
-  it("starts a session from a quick start card with the selected URL", () => {
+  it("starts a session immediately when a recent bookmark is clicked", () => {
     render(
       <SearchLandingClient
         initialUrl={undefined}
@@ -106,6 +104,22 @@ describe("SearchLandingClient", () => {
     );
 
     fireEvent.click(screen.getByRole("button", { name: /Recent Pick/i }));
+
+    expect(pushMock).toHaveBeenCalledWith(
+      "/search/session-123?url=https%3A%2F%2Fexample.com%2Frecent",
+    );
+  });
+
+  it("starts a session from a quick start card with the selected URL", () => {
+    render(
+      <SearchLandingClient
+        initialUrl="https://example.com/recent"
+        recentBookmarks={recentBookmarks}
+        selectedBookmark={recentBookmarks[0]}
+        historyThreads={historyThreads}
+      />,
+    );
+
     fireEvent.click(
       screen.getByRole("button", {
         name: /What did I already bookmark that relates to this URL\?/i,

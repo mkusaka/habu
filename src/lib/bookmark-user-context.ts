@@ -20,6 +20,7 @@ export async function buildMcpContextForUser(
 
   return {
     userId: user.id,
+    hatenaId: user.hatenaId ?? null,
     scopes: [...MCP_SCOPES],
     hatenaToken: user.hatenaToken
       ? {

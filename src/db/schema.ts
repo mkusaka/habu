@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, integer, index } from "drizzle-orm/sqlite-core";
 import { relations } from "drizzle-orm";
 import { sql } from "drizzle-orm";
 
@@ -179,6 +179,7 @@ export const chatThreads = sqliteTable(
     userId: text("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
+    hatenaId: text("hatena_id").references(() => hatenaTokens.hatenaId, { onDelete: "cascade" }),
     url: text("url"),
     query: text("query"),
     title: text("title"),
@@ -192,7 +193,12 @@ export const chatThreads = sqliteTable(
       .notNull()
       .default(sql`(unixepoch('now') * 1000)`),
   },
-  (_table) => ({}),
+  (table) => ({
+    hatenaIdUpdatedAtIdx: index("chat_threads_hatena_id_updated_at_idx").on(
+      table.hatenaId,
+      table.updatedAt,
+    ),
+  }),
 );
 
 // Relations

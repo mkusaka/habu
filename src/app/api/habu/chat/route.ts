@@ -12,7 +12,7 @@ import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { createAuth } from "@/lib/auth";
 import { buildMcpContextForUser } from "@/lib/bookmark-user-context";
 import { applyChatRequestToMessages } from "@/lib/chat-request-messages";
-import { getChatThreadForUser, saveChatThreadForUser } from "@/lib/chat-history";
+import { getChatThreadForHatenaAccount, saveChatThreadForHatenaAccount } from "@/lib/chat-history";
 import {
   buildChatSystemPrompt,
   buildChatUserContext,
@@ -68,6 +68,13 @@ export async function POST(request: NextRequest) {
         headers: { "Content-Type": "application/json" },
       });
     }
+    if (!mcpContext.hatenaId) {
+      return new Response(JSON.stringify({ error: "Hatena not connected" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    const hatenaId = mcpContext.hatenaId;
 
     const body = (await request.json()) as ChatRequestBody;
     const { context } = body;
@@ -150,7 +157,7 @@ export async function POST(request: NextRequest) {
       }),
     };
 
-    const previousThread = await getChatThreadForUser(session.user.id, threadId, env.DB);
+    const previousThread = await getChatThreadForHatenaAccount(hatenaId, threadId, env.DB);
     const previousMessages = previousThread?.messages ?? [];
     const requestMessages = applyChatRequestToMessages(previousMessages, body);
 
@@ -189,9 +196,10 @@ export async function POST(request: NextRequest) {
           return;
         }
 
-        await saveChatThreadForUser({
+        await saveChatThreadForHatenaAccount({
           threadId,
           userId: session.user.id,
+          hatenaId,
           query: context.query,
           url: context.url,
           title: context.metadata?.title || context.query || context.url || "Search Session",

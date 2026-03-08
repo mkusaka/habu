@@ -40,13 +40,13 @@ function extractText(message: UIMessage | undefined): string {
     .slice(0, 200);
 }
 
-export async function listChatThreadsForUser(
-  userId: string,
+export async function listChatThreadsForHatenaAccount(
+  hatenaId: string,
   dbBinding: D1Database,
 ): Promise<ChatThreadSummary[]> {
   const db = getDb(dbBinding);
   const rows = await db.query.chatThreads.findMany({
-    where: eq(chatThreads.userId, userId),
+    where: eq(chatThreads.hatenaId, hatenaId),
     orderBy: [desc(chatThreads.updatedAt)],
   });
 
@@ -61,14 +61,14 @@ export async function listChatThreadsForUser(
   }));
 }
 
-export async function getChatThreadForUser(
-  userId: string,
+export async function getChatThreadForHatenaAccount(
+  hatenaId: string,
   threadId: string,
   dbBinding: D1Database,
 ): Promise<ChatThreadRecord | null> {
   const db = getDb(dbBinding);
   const row = await db.query.chatThreads.findFirst({
-    where: and(eq(chatThreads.userId, userId), eq(chatThreads.id, threadId)),
+    where: and(eq(chatThreads.hatenaId, hatenaId), eq(chatThreads.id, threadId)),
   });
 
   if (!row) {
@@ -87,9 +87,10 @@ export async function getChatThreadForUser(
   };
 }
 
-export async function saveChatThreadForUser(params: {
+export async function saveChatThreadForHatenaAccount(params: {
   threadId: string;
   userId: string;
+  hatenaId: string;
   query?: string;
   url?: string;
   title?: string;
@@ -103,14 +104,16 @@ export async function saveChatThreadForUser(params: {
     where: eq(chatThreads.id, params.threadId),
   });
 
-  if (existingThread && existingThread.userId !== params.userId) {
-    throw new Error("Thread does not belong to the current user");
+  if (existingThread && existingThread.hatenaId !== params.hatenaId) {
+    throw new Error("Thread does not belong to the current Hatena account");
   }
 
   if (existingThread) {
     await db
       .update(chatThreads)
       .set({
+        userId: params.userId,
+        hatenaId: params.hatenaId,
         query: params.query,
         url: params.url,
         title: params.title,
@@ -126,6 +129,7 @@ export async function saveChatThreadForUser(params: {
   await db.insert(chatThreads).values({
     id: params.threadId,
     userId: params.userId,
+    hatenaId: params.hatenaId,
     query: params.query,
     url: params.url,
     title: params.title,

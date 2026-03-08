@@ -1,0 +1,2 @@
+ALTER TABLE `chat_threads` ADD `hatena_id` text REFERENCES hatena_tokens(hatena_id);--> statement-breakpoint
+CREATE INDEX `chat_threads_hatena_id_updated_at_idx` ON `chat_threads` (`hatena_id`,`updated_at`);

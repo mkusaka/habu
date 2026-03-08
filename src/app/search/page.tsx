@@ -5,9 +5,10 @@ import { AlertCircle } from "lucide-react";
 import { redirect } from "next/navigation";
 import { createAuth } from "@/lib/auth";
 import { ChatPageClient } from "@/components/chat/chat-page-client";
+import { buildMcpContextForUser } from "@/lib/bookmark-user-context";
 import { LinkButton } from "@/components/ui/link-button";
 import { buildChatPageContextForUser } from "@/lib/chat-page-context";
-import { getChatThreadForUser, listChatThreadsForUser } from "@/lib/chat-history";
+import { getChatThreadForHatenaAccount, listChatThreadsForHatenaAccount } from "@/lib/chat-history";
 
 export const dynamic = "force-dynamic";
 
@@ -62,7 +63,22 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
     );
   }
 
-  const historyThreads = await listChatThreadsForUser(session.user.id, env.DB);
+  const mcpContext = await buildMcpContextForUser(session.user.id, env.DB);
+  if (!mcpContext?.hatenaId) {
+    return (
+      <div className="mx-auto flex min-h-screen max-w-xl flex-col items-center justify-center gap-4 px-6 text-center">
+        <div className="inline-flex items-center gap-2 rounded-md border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          <AlertCircle className="h-4 w-4" />
+          <span>Connect your Hatena account to use bookmark search.</span>
+        </div>
+        <LinkButton href="/settings" variant="outline">
+          Open Settings
+        </LinkButton>
+      </div>
+    );
+  }
+
+  const historyThreads = await listChatThreadsForHatenaAccount(mcpContext.hatenaId, env.DB);
 
   let initialMessages: UIMessage[] = [];
   let title: string | undefined;
@@ -74,7 +90,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
       error = "Please provide a valid public http/https URL.";
       title = "Invalid URL";
     } else if (sessionId) {
-      const thread = await getChatThreadForUser(session.user.id, sessionId, env.DB);
+      const thread = await getChatThreadForHatenaAccount(mcpContext.hatenaId, sessionId, env.DB);
       const effectiveUrl = selectedUrl ?? thread?.url;
       const effectiveQuery = query ?? thread?.query;
 

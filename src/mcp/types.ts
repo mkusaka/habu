@@ -3,6 +3,7 @@ import type { McpScope } from "@/lib/auth";
 // MCP session context passed to tools
 export interface McpContext {
   userId: string;
+  hatenaId: string | null;
   scopes: string[];
   hatenaToken: {
     accessToken: string;

@@ -14,6 +14,7 @@ afterEach(() => {
 
 const baseContext: McpContext = {
   userId: "user-1",
+  hatenaId: "hatena-user",
   scopes: ["bookmark:read"],
   hatenaToken: {
     accessToken: "access-token",

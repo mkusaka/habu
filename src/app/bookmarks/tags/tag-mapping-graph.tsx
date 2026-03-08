@@ -54,15 +54,12 @@ export function TagMappingGraph({
     null,
   );
 
-  const handleCopyTarget = async (label: string, action: TagMappingAction, targetKey: string) => {
+  const handleCopyTarget = async (label: string, action: TagMappingAction) => {
     if (action === "delete") return;
 
     try {
       await navigator.clipboard.writeText(label);
       toast.success("Tag copied", { description: label });
-      setSelection((current) =>
-        current?.sourceTag === undefined && current?.targetKey === targetKey ? null : { targetKey },
-      );
     } catch {
       toast.error("Failed to copy");
     }
@@ -284,9 +281,10 @@ export function TagMappingGraph({
                     {target.action !== "delete" ? (
                       <button
                         type="button"
+                        onMouseDown={(event) => event.preventDefault()}
                         onClick={(event) => {
                           event.stopPropagation();
-                          void handleCopyTarget(target.label, target.action, target.key);
+                          void handleCopyTarget(target.label, target.action);
                         }}
                         className="shrink-0 text-muted-foreground hover:text-foreground"
                         title={`Copy ${target.label}`}

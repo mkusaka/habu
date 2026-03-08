@@ -4,6 +4,13 @@ import type { FormEvent } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import { Input } from "@/components/ui/input";
 import type { ChatThreadSummary } from "@/lib/chat-history";
 import { cn } from "@/lib/utils";
@@ -81,8 +88,18 @@ export function SearchPanel({
         <div className="space-y-2">
           {visibleHistory.length === 0 ? (
             <Card className="gap-0 py-0">
-              <CardContent className="px-4 py-3 text-sm text-muted-foreground">
-                No saved conversations yet.
+              <CardContent className="px-3 py-3">
+                <Empty className="gap-4 border-none p-4 md:p-4">
+                  <EmptyHeader className="gap-1.5">
+                    <EmptyMedia variant="icon">
+                      <Plus />
+                    </EmptyMedia>
+                    <EmptyTitle className="text-sm">No saved conversations yet</EmptyTitle>
+                    <EmptyDescription>
+                      Start a search to create your first reusable conversation.
+                    </EmptyDescription>
+                  </EmptyHeader>
+                </Empty>
               </CardContent>
             </Card>
           ) : (

@@ -28,6 +28,13 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 
 interface ChatMessagesProps {
   messages: UIMessage[];
@@ -50,11 +57,19 @@ export function ChatMessages({
 
   if (messages.length === 0 && !isLoading) {
     return (
-      <div className="flex-1 flex items-center justify-center p-4">
-        <p className="text-muted-foreground text-sm text-center">
-          Search this page, linked URLs, or your bookmarks.
-          <br />I can also search your bookmarks and fetch linked pages when needed.
-        </p>
+      <div className="flex flex-1 items-center justify-center p-4">
+        <Empty className="max-w-lg border-dashed">
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <Search />
+            </EmptyMedia>
+            <EmptyTitle>Start a search conversation</EmptyTitle>
+            <EmptyDescription>
+              Search this page, linked URLs, or your bookmarks. I can also fetch linked pages when
+              needed.
+            </EmptyDescription>
+          </EmptyHeader>
+        </Empty>
       </div>
     );
   }

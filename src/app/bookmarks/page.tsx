@@ -22,6 +22,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { LinkButton } from "@/components/ui/link-button";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import { RefreshButton } from "./refresh-button";
 import { RegenerateButton } from "./regenerate-button";
 import { BulkRegenerateButton } from "./bulk-regenerate-button";
@@ -274,10 +282,11 @@ async function BookmarkList({ page, tags }: { page: number; tags: string[] }) {
 
   if (!result.success) {
     return (
-      <div className="flex items-center gap-2 p-4 bg-red-50 dark:bg-red-900/20 rounded-md text-sm text-red-800 dark:text-red-200">
-        <AlertCircle className="w-4 h-4 flex-shrink-0" />
-        <span>{result.error}</span>
-      </div>
+      <Alert variant="destructive">
+        <AlertCircle />
+        <AlertTitle>Failed to load bookmarks</AlertTitle>
+        <AlertDescription>{result.error}</AlertDescription>
+      </Alert>
     );
   }
 
@@ -286,9 +295,19 @@ async function BookmarkList({ page, tags }: { page: number; tags: string[] }) {
 
   if (bookmarks.length === 0) {
     return (
-      <div className="text-center py-8 text-muted-foreground">
-        <p>{tags.length > 0 ? "No bookmarks found for the selected tags" : "No bookmarks found"}</p>
-      </div>
+      <Empty className="border-dashed">
+        <EmptyHeader>
+          <EmptyMedia variant="icon">
+            <Bookmark />
+          </EmptyMedia>
+          <EmptyTitle>No bookmarks found</EmptyTitle>
+          <EmptyDescription>
+            {tags.length > 0
+              ? "No bookmarks matched the selected tags. Clear filters or try different tags."
+              : "Connect Hatena and start saving bookmarks to build your list."}
+          </EmptyDescription>
+        </EmptyHeader>
+      </Empty>
     );
   }
 

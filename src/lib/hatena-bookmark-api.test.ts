@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyTagMappings, replaceBookmarkTag } from "./hatena-bookmark-api";
+import { applyTagMappings, buildHatenaSearchUrl, replaceBookmarkTag } from "./hatena-bookmark-api";
 
 describe("replaceBookmarkTag", () => {
   it("replaces the source tag and preserves order", () => {
@@ -31,5 +31,26 @@ describe("replaceBookmarkTag", () => {
       nextTags: ["before1", "after1"],
       matchedSourceTags: ["before1", "before2", "before3", "before4"],
     });
+  });
+
+  it("treats case-only variants as distinct source tags", () => {
+    expect(
+      applyTagMappings(
+        ["Agents", "agents"],
+        [
+          { sourceTag: "Agents", action: "update", targetTag: "AI Agents" },
+          { sourceTag: "agents", action: "delete" },
+        ],
+      ),
+    ).toEqual({
+      nextTags: ["AI Agents"],
+      matchedSourceTags: ["Agents", "agents"],
+    });
+  });
+
+  it("builds fulltext search URLs with the q parameter", () => {
+    expect(buildHatenaSearchUrl("AI agents", 100, 20)).toBe(
+      "https://b.hatena.ne.jp/my/search/json?q=AI%20agents&of=100&limit=20",
+    );
   });
 });

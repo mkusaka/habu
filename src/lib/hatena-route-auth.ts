@@ -11,7 +11,6 @@ interface HatenaRouteContext {
   accessTokenSecret: string;
   consumerKey: string;
   consumerSecret: string;
-  scopes: string[];
 }
 
 type HatenaRouteAuthResult =
@@ -63,10 +62,6 @@ export async function getHatenaRouteContext(headers: Headers): Promise<HatenaRou
       accessTokenSecret: user.hatenaToken.accessTokenSecret,
       consumerKey,
       consumerSecret,
-      scopes: user.hatenaToken.scope
-        .split(",")
-        .map((scope) => scope.trim())
-        .filter(Boolean),
     },
   };
 }

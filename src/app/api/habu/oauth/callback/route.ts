@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAccessToken, fetchHatenaUserInfo } from "@/lib/hatena-oauth";
+import { getAccessToken, fetchHatenaUserInfo, HATENA_OAUTH_SCOPE } from "@/lib/hatena-oauth";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { getDb } from "@/db/client";
 import { hatenaTokens, users } from "@/db/schema";
@@ -117,14 +117,14 @@ export async function GET(request: NextRequest) {
         hatenaId,
         accessToken,
         accessTokenSecret,
-        scope: "read_public,read_private,write_public,write_private",
+        scope: HATENA_OAUTH_SCOPE,
       })
       .onConflictDoUpdate({
         target: hatenaTokens.hatenaId,
         set: {
           accessToken,
           accessTokenSecret,
-          scope: "read_public,read_private,write_public,write_private",
+          scope: HATENA_OAUTH_SCOPE,
           updatedAt: new Date(),
         },
       });

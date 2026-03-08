@@ -50,16 +50,31 @@ export function TagMappingGraph({
   const sourceRefs = useRef<Record<string, HTMLElement | null>>({});
   const targetRefs = useRef<Record<string, HTMLElement | null>>({});
   const [edges, setEdges] = useState<EdgePosition[]>([]);
+  const [selection, setSelection] = useState<{ sourceTag?: string; targetKey: string } | null>(
+    null,
+  );
 
-  const handleCopyTarget = async (label: string, action: TagMappingAction) => {
+  const handleCopyTarget = async (label: string, action: TagMappingAction, targetKey: string) => {
     if (action === "delete") return;
 
     try {
       await navigator.clipboard.writeText(label);
       toast.success("Tag copied", { description: label });
+      setSelection((current) =>
+        current?.sourceTag === undefined && current?.targetKey === targetKey ? null : { targetKey },
+      );
     } catch {
       toast.error("Failed to copy");
     }
+  };
+
+  const handleSelectSource = (row: MappingGraphRow) => {
+    const target = getTargetMeta(row);
+    setSelection((current) =>
+      current?.sourceTag === row.sourceTag
+        ? null
+        : { sourceTag: row.sourceTag, targetKey: target.key },
+    );
   };
 
   const targetNodes = useMemo(() => {
@@ -135,6 +150,16 @@ export function TagMappingGraph({
     return null;
   }
 
+  const hasSelection = selection !== null;
+
+  const isEdgeHighlighted = (edge: EdgePosition) => {
+    if (!selection) return true;
+    if (selection.sourceTag) {
+      return edge.sourceTag === selection.sourceTag && edge.targetKey === selection.targetKey;
+    }
+    return edge.targetKey === selection.targetKey;
+  };
+
   return (
     <div className="overflow-x-auto rounded-lg border">
       <div
@@ -154,8 +179,9 @@ export function TagMappingGraph({
                     ? "rgb(59 130 246 / 0.45)"
                     : "rgb(148 163 184 / 0.35)"
               }
-              strokeWidth="2"
+              strokeWidth={isEdgeHighlighted(edge) ? "3" : "2"}
               strokeLinecap="round"
+              opacity={hasSelection ? (isEdgeHighlighted(edge) ? 1 : 0.18) : 1}
             />
           ))}
         </svg>
@@ -165,61 +191,89 @@ export function TagMappingGraph({
             <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
               Before
             </div>
-            {rows.map((row) => (
-              <a
-                key={row.sourceTag}
-                href={hatenaId ? buildHatenaTagPageUrl(hatenaId, row.sourceTag) : undefined}
-                target={hatenaId ? "_blank" : undefined}
-                rel={hatenaId ? "noopener noreferrer" : undefined}
-                ref={(element) => {
-                  sourceRefs.current[row.sourceTag] = element;
-                }}
-                className={cn(
-                  "flex min-h-10 items-center justify-between gap-2 rounded-md border bg-background px-3 py-2 text-sm shadow-sm transition-colors",
-                  hatenaId ? "cursor-pointer hover:bg-accent/40" : "cursor-default",
-                )}
-                title={hatenaId ? `Open Hatena bookmarks tagged ${row.sourceTag}` : undefined}
-              >
-                <span className="flex min-w-0 items-center gap-2 font-medium">
-                  <span className="truncate">{row.sourceTag}</span>
-                  {hatenaId && <ExternalLink className="size-3 shrink-0 text-muted-foreground" />}
-                </span>
-                <span className="shrink-0 text-xs text-muted-foreground">{row.sourceCount}</span>
-              </a>
-            ))}
+            {rows.map((row) => {
+              const target = getTargetMeta(row);
+              const isHighlighted =
+                selection?.sourceTag === row.sourceTag ||
+                (!selection?.sourceTag && selection?.targetKey === target.key);
+              const isDimmed = hasSelection && !isHighlighted;
+
+              return (
+                <button
+                  type="button"
+                  key={row.sourceTag}
+                  onClick={() => handleSelectSource(row)}
+                  aria-pressed={selection?.sourceTag === row.sourceTag}
+                  ref={(element) => {
+                    sourceRefs.current[row.sourceTag] = element;
+                  }}
+                  className={cn(
+                    "flex min-h-10 w-full items-center justify-between gap-2 rounded-md border bg-background px-3 py-2 text-sm shadow-sm transition-all",
+                    isHighlighted && "border-primary bg-primary/10 ring-1 ring-primary/40",
+                    isDimmed && "opacity-35",
+                    !hasSelection && "hover:bg-accent/40",
+                  )}
+                  title={`Highlight ${row.sourceTag}`}
+                >
+                  <span className="flex min-w-0 items-center gap-2 font-medium">
+                    <span className="truncate">{row.sourceTag}</span>
+                    {hatenaId ? (
+                      <a
+                        href={buildHatenaTagPageUrl(hatenaId, row.sourceTag)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(event) => event.stopPropagation()}
+                        className="shrink-0 text-muted-foreground hover:text-foreground"
+                        title={`Open Hatena bookmarks tagged ${row.sourceTag}`}
+                      >
+                        <ExternalLink className="size-3" />
+                      </a>
+                    ) : null}
+                  </span>
+                  <span className="shrink-0 text-xs text-muted-foreground">{row.sourceCount}</span>
+                </button>
+              );
+            })}
           </div>
 
           <div className="space-y-2">
             <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
               After
             </div>
-            {targetNodes.map((target) => (
-              <button
-                type="button"
-                key={target.key}
-                onClick={() => void handleCopyTarget(target.label, target.action)}
-                ref={(element) => {
-                  targetRefs.current[target.key] = element;
-                }}
-                className={cn(
-                  "flex min-h-10 w-full items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm shadow-sm transition-colors",
-                  target.action === "delete"
-                    ? "border-red-200 bg-red-50 text-red-700 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-200"
-                    : "cursor-pointer bg-background hover:bg-accent/40",
-                )}
-                title={target.action === "delete" ? undefined : `Copy ${target.label}`}
-              >
-                <span className="flex min-w-0 items-center gap-2 font-medium">
-                  <span className="truncate">{target.label}</span>
-                  {target.action !== "delete" && (
-                    <Copy className="size-3 shrink-0 text-muted-foreground" />
+            {targetNodes.map((target) => {
+              const isHighlighted = selection?.targetKey === target.key;
+              const isDimmed = hasSelection && selection?.targetKey !== target.key;
+
+              return (
+                <button
+                  type="button"
+                  key={target.key}
+                  onClick={() => void handleCopyTarget(target.label, target.action, target.key)}
+                  ref={(element) => {
+                    targetRefs.current[target.key] = element;
+                  }}
+                  className={cn(
+                    "flex min-h-10 w-full items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm shadow-sm transition-all",
+                    target.action === "delete"
+                      ? "border-red-200 bg-red-50 text-red-700 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-200"
+                      : "cursor-pointer bg-background hover:bg-accent/40",
+                    isHighlighted && "border-primary bg-primary/10 ring-1 ring-primary/40",
+                    isDimmed && "opacity-35",
                   )}
-                </span>
-                {target.action !== "delete" ? (
-                  <span className="shrink-0 text-xs text-muted-foreground">{target.count}</span>
-                ) : null}
-              </button>
-            ))}
+                  title={target.action === "delete" ? undefined : `Copy ${target.label}`}
+                >
+                  <span className="flex min-w-0 items-center gap-2 font-medium">
+                    <span className="truncate">{target.label}</span>
+                    {target.action !== "delete" && (
+                      <Copy className="size-3 shrink-0 text-muted-foreground" />
+                    )}
+                  </span>
+                  {target.action !== "delete" ? (
+                    <span className="shrink-0 text-xs text-muted-foreground">{target.count}</span>
+                  ) : null}
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>

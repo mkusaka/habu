@@ -18,8 +18,6 @@ import {
   PaginationContent,
   PaginationItem,
   PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
 } from "@/components/ui/pagination";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
@@ -121,7 +119,6 @@ async function fetchBookmarks(page: number, tags: string[]): Promise<FetchBookma
     return { success: false, error: "Server configuration error" };
   }
 
-  // Get username
   const authHeaders = createSignedRequest(
     HATENA_MY_API_URL,
     "GET",
@@ -147,7 +144,6 @@ async function fetchBookmarks(page: number, tags: string[]): Promise<FetchBookma
   const myData = (await myResponse.json()) as HatenaMyResponse;
   const username = myData.name;
 
-  // Fetch bookmarks using unofficial API (uses page parameter)
   const bookmarkParams = new URLSearchParams({ page: String(page) });
   appendTagFilters(bookmarkParams, tags);
   const bookmarksApiUrl = `https://b.hatena.ne.jp/api/users/${username}/bookmarks?${bookmarkParams.toString()}`;
@@ -345,11 +341,21 @@ function Pagination({ page, hasMore, tags }: { page: number; hasMore: boolean; t
       <PaginationContent className="w-full justify-between">
         <PaginationItem>
           {page > 1 ? (
-            <PaginationPrevious asChild>
-              <Link href={buildBookmarksHref(page - 1, tags)}>Previous</Link>
-            </PaginationPrevious>
+            <PaginationLink asChild size="default" className="gap-1 px-2.5 sm:pl-2.5">
+              <Link href={buildBookmarksHref(page - 1, tags)}>
+                <span aria-hidden>←</span>
+                <span className="hidden sm:block">Previous</span>
+              </Link>
+            </PaginationLink>
           ) : (
-            <PaginationPrevious className="pointer-events-none opacity-50" />
+            <PaginationLink
+              size="default"
+              className="pointer-events-none gap-1 px-2.5 opacity-50 sm:pl-2.5"
+              aria-disabled="true"
+            >
+              <span aria-hidden>←</span>
+              <span className="hidden sm:block">Previous</span>
+            </PaginationLink>
           )}
         </PaginationItem>
         <PaginationItem>
@@ -359,11 +365,21 @@ function Pagination({ page, hasMore, tags }: { page: number; hasMore: boolean; t
         </PaginationItem>
         <PaginationItem>
           {hasMore ? (
-            <PaginationNext asChild>
-              <Link href={buildBookmarksHref(page + 1, tags)}>Next</Link>
-            </PaginationNext>
+            <PaginationLink asChild size="default" className="gap-1 px-2.5 sm:pr-2.5">
+              <Link href={buildBookmarksHref(page + 1, tags)}>
+                <span className="hidden sm:block">Next</span>
+                <span aria-hidden>→</span>
+              </Link>
+            </PaginationLink>
           ) : (
-            <PaginationNext className="pointer-events-none opacity-50" />
+            <PaginationLink
+              size="default"
+              className="pointer-events-none gap-1 px-2.5 opacity-50 sm:pr-2.5"
+              aria-disabled="true"
+            >
+              <span className="hidden sm:block">Next</span>
+              <span aria-hidden>→</span>
+            </PaginationLink>
           )}
         </PaginationItem>
       </PaginationContent>

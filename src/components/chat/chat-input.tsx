@@ -3,7 +3,8 @@
 import { useRef, useState, type KeyboardEvent, type ChangeEvent, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, Loader2, X, Square } from "lucide-react";
+import { Send, Loader2, Square } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface ChatInputProps {
   input: string;
@@ -13,8 +14,8 @@ interface ChatInputProps {
   isLoading?: boolean;
   isStreaming?: boolean;
   onStop?: () => void;
-  isEditing?: boolean;
-  onCancelEdit?: () => void;
+  placeholder?: string;
+  className?: string;
 }
 
 export function ChatInput({
@@ -25,20 +26,13 @@ export function ChatInput({
   isLoading,
   isStreaming,
   onStop,
-  isEditing,
-  onCancelEdit,
+  placeholder = "Search this page or your bookmarks...",
+  className,
 }: ChatInputProps) {
   const formRef = useRef<HTMLFormElement>(null);
   const [isComposing, setIsComposing] = useState(false);
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    // Cancel edit on Escape
-    if (e.key === "Escape" && isEditing && onCancelEdit) {
-      e.preventDefault();
-      onCancelEdit();
-      return;
-    }
-    // Ignore Enter during IME composition
     if (e.key === "Enter" && !e.shiftKey && !isComposing) {
       e.preventDefault();
       if (input.trim() && !disabled) {
@@ -48,33 +42,23 @@ export function ChatInput({
   };
 
   return (
-    <div className="border-t">
-      {isEditing && (
-        <div className="px-4 pt-2 flex items-center justify-between text-xs text-muted-foreground bg-muted/50">
-          <span>Editing message...</span>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={onCancelEdit}
-            className="h-6 px-2 text-xs"
-          >
-            <X className="w-3 h-3 mr-1" />
-            Cancel
-          </Button>
-        </div>
+    <div
+      className={cn(
+        "overflow-hidden rounded-3xl border border-border/80 bg-card/95 shadow-lg backdrop-blur",
+        className,
       )}
-      <form ref={formRef} onSubmit={onSubmit} className="flex gap-2 p-4">
+    >
+      <form ref={formRef} onSubmit={onSubmit} className="flex items-end gap-3 p-4">
         <Textarea
           value={input}
           onChange={onChange}
           onKeyDown={handleKeyDown}
           onCompositionStart={() => setIsComposing(true)}
           onCompositionEnd={() => setIsComposing(false)}
-          placeholder={isEditing ? "Edit your message..." : "Search this page or your bookmarks..."}
+          placeholder={placeholder}
           disabled={disabled}
           rows={2}
-          className="resize-none flex-1"
+          className="min-h-24 flex-1 resize-none rounded-2xl border border-border/70 bg-muted/35 px-4 py-3 shadow-none placeholder:text-muted-foreground/85 focus-visible:bg-background focus-visible:ring-2 focus-visible:ring-ring/30"
         />
         {isStreaming && onStop ? (
           <Button
@@ -82,7 +66,7 @@ export function ChatInput({
             size="icon"
             variant="destructive"
             onClick={onStop}
-            className="shrink-0 h-auto"
+            className="size-11 shrink-0 rounded-full"
             title="Stop generating"
           >
             <Square className="w-4 h-4" />
@@ -92,7 +76,7 @@ export function ChatInput({
             type="submit"
             size="icon"
             disabled={disabled || !input.trim()}
-            className="shrink-0 h-auto"
+            className="size-11 shrink-0 rounded-full"
           >
             {isLoading ? (
               <Loader2 className="w-4 h-4 animate-spin" />

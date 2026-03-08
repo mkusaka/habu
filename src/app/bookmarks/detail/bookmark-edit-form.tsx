@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
+import { InputGroup, InputGroupTextarea } from "@/components/ui/input-group";
 import { toast } from "sonner";
 import {
   Loader2,
@@ -28,6 +29,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { deleteBookmark } from "@/lib/bookmark-client";
 import { extractCommentText, extractTagsFromComment } from "@/lib/bookmark-comment";
 import { isBodyWithinLimit } from "@/lib/hatena-body-limit";
@@ -420,33 +422,36 @@ export function BookmarkEditForm({
       )}
 
       {/* Comment Input */}
-      <div className="space-y-2">
-        <Label htmlFor="comment">Comment</Label>
-        <Textarea
-          id="comment"
-          value={comment}
-          onChange={(e) => setComment(e.target.value)}
-          placeholder="Your comment"
-          rows={3}
-        />
-        {isCommentTooLong && (
-          <p className="text-sm text-red-500">
-            Comment is too long for this URL. Please shorten your comment.
-          </p>
-        )}
+      <Field data-invalid={isCommentTooLong ? true : undefined}>
+        <FieldLabel htmlFor="comment">Comment</FieldLabel>
+        <InputGroup>
+          <InputGroupTextarea
+            id="comment"
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            placeholder="Your comment"
+            rows={3}
+            aria-invalid={isCommentTooLong ? true : undefined}
+          />
+        </InputGroup>
+        <FieldError>
+          {isCommentTooLong
+            ? "Comment is too long for this URL. Please shorten your comment."
+            : undefined}
+        </FieldError>
         {currentTags.length > 0 && (
           <div className="flex flex-wrap gap-1">
             {currentTags.map((tag, i) => (
-              <span key={i} className="px-2 py-0.5 bg-primary/10 text-primary rounded text-xs">
+              <Badge key={i} variant="secondary">
                 {tag}
-              </span>
+              </Badge>
             ))}
           </div>
         )}
         {currentCommentText && (
           <p className="text-xs text-muted-foreground">{currentCommentText}</p>
         )}
-      </div>
+      </Field>
 
       {/* Context Toggle */}
       <div className="space-y-2">
@@ -459,23 +464,25 @@ export function BookmarkEditForm({
           <span>Add context for AI generation</span>
         </button>
         {showContext && (
-          <div className="space-y-2">
-            <Label htmlFor="context" className="text-sm text-muted-foreground">
+          <Field>
+            <FieldLabel htmlFor="context">
               Context (for pages that fail to fetch or need extra info)
-            </Label>
-            <Textarea
-              id="context"
-              value={context}
-              onChange={(e) => setContext(e.target.value)}
-              placeholder="Paste page content, add notes, or provide context for AI to use..."
-              rows={5}
-              className="text-sm"
-            />
-            <p className="text-xs text-muted-foreground">
+            </FieldLabel>
+            <InputGroup>
+              <InputGroupTextarea
+                id="context"
+                value={context}
+                onChange={(e) => setContext(e.target.value)}
+                placeholder="Paste page content, add notes, or provide context for AI to use..."
+                rows={5}
+                className="text-sm"
+              />
+            </InputGroup>
+            <FieldDescription className="text-xs">
               This context will be used when generating summaries and tags. Useful for bot-blocked
               pages or to add supplementary information.
-            </p>
-          </div>
+            </FieldDescription>
+          </Field>
         )}
       </div>
 
@@ -498,12 +505,9 @@ export function BookmarkEditForm({
               {generatedResult.tags && generatedResult.tags.length > 0 && (
                 <div className="flex flex-wrap gap-1 mb-2">
                   {generatedResult.tags.map((tag, i) => (
-                    <span
-                      key={i}
-                      className="px-2 py-0.5 bg-primary/10 text-primary rounded text-xs"
-                    >
+                    <Badge key={i} variant="secondary">
                       {tag}
-                    </span>
+                    </Badge>
                   ))}
                 </div>
               )}
@@ -643,9 +647,11 @@ export function BookmarkEditForm({
                         <Copy className="w-3 h-3" />
                       </button>
                     </summary>
-                    <pre className="mt-2 bg-background p-2 rounded text-xs overflow-auto whitespace-pre-wrap break-all">
-                      {generatedResult.summary}
-                    </pre>
+                    <ScrollArea className="mt-2 max-h-48 rounded bg-background">
+                      <pre className="p-2 text-xs whitespace-pre-wrap break-all">
+                        {generatedResult.summary}
+                      </pre>
+                    </ScrollArea>
                   </details>
                 )}
 
@@ -671,9 +677,9 @@ export function BookmarkEditForm({
                     </summary>
                     <div className="mt-2 bg-background p-2 rounded text-xs flex flex-wrap gap-1">
                       {generatedResult.tags.map((tag, i) => (
-                        <span key={i} className="px-2 py-0.5 bg-primary/10 text-primary rounded">
+                        <Badge key={i} variant="secondary">
                           {tag}
-                        </span>
+                        </Badge>
                       ))}
                     </div>
                   </details>
@@ -699,9 +705,11 @@ export function BookmarkEditForm({
                         <Copy className="w-3 h-3" />
                       </button>
                     </summary>
-                    <pre className="mt-2 bg-background p-2 rounded text-xs overflow-auto max-h-48 whitespace-pre-wrap break-all">
-                      {generatedResult.webContext}
-                    </pre>
+                    <ScrollArea className="mt-2 max-h-48 rounded bg-background">
+                      <pre className="p-2 text-xs whitespace-pre-wrap break-all">
+                        {generatedResult.webContext}
+                      </pre>
+                    </ScrollArea>
                   </details>
                 )}
 
@@ -725,9 +733,11 @@ export function BookmarkEditForm({
                         <Copy className="w-3 h-3" />
                       </button>
                     </summary>
-                    <pre className="mt-2 bg-background p-2 rounded text-xs overflow-auto whitespace-pre-wrap break-all">
-                      {generatedResult.markdown}
-                    </pre>
+                    <ScrollArea className="mt-2 max-h-64 rounded bg-background">
+                      <pre className="p-2 text-xs whitespace-pre-wrap break-all">
+                        {generatedResult.markdown}
+                      </pre>
+                    </ScrollArea>
                   </details>
                 ) : generatedResult.markdownError ? (
                   <details className="rounded border border-yellow-200/60 bg-yellow-50/60 dark:border-yellow-900/50 dark:bg-yellow-900/20 p-2">
@@ -748,9 +758,11 @@ export function BookmarkEditForm({
                         <Copy className="w-3 h-3" />
                       </button>
                     </summary>
-                    <pre className="mt-2 p-2 rounded text-xs text-yellow-800 dark:text-yellow-200 overflow-auto max-h-24 whitespace-pre-wrap break-all">
-                      {generatedResult.markdownError}
-                    </pre>
+                    <ScrollArea className="mt-2 max-h-24 rounded">
+                      <pre className="p-2 text-xs text-yellow-800 dark:text-yellow-200 whitespace-pre-wrap break-all">
+                        {generatedResult.markdownError}
+                      </pre>
+                    </ScrollArea>
                   </details>
                 ) : null}
               </div>

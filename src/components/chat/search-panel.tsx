@@ -4,7 +4,16 @@ import type { FormEvent } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
+import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { InputGroup, InputGroupInput } from "@/components/ui/input-group";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import type { ChatThreadSummary } from "@/lib/chat-history";
 import { cn } from "@/lib/utils";
 
@@ -51,38 +60,61 @@ export function SearchPanel({
 
   return (
     <>
-      <form onSubmit={onStartSearch} className="space-y-2 border-b p-4">
-        {showQueryInput && (
-          <>
-            <label className="text-xs font-medium text-muted-foreground">Search query</label>
-            <Input
-              value={queryInput}
-              onChange={(e) => onQueryChange(e.target.value)}
-              placeholder="Search your bookmarks"
-              type="text"
-            />
-          </>
-        )}
-        <label className="text-xs font-medium text-muted-foreground">Page URL (optional)</label>
-        <Input
-          value={urlInput}
-          onChange={(e) => onUrlChange(e.target.value)}
-          placeholder="https://example.com/article"
-          type="url"
-        />
+      <form onSubmit={onStartSearch} className="flex flex-col gap-4 border-b p-4">
+        <FieldGroup className="gap-4">
+          {showQueryInput && (
+            <Field>
+              <FieldLabel htmlFor="search-panel-query">Search query</FieldLabel>
+              <InputGroup>
+                <InputGroupInput
+                  id="search-panel-query"
+                  value={queryInput}
+                  onChange={(e) => onQueryChange(e.target.value)}
+                  placeholder="Search your bookmarks"
+                  type="text"
+                />
+              </InputGroup>
+            </Field>
+          )}
+          <Field>
+            <FieldLabel htmlFor="search-panel-url">Page URL (optional)</FieldLabel>
+            <InputGroup>
+              <InputGroupInput
+                id="search-panel-url"
+                value={urlInput}
+                onChange={(e) => onUrlChange(e.target.value)}
+                placeholder="https://example.com/article"
+                type="url"
+              />
+            </InputGroup>
+            <FieldDescription>
+              Optional. Include a page URL to search with extra context.
+            </FieldDescription>
+          </Field>
+        </FieldGroup>
         <Button type="submit" className="w-full">
           <Plus className="mr-2 h-4 w-4" />
           {submitLabel}
         </Button>
       </form>
 
-      <div className="min-h-0 flex-1 overflow-y-auto p-3">
-        <div className="px-1 pb-2 text-xs font-medium text-muted-foreground">{historyTitle}</div>
-        <div className="space-y-2">
+      <ScrollArea className="min-h-0 flex-1">
+        <div className="space-y-2 p-3">
+          <div className="px-1 pb-2 text-xs font-medium text-muted-foreground">{historyTitle}</div>
           {visibleHistory.length === 0 ? (
             <Card className="gap-0 py-0">
-              <CardContent className="px-4 py-3 text-sm text-muted-foreground">
-                No saved conversations yet.
+              <CardContent className="px-3 py-3">
+                <Empty className="gap-4 border-none p-4 md:p-4">
+                  <EmptyHeader className="gap-1.5">
+                    <EmptyMedia variant="icon">
+                      <Plus />
+                    </EmptyMedia>
+                    <EmptyTitle className="text-sm">No saved conversations yet</EmptyTitle>
+                    <EmptyDescription>
+                      Start a search to create your first reusable conversation.
+                    </EmptyDescription>
+                  </EmptyHeader>
+                </Empty>
               </CardContent>
             </Card>
           ) : (
@@ -122,7 +154,7 @@ export function SearchPanel({
             ))
           )}
         </div>
-      </div>
+      </ScrollArea>
     </>
   );
 }

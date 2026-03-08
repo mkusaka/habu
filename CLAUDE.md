@@ -147,6 +147,43 @@ Built with shadcn/ui + Tailwind CSS v4:
 - shadcn config: `components.json`
 - Custom components: `background-sync.tsx`, `auto-save-toggle.tsx`, `sw-register.tsx`
 
+## shadcn/ui Working Rules
+
+When working on UI in this repo, prefer reusing shadcn/ui components from `src/components/ui/` and avoid adding unnecessary hand-written `div` / `span` / `label` markup.
+
+### Guidelines
+
+- Before creating a new UI pattern, check whether an existing shadcn/ui component can express it.
+- Before adding a component, check `pnpm dlx shadcn@latest docs <component>` and only use `pnpm dlx shadcn@latest add <component>` when it is actually needed.
+- Do not overwrite existing files under `src/components/ui/*` without reviewing the diff first.
+
+### Prefer These Components In This Repo
+
+- Empty states: `Empty`
+- Error or warning states: `Alert`
+- Tags and small status chips: `Badge`
+- List pagination: `Pagination`
+- Isolated scroll regions: `ScrollArea`
+- Form rows: `Field`, `FieldLabel`, `FieldDescription`, `FieldError`
+- Input wrappers: `InputGroup`, `InputGroupInput`, `InputGroupTextarea`
+
+### Implementation Rules
+
+- Do not hand-compose forms with `Label` + `Input` by default. Prefer `Field`.
+- When using `InputGroup`, do not place raw `Input` / `Textarea` inside it. Use `InputGroupInput` / `InputGroupTextarea`.
+- Do not add new custom banners or empty cards for error and empty states before checking whether `Empty` / `Alert` should be used.
+- Do not hand-style tag chips first. Use `Badge`.
+- Prefer `ScrollArea` for simple list scrolling. If the scroll container has behavioral constraints such as being the scroll parent for a virtualizer, keeping a custom scroll container is acceptable.
+- Do not force component replacement for app-shell-level scrolling such as the root layout scroll area.
+
+### Already Standardized In This Repo
+
+- Empty and alert states in bookmarks / queue / chat / search history
+- Bookmark tag chips and bookmark list pagination
+- Field primitives in search panel, save form, and bookmark edit form
+- Scroll areas for list preview and debug panels
+- Toggle rows in settings
+
 ## Common Pitfalls
 
 1. **OAuth signature failures**: Ensure all parameters in `data` are included in signature (oauth-1.0a library requirement)

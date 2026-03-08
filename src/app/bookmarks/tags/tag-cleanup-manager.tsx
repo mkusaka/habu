@@ -4,6 +4,14 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Loader2, Sparkles, WandSparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import { TagMappingGraph, type MappingGraphRow } from "./tag-mapping-graph";
 import type { TagCleanupCandidatesResponse, TagMappingCandidate } from "@/types/habu";
 
@@ -86,7 +94,12 @@ export function TagCleanupManager() {
           </Button>
         </div>
 
-        {errorMessage && <p className="mt-3 text-sm text-red-500">{errorMessage}</p>}
+        {errorMessage && (
+          <Alert variant="destructive" className="mt-3">
+            <AlertTitle>Suggestion generation failed</AlertTitle>
+            <AlertDescription>{errorMessage}</AlertDescription>
+          </Alert>
+        )}
 
         <div className="mt-4 rounded-lg border bg-muted/20 p-3">
           <div className="grid gap-2 text-sm sm:flex sm:flex-wrap sm:items-center sm:gap-3">
@@ -103,9 +116,17 @@ export function TagCleanupManager() {
       {graphRows.length > 0 ? (
         <TagMappingGraph rows={graphRows} hatenaId={hatenaId} />
       ) : (
-        <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
-          No suggestions yet. Generate suggestions to visualize the mapping graph.
-        </div>
+        <Empty className="border-dashed">
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <WandSparkles />
+            </EmptyMedia>
+            <EmptyTitle>No suggestions yet</EmptyTitle>
+            <EmptyDescription>
+              Generate suggestions to visualize likely tag merges and cleanup targets.
+            </EmptyDescription>
+          </EmptyHeader>
+        </Empty>
       )}
     </div>
   );

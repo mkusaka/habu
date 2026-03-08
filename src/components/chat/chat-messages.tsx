@@ -28,12 +28,26 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface ChatMessagesProps {
   messages: UIMessage[];
   isLoading?: boolean;
   onEditMessage?: (messageId: string, text: string) => void;
   editingMessageId?: string | null;
+  editingText?: string;
+  onEditingTextChange?: (value: string) => void;
+  onSaveEdit?: (messageId: string) => void;
+  onCancelEdit?: () => void;
 }
 
 export function ChatMessages({
@@ -41,6 +55,10 @@ export function ChatMessages({
   isLoading,
   onEditMessage,
   editingMessageId,
+  editingText,
+  onEditingTextChange,
+  onSaveEdit,
+  onCancelEdit,
 }: ChatMessagesProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -50,38 +68,53 @@ export function ChatMessages({
 
   if (messages.length === 0 && !isLoading) {
     return (
-      <div className="flex-1 flex items-center justify-center p-4">
-        <p className="text-muted-foreground text-sm text-center">
-          Search this page, linked URLs, or your bookmarks.
-          <br />I can also search your bookmarks and fetch linked pages when needed.
-        </p>
+      <div className="flex flex-1 items-center justify-center p-4">
+        <Empty className="max-w-lg border-dashed">
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <Search />
+            </EmptyMedia>
+            <EmptyTitle>Start a search conversation</EmptyTitle>
+            <EmptyDescription>
+              Search this page, linked URLs, or your bookmarks. I can also fetch linked pages when
+              needed.
+            </EmptyDescription>
+          </EmptyHeader>
+        </Empty>
       </div>
     );
   }
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 space-y-4">
-      {messages.map((message) => (
-        <ChatMessage
-          key={message.id}
-          message={message}
-          onEdit={onEditMessage}
-          isEditing={editingMessageId === message.id}
-        />
-      ))}
-      {isLoading && messages[messages.length - 1]?.role === "user" && (
-        <div className="flex items-start gap-3">
-          <div className="shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-            <Bot className="w-4 h-4 text-primary" />
+    <ScrollArea className="flex-1">
+      <div className="space-y-4 p-4">
+        {messages.map((message) => (
+          <ChatMessage
+            key={message.id}
+            message={message}
+            onEdit={onEditMessage}
+            isEditing={editingMessageId === message.id}
+            editingText={editingText}
+            onEditingTextChange={onEditingTextChange}
+            onSaveEdit={onSaveEdit}
+            onCancelEdit={onCancelEdit}
+            isLoading={isLoading}
+          />
+        ))}
+        {isLoading && messages[messages.length - 1]?.role === "user" && (
+          <div className="flex items-start gap-3">
+            <div className="shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+              <Bot className="w-4 h-4 text-primary" />
+            </div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Thinking...
+            </div>
           </div>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="w-4 h-4 animate-spin" />
-            Thinking...
-          </div>
-        </div>
-      )}
-      <div ref={messagesEndRef} />
-    </div>
+        )}
+        <div ref={messagesEndRef} />
+      </div>
+    </ScrollArea>
   );
 }
 
@@ -89,6 +122,11 @@ interface ChatMessageProps {
   message: UIMessage;
   onEdit?: (messageId: string, text: string) => void;
   isEditing?: boolean;
+  editingText?: string;
+  onEditingTextChange?: (value: string) => void;
+  onSaveEdit?: (messageId: string) => void;
+  onCancelEdit?: () => void;
+  isLoading?: boolean;
 }
 
 // Shared markdown component configuration
@@ -115,9 +153,19 @@ const markdownComponents = {
   ),
 };
 
-function ChatMessage({ message, onEdit, isEditing }: ChatMessageProps) {
+function ChatMessage({
+  message,
+  onEdit,
+  isEditing,
+  editingText,
+  onEditingTextChange,
+  onSaveEdit,
+  onCancelEdit,
+  isLoading,
+}: ChatMessageProps) {
   const isUser = message.role === "user";
   const [copied, setCopied] = useState(false);
+  const [isComposing, setIsComposing] = useState(false);
 
   // Extract text content from parts
   const textContent =
@@ -169,46 +217,92 @@ function ChatMessage({ message, onEdit, isEditing }: ChatMessageProps) {
         )}
         {textContent && (
           <div className="relative">
-            <div
-              className={cn(
-                "inline-block rounded-lg px-3 py-2 text-sm max-w-full text-left",
-                isUser ? "bg-primary text-primary-foreground" : "bg-muted text-foreground",
-                isUser && onEdit && "cursor-pointer hover:opacity-90 transition-opacity",
-                isEditing && "ring-2 ring-ring ring-offset-2 ring-offset-background",
-              )}
-              onClick={handleEditClick}
-              onKeyDown={(e) => e.key === "Enter" && handleEditClick()}
-              role={isUser && onEdit ? "button" : undefined}
-              tabIndex={isUser && onEdit ? 0 : undefined}
-              title={isUser && onEdit ? "Click to edit" : undefined}
-            >
-              <Streamdown
-                className={cn(
-                  "prose prose-sm max-w-none break-words [&>*:first-child]:mt-0 [&>*:last-child]:mb-0",
-                  isUser ? "prose-invert" : "dark:prose-invert",
-                )}
-                components={markdownComponents}
+            {isEditing ? (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  onSaveEdit?.(message.id);
+                }}
+                className="w-full max-w-full rounded-2xl border border-border/80 bg-card px-3 py-3 shadow-sm"
               >
-                {textContent}
-              </Streamdown>
-            </div>
-            {/* Copy button */}
-            <button
-              type="button"
-              onClick={handleCopy}
-              className={cn(
-                "absolute -bottom-1 opacity-0 group-hover:opacity-100 transition-opacity",
-                "p-1 rounded bg-background border shadow-sm hover:bg-muted",
-                isUser ? "left-0 translate-x-0" : "right-0 translate-x-0",
-              )}
-              title="Copy message"
-            >
-              {copied ? (
-                <Check className="w-3 h-3 text-green-500" />
-              ) : (
-                <Copy className="w-3 h-3 text-muted-foreground" />
-              )}
-            </button>
+                <Textarea
+                  value={editingText ?? textContent}
+                  onChange={(e) => onEditingTextChange?.(e.target.value)}
+                  onCompositionStart={() => setIsComposing(true)}
+                  onCompositionEnd={() => setIsComposing(false)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Escape") {
+                      e.preventDefault();
+                      onCancelEdit?.();
+                      return;
+                    }
+
+                    if (e.key === "Enter" && !e.shiftKey && !isComposing) {
+                      e.preventDefault();
+                      onSaveEdit?.(message.id);
+                    }
+                  }}
+                  rows={3}
+                  autoFocus
+                  disabled={isLoading}
+                  className="min-h-24 resize-none rounded-xl border border-border/70 bg-muted/35"
+                />
+                <div className="mt-3 flex items-center justify-end gap-2">
+                  <Button type="button" variant="ghost" size="sm" onClick={onCancelEdit}>
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    size="sm"
+                    disabled={isLoading || !(editingText ?? textContent).trim()}
+                  >
+                    Save
+                  </Button>
+                </div>
+              </form>
+            ) : (
+              <>
+                <div
+                  className={cn(
+                    "inline-block max-w-full rounded-lg px-3 py-2 text-left text-sm",
+                    isUser ? "bg-primary text-primary-foreground" : "bg-muted text-foreground",
+                    isUser && onEdit && "cursor-pointer transition-opacity hover:opacity-90",
+                  )}
+                  onClick={handleEditClick}
+                  onKeyDown={(e) => e.key === "Enter" && handleEditClick()}
+                  role={isUser && onEdit ? "button" : undefined}
+                  tabIndex={isUser && onEdit ? 0 : undefined}
+                  title={isUser && onEdit ? "Click to edit" : undefined}
+                >
+                  <Streamdown
+                    className={cn(
+                      "prose prose-sm max-w-none break-words [&>*:first-child]:mt-0 [&>*:last-child]:mb-0",
+                      isUser ? "prose-invert" : "dark:prose-invert",
+                    )}
+                    components={markdownComponents}
+                  >
+                    {textContent}
+                  </Streamdown>
+                </div>
+                {/* Copy button */}
+                <button
+                  type="button"
+                  onClick={handleCopy}
+                  className={cn(
+                    "absolute -bottom-1 opacity-0 group-hover:opacity-100 transition-opacity",
+                    "p-1 rounded bg-background border shadow-sm hover:bg-muted",
+                    isUser ? "left-0 translate-x-0" : "right-0 translate-x-0",
+                  )}
+                  title="Copy message"
+                >
+                  {copied ? (
+                    <Check className="w-3 h-3 text-green-500" />
+                  ) : (
+                    <Copy className="w-3 h-3 text-muted-foreground" />
+                  )}
+                </button>
+              </>
+            )}
           </div>
         )}
       </div>
@@ -315,9 +409,11 @@ function ToolInvocationDisplay({ toolPart }: { toolPart: ToolPart }) {
         )}
       </button>
       {isExpanded && resultText && (
-        <div className="mt-1 p-2 bg-muted/30 rounded border border-border/50 max-h-64 overflow-auto">
-          <pre className="whitespace-pre-wrap break-words text-xs font-mono">{resultText}</pre>
-        </div>
+        <ScrollArea className="mt-1 max-h-64 rounded border border-border/50 bg-muted/30">
+          <div className="p-2">
+            <pre className="whitespace-pre-wrap break-words text-xs font-mono">{resultText}</pre>
+          </div>
+        </ScrollArea>
       )}
     </div>
   );

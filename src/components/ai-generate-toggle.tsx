@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Label } from "@/components/ui/label";
+import { Field, FieldContent, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Switch } from "@/components/ui/switch";
 
 export function AiGenerateToggle() {
@@ -17,14 +17,14 @@ export function AiGenerateToggle() {
   };
 
   return (
-    <div className="flex items-center justify-between">
-      <div className="space-y-0.5">
-        <Label htmlFor="ai-generate">AI auto-generation</Label>
-        <p className="text-sm text-muted-foreground">
-          Automatically generate summary and tags when saving without a comment
-        </p>
-      </div>
+    <Field orientation="horizontal">
+      <FieldContent>
+        <FieldLabel htmlFor="ai-generate">AI auto-generation</FieldLabel>
+        <FieldDescription>
+          Automatically generate summary and tags when saving without a comment.
+        </FieldDescription>
+      </FieldContent>
       <Switch id="ai-generate" checked={aiGenerate} onCheckedChange={handleToggle} />
-    </div>
+    </Field>
   );
 }

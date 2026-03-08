@@ -8,9 +8,10 @@ import { eq } from "drizzle-orm";
 import { createSignedRequest } from "@/lib/hatena-oauth";
 import { Bookmark, ExternalLink, ArrowLeft, AlertCircle, Home } from "lucide-react";
 import { CopyButton } from "@/components/copy-button";
-import { Label } from "@/components/ui/label";
+import { Field, FieldLabel } from "@/components/ui/field";
 import { LinkButton } from "@/components/ui/link-button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { BookmarkEditForm } from "./bookmark-edit-form";
 import { fetchPageMeta, isMetaExtractionResult } from "@/lib/page-meta";
 import { normalizeTagFilters } from "@/lib/bookmark-tag-filter";
@@ -200,10 +201,11 @@ async function BookmarkDetailContent({
   if (!result.success) {
     return (
       <div className="space-y-4">
-        <div className="flex items-center gap-2 p-4 bg-red-50 dark:bg-red-900/20 rounded-md text-sm text-red-800 dark:text-red-200">
-          <AlertCircle className="w-4 h-4 flex-shrink-0" />
-          <span>{result.error}</span>
-        </div>
+        <Alert variant="destructive">
+          <AlertCircle />
+          <AlertTitle>Failed to load bookmark</AlertTitle>
+          <AlertDescription>{result.error}</AlertDescription>
+        </Alert>
         <LinkButton href={backHref} variant="outline" className="w-full">
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to Bookmarks
@@ -221,8 +223,8 @@ async function BookmarkDetailContent({
   return (
     <div className="space-y-4">
       {/* URL Display (static) */}
-      <div className="space-y-2">
-        <Label>URL</Label>
+      <Field>
+        <FieldLabel>URL</FieldLabel>
         <div className="flex items-center gap-2 p-2 bg-muted rounded-md">
           <span className="text-sm truncate flex-1">{bookmarkUrl}</span>
           <CopyButton text={bookmarkUrl} label="URL" />
@@ -245,15 +247,15 @@ async function BookmarkDetailContent({
             <Bookmark className="w-4 h-4" />
           </a>
         </div>
-      </div>
+      </Field>
 
       {/* Title Display (static) */}
-      <div className="space-y-2">
-        <Label>Title</Label>
+      <Field>
+        <FieldLabel>Title</FieldLabel>
         <div className="p-2 bg-muted rounded-md text-sm">
           {result.title || <span className="text-muted-foreground">No title</span>}
         </div>
-      </div>
+      </Field>
 
       {/* Interactive Form (client component) */}
       <BookmarkEditForm

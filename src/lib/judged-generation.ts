@@ -1,6 +1,6 @@
 const DEFAULT_MAX_JUDGE_ATTEMPTS = 3;
 
-export type JudgedAttemptResult<T> =
+type JudgedAttemptResult<T> =
   | {
       type: "accepted";
       value: T;

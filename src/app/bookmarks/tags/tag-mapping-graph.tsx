@@ -245,33 +245,60 @@ export function TagMappingGraph({
               const isDimmed = hasSelection && selection?.targetKey !== target.key;
 
               return (
-                <button
-                  type="button"
+                <div
                   key={target.key}
-                  onClick={() => void handleCopyTarget(target.label, target.action, target.key)}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() =>
+                    setSelection((current) =>
+                      current?.sourceTag === undefined && current?.targetKey === target.key
+                        ? null
+                        : { targetKey: target.key },
+                    )
+                  }
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      setSelection((current) =>
+                        current?.sourceTag === undefined && current?.targetKey === target.key
+                          ? null
+                          : { targetKey: target.key },
+                      );
+                    }
+                  }}
                   ref={(element) => {
                     targetRefs.current[target.key] = element;
                   }}
                   className={cn(
-                    "flex min-h-10 w-full items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm shadow-sm transition-all",
+                    "flex min-h-10 w-full items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm shadow-sm transition-all outline-none",
                     target.action === "delete"
                       ? "border-red-200 bg-red-50 text-red-700 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-200"
                       : "cursor-pointer bg-background hover:bg-accent/40",
                     isHighlighted && "border-primary bg-primary/10 ring-1 ring-primary/40",
                     isDimmed && "opacity-35",
                   )}
-                  title={target.action === "delete" ? undefined : `Copy ${target.label}`}
+                  title={`Highlight mappings to ${target.label}`}
                 >
                   <span className="flex min-w-0 items-center gap-2 font-medium">
                     <span className="truncate">{target.label}</span>
-                    {target.action !== "delete" && (
-                      <Copy className="size-3 shrink-0 text-muted-foreground" />
-                    )}
+                    {target.action !== "delete" ? (
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          void handleCopyTarget(target.label, target.action, target.key);
+                        }}
+                        className="shrink-0 text-muted-foreground hover:text-foreground"
+                        title={`Copy ${target.label}`}
+                      >
+                        <Copy className="size-3" />
+                      </button>
+                    ) : null}
                   </span>
                   {target.action !== "delete" ? (
                     <span className="shrink-0 text-xs text-muted-foreground">{target.count}</span>
                   ) : null}
-                </button>
+                </div>
               );
             })}
           </div>

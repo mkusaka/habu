@@ -7,11 +7,13 @@ import { DefaultChatTransport, type UIMessage } from "ai";
 import { Bookmark, ExternalLink, AlertCircle, History, Menu, Search } from "lucide-react";
 import { ChatMessages } from "./chat-messages";
 import { ChatInput } from "./chat-input";
-import { Button } from "@/components/ui/button";
-import { LinkButton } from "@/components/ui/link-button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import type { ChatContext } from "@/lib/chat-context";
 import type { ChatThreadSummary } from "@/lib/chat-history";
 import { SearchPanel } from "./search-panel";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 interface ChatPageClientProps {
   sessionId: string;
@@ -193,39 +195,66 @@ export function ChatPageClient({
     <div className="flex min-h-screen flex-col bg-background">
       <header className="border-b px-4 py-4 sm:px-6">
         <div className="flex flex-wrap items-center gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => setIsSearchPanelOpen((open) => !open)}
-          >
-            <Menu className="mr-2 h-4 w-4" />
-            {isSearchPanelOpen ? "Close Search Menu" : "Open Search Menu"}
-          </Button>
-          <div className="flex items-center gap-2">
-            <Search className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm font-medium">Search</span>
-          </div>
-          <LinkButton href="/search" variant="outline" size="sm">
-            Search Home
-          </LinkButton>
-          <LinkButton href="/search/histories" variant="outline" size="sm">
-            <History className="mr-2 h-4 w-4" />
-            Histories
-          </LinkButton>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsSearchPanelOpen((open) => !open)}
+                aria-label={isSearchPanelOpen ? "Hide search panel" : "Show search panel"}
+              >
+                <Menu className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              {isSearchPanelOpen ? "Hide Search Panel" : "Show Search Panel"}
+            </TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Link
+                href="/search/histories"
+                className={cn(buttonVariants({ variant: "ghost", size: "icon" }))}
+              >
+                <History className="h-4 w-4" />
+                <span className="sr-only">Histories</span>
+              </Link>
+            </TooltipTrigger>
+            <TooltipContent>Histories</TooltipContent>
+          </Tooltip>
           {selectedUrl && (
-            <LinkButton
-              href={`/bookmarks/detail?url=${encodeURIComponent(selectedUrl)}`}
-              variant="outline"
-              size="sm"
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Link
+                  href={`/bookmarks/detail?url=${encodeURIComponent(selectedUrl)}`}
+                  className={cn(buttonVariants({ variant: "ghost", size: "icon" }))}
+                >
+                  <Bookmark className="h-4 w-4" />
+                  <span className="sr-only">Open Bookmark Detail</span>
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent>Open Bookmark Detail</TooltipContent>
+            </Tooltip>
+          )}
+          {selectedUrl && (
+            <a
+              href={selectedUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={cn(buttonVariants({ variant: "ghost", size: "icon" }))}
+              aria-label="Open Page"
             >
-              <Bookmark className="mr-2 h-4 w-4" />
-              Open Bookmark Detail
-            </LinkButton>
+              <ExternalLink className="h-4 w-4" />
+              <span className="sr-only">Open Page</span>
+            </a>
           )}
         </div>
         <div className="mt-3">
-          <h1 className="text-xl font-semibold">{title || initialQuery || "Search"}</h1>
+          <div className="flex items-center gap-2">
+            <Search className="h-4 w-4 text-muted-foreground" />
+            <h1 className="text-xl font-semibold">{title || initialQuery || "Search"}</h1>
+          </div>
           {error ? (
             <div className="mt-2 inline-flex items-center gap-2 rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive">
               <AlertCircle className="h-4 w-4" />
@@ -234,20 +263,7 @@ export function ChatPageClient({
           ) : selectedUrl || initialQuery ? (
             <div className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
               {initialQuery && <span className="truncate">Query: {initialQuery}</span>}
-              {selectedUrl && (
-                <>
-                  <span className="truncate">{selectedUrl}</span>
-                  <a
-                    href={selectedUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 hover:text-foreground"
-                  >
-                    <ExternalLink className="h-3.5 w-3.5" />
-                    Open Page
-                  </a>
-                </>
-              )}
+              {selectedUrl && <span className="truncate">{selectedUrl}</span>}
             </div>
           ) : (
             <p className="mt-1 text-sm text-muted-foreground">

@@ -63,7 +63,7 @@ export function TagCleanupManager() {
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex items-center gap-2">
             <WandSparkles className="w-4 h-4 text-muted-foreground" />
-            <h2 className="font-medium">Mapping Candidates</h2>
+            <h2 className="font-medium">Cleanup Suggestions</h2>
           </div>
           <Button
             type="button"

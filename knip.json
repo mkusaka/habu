@@ -12,10 +12,5 @@
     "src/**/*.{ts,tsx}",
     "*.config.{js,cjs,mjs,ts}",
     "*.{js,mjs,ts}"
-  ],
-  "ignoreIssues": {
-    "src/components/ui/**/*.tsx": [
-      "exports"
-    ]
-  }
+  ]
 }

@@ -43,6 +43,10 @@ interface HatenaSearchResponse {
   bookmarks?: HatenaSearchBookmarkItem[];
 }
 
+export function buildHatenaSearchUrl(query: string, offset: number, limit: number): string {
+  return `${HATENA_FULLTEXT_SEARCH_API_URL}?q=${encodeURIComponent(query)}&of=${offset}&limit=${limit}`;
+}
+
 function buildFormBody(params: Record<string, string | string[] | undefined>) {
   const body = new URLSearchParams();
 
@@ -59,23 +63,20 @@ function buildFormBody(params: Record<string, string | string[] | undefined>) {
 }
 
 export function replaceBookmarkTag(tags: string[], sourceTag: string, targetTag: string) {
-  const sourceKey = sourceTag.toLowerCase();
   const next = tags
-    .map((tag) => (tag.toLowerCase() === sourceKey ? targetTag : tag))
+    .map((tag) => (tag === sourceTag ? targetTag : tag))
     .filter((tag) => tag.trim().length > 0);
 
   return sanitizeBookmarkTags(next);
 }
 
 export function applyTagMappings(tags: string[], mappings: TagMappingCandidate[]) {
-  const mappingMap = new Map(
-    mappings.map((mapping) => [mapping.sourceTag.toLowerCase(), mapping] as const),
-  );
+  const mappingMap = new Map(mappings.map((mapping) => [mapping.sourceTag, mapping] as const));
   const matchedSourceTags: string[] = [];
   const nextTags: string[] = [];
 
   for (const tag of tags) {
-    const mapping = mappingMap.get(tag.toLowerCase());
+    const mapping = mappingMap.get(tag);
     if (!mapping) {
       nextTags.push(tag);
       continue;
@@ -137,7 +138,7 @@ async function searchBookmarksPage(
   offset: number,
   limit: number,
 ): Promise<{ total: number; bookmarks: TagCleanupBookmark[] }> {
-  const apiUrl = `${HATENA_FULLTEXT_SEARCH_API_URL}?word=${encodeURIComponent(query)}&of=${offset}&limit=${limit}`;
+  const apiUrl = buildHatenaSearchUrl(query, offset, limit);
   const authHeaders = createSignedRequest(
     apiUrl,
     "GET",
@@ -192,7 +193,6 @@ export async function findBookmarksByTag(
   credentials: HatenaApiCredentials,
   sourceTag: string,
 ): Promise<TagCleanupBookmark[]> {
-  const sourceKey = sourceTag.toLowerCase();
   const matches: TagCleanupBookmark[] = [];
   const seen = new Set<string>();
   let offset = 0;
@@ -203,7 +203,7 @@ export async function findBookmarksByTag(
     total = page.total;
 
     const exactMatches = page.bookmarks.filter((bookmark) =>
-      bookmark.currentTags.some((tag) => tag.toLowerCase() === sourceKey),
+      bookmark.currentTags.includes(sourceTag),
     );
 
     for (const bookmark of exactMatches) {

@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Copy, ExternalLink } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { TagMappingAction } from "@/types/habu";
 
@@ -33,11 +35,44 @@ function getTargetMeta(row: MappingGraphRow) {
   };
 }
 
-export function TagMappingGraph({ rows }: { rows: MappingGraphRow[] }) {
+function buildHatenaTagPageUrl(hatenaId: string, tag: string) {
+  return `https://b.hatena.ne.jp/${encodeURIComponent(hatenaId)}/${encodeURIComponent(tag)}/`;
+}
+
+export function TagMappingGraph({
+  rows,
+  hatenaId,
+}: {
+  rows: MappingGraphRow[];
+  hatenaId?: string;
+}) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const sourceRefs = useRef<Record<string, HTMLDivElement | null>>({});
-  const targetRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const sourceRefs = useRef<Record<string, HTMLElement | null>>({});
+  const targetRefs = useRef<Record<string, HTMLElement | null>>({});
   const [edges, setEdges] = useState<EdgePosition[]>([]);
+  const [selection, setSelection] = useState<{ sourceTag?: string; targetKey: string } | null>(
+    null,
+  );
+
+  const handleCopyTarget = async (label: string, action: TagMappingAction) => {
+    if (action === "delete") return;
+
+    try {
+      await navigator.clipboard.writeText(label);
+      toast.success("Tag copied", { description: label });
+    } catch {
+      toast.error("Failed to copy");
+    }
+  };
+
+  const handleSelectSource = (row: MappingGraphRow) => {
+    const target = getTargetMeta(row);
+    setSelection((current) =>
+      current?.sourceTag === row.sourceTag
+        ? null
+        : { sourceTag: row.sourceTag, targetKey: target.key },
+    );
+  };
 
   const targetNodes = useMemo(() => {
     const deduped = new Map<
@@ -112,69 +147,158 @@ export function TagMappingGraph({ rows }: { rows: MappingGraphRow[] }) {
     return null;
   }
 
+  const hasSelection = selection !== null;
+
+  const isEdgeHighlighted = (edge: EdgePosition) => {
+    if (!selection) return true;
+    if (selection.sourceTag) {
+      return edge.sourceTag === selection.sourceTag && edge.targetKey === selection.targetKey;
+    }
+    return edge.targetKey === selection.targetKey;
+  };
+
   return (
-    <div ref={containerRef} className="relative overflow-hidden rounded-lg border bg-muted/20 p-4">
-      <svg className="pointer-events-none absolute inset-0 h-full w-full">
-        {edges.map((edge) => (
-          <path
-            key={`${edge.sourceTag}-${edge.targetKey}`}
-            d={edge.path}
-            fill="none"
-            stroke={
-              edge.action === "delete"
-                ? "rgb(239 68 68 / 0.45)"
-                : edge.action === "update"
-                  ? "rgb(59 130 246 / 0.45)"
-                  : "rgb(148 163 184 / 0.35)"
-            }
-            strokeWidth="2"
-            strokeLinecap="round"
-          />
-        ))}
-      </svg>
-
-      <div className="relative grid gap-10 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-        <div className="space-y-2">
-          <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Before
-          </div>
-          {rows.map((row) => (
-            <div
-              key={row.sourceTag}
-              ref={(element) => {
-                sourceRefs.current[row.sourceTag] = element;
-              }}
-              className="flex min-h-10 items-center justify-between rounded-md border bg-background px-3 py-2 text-sm shadow-sm"
-            >
-              <span className="font-medium">{row.sourceTag}</span>
-              <span className="text-xs text-muted-foreground">{row.sourceCount}</span>
-            </div>
+    <div className="overflow-x-auto rounded-lg border md:overflow-x-visible">
+      <div
+        ref={containerRef}
+        className="relative w-max min-w-full bg-muted/20 p-3 md:mx-auto md:w-full md:min-w-0 md:max-w-[860px] md:p-4"
+      >
+        <svg className="pointer-events-none absolute inset-0 h-full w-full">
+          {edges.map((edge) => (
+            <path
+              key={`${edge.sourceTag}-${edge.targetKey}`}
+              d={edge.path}
+              fill="none"
+              stroke={
+                edge.action === "delete"
+                  ? "rgb(239 68 68 / 0.45)"
+                  : edge.action === "update"
+                    ? "rgb(59 130 246 / 0.45)"
+                    : "rgb(148 163 184 / 0.35)"
+              }
+              strokeWidth={isEdgeHighlighted(edge) ? "3" : "2"}
+              strokeLinecap="round"
+              opacity={hasSelection ? (isEdgeHighlighted(edge) ? 1 : 0.18) : 1}
+            />
           ))}
-        </div>
+        </svg>
 
-        <div className="space-y-2">
-          <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            After
-          </div>
-          {targetNodes.map((target) => (
-            <div
-              key={target.key}
-              ref={(element) => {
-                targetRefs.current[target.key] = element;
-              }}
-              className={cn(
-                "flex min-h-10 items-center justify-between rounded-md border px-3 py-2 text-sm shadow-sm",
-                target.action === "delete"
-                  ? "border-red-200 bg-red-50 text-red-700 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-200"
-                  : "bg-background",
-              )}
-            >
-              <span className="font-medium">{target.label}</span>
-              {target.action !== "delete" && (
-                <span className="text-xs text-muted-foreground">{target.count}</span>
-              )}
+        <div className="relative grid grid-cols-[minmax(8rem,max-content)_minmax(8rem,max-content)] justify-between gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] md:gap-10">
+          <div className="space-y-2">
+            <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Before
             </div>
-          ))}
+            {rows.map((row) => {
+              const target = getTargetMeta(row);
+              const isHighlighted =
+                selection?.sourceTag === row.sourceTag ||
+                (!selection?.sourceTag && selection?.targetKey === target.key);
+              const isDimmed = hasSelection && !isHighlighted;
+
+              return (
+                <button
+                  type="button"
+                  key={row.sourceTag}
+                  onClick={() => handleSelectSource(row)}
+                  aria-pressed={selection?.sourceTag === row.sourceTag}
+                  ref={(element) => {
+                    sourceRefs.current[row.sourceTag] = element;
+                  }}
+                  className={cn(
+                    "flex min-h-10 w-full items-center justify-between gap-2 rounded-md border bg-background px-3 py-2 text-sm shadow-sm transition-all",
+                    isHighlighted && "border-primary bg-primary/10 ring-1 ring-primary/40",
+                    isDimmed && "opacity-35",
+                    !hasSelection && "hover:bg-accent/40",
+                  )}
+                  title={`Highlight ${row.sourceTag}`}
+                >
+                  <span className="flex min-w-0 items-center gap-2 font-medium">
+                    <span className="truncate">{row.sourceTag}</span>
+                    {hatenaId ? (
+                      <a
+                        href={buildHatenaTagPageUrl(hatenaId, row.sourceTag)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(event) => event.stopPropagation()}
+                        className="shrink-0 text-muted-foreground hover:text-foreground"
+                        title={`Open Hatena bookmarks tagged ${row.sourceTag}`}
+                      >
+                        <ExternalLink className="size-3" />
+                      </a>
+                    ) : null}
+                  </span>
+                  <span className="shrink-0 text-xs text-muted-foreground">{row.sourceCount}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="space-y-2">
+            <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              After
+            </div>
+            {targetNodes.map((target) => {
+              const isHighlighted = selection?.targetKey === target.key;
+              const isDimmed = hasSelection && selection?.targetKey !== target.key;
+
+              return (
+                <div
+                  key={target.key}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() =>
+                    setSelection((current) =>
+                      current?.sourceTag === undefined && current?.targetKey === target.key
+                        ? null
+                        : { targetKey: target.key },
+                    )
+                  }
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      setSelection((current) =>
+                        current?.sourceTag === undefined && current?.targetKey === target.key
+                          ? null
+                          : { targetKey: target.key },
+                      );
+                    }
+                  }}
+                  ref={(element) => {
+                    targetRefs.current[target.key] = element;
+                  }}
+                  className={cn(
+                    "flex min-h-10 w-full items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm shadow-sm transition-all outline-none",
+                    target.action === "delete"
+                      ? "border-red-200 bg-red-50 text-red-700 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-200"
+                      : "cursor-pointer bg-background hover:bg-accent/40",
+                    isHighlighted && "border-primary bg-primary/10 ring-1 ring-primary/40",
+                    isDimmed && "opacity-35",
+                  )}
+                  title={`Highlight mappings to ${target.label}`}
+                >
+                  <span className="flex min-w-0 items-center gap-2 font-medium">
+                    <span className="truncate">{target.label}</span>
+                    {target.action !== "delete" ? (
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          void handleCopyTarget(target.label, target.action);
+                        }}
+                        className="shrink-0 text-muted-foreground hover:text-foreground"
+                        title={`Copy ${target.label}`}
+                      >
+                        <Copy className="size-3" />
+                      </button>
+                    ) : null}
+                  </span>
+                  {target.action !== "delete" ? (
+                    <span className="shrink-0 text-xs text-muted-foreground">{target.count}</span>
+                  ) : null}
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>

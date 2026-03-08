@@ -9,6 +9,6 @@ export default defineConfig({
   },
   test: {
     environment: "happy-dom",
-    include: ["src/app/bookmarks/tags/*.test.tsx"],
+    include: ["src/app/bookmarks/tags/*.test.tsx", "src/components/chat/*.test.tsx"],
   },
 });

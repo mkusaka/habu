@@ -1,138 +1,52 @@
 import { NextRequest } from "next/server";
-import { streamText, convertToModelMessages, tool, stepCountIs, type UIMessage } from "ai";
+import {
+  streamText,
+  convertToModelMessages,
+  tool,
+  stepCountIs,
+  type ToolSet,
+  type UIMessage,
+} from "ai";
 import { createOpenAI } from "@ai-sdk/openai";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { createAuth } from "@/lib/auth";
+import { buildMcpContextForUser } from "@/lib/bookmark-user-context";
+import { applyChatRequestToMessages } from "@/lib/chat-request-messages";
+import { getChatThreadForHatenaAccount, saveChatThreadForHatenaAccount } from "@/lib/chat-history";
 import {
   buildChatSystemPrompt,
   buildChatUserContext,
   type ChatContext,
   type PageMetadata,
 } from "@/lib/chat-context";
-import { z } from "zod";
-
-// Fetch with timeout using AbortController
-async function fetchWithTimeout(
-  url: string,
-  options: RequestInit,
-  timeoutMs: number,
-): Promise<Response> {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-
-  try {
-    const response = await fetch(url, {
-      ...options,
-      signal: controller.signal,
-    });
-    return response;
-  } finally {
-    clearTimeout(timeoutId);
-  }
-}
-
-// Fetch with retry logic
-async function fetchWithRetry(
-  url: string,
-  options: RequestInit,
-  { timeoutMs = 15000, maxRetries = 2 }: { timeoutMs?: number; maxRetries?: number } = {},
-): Promise<Response> {
-  let lastError: Error | null = null;
-
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    try {
-      return await fetchWithTimeout(url, options, timeoutMs);
-    } catch (error) {
-      lastError = error instanceof Error ? error : new Error(String(error));
-
-      // Don't retry if it's not a timeout/network error
-      if (lastError.name !== "AbortError" && !lastError.message.includes("fetch")) {
-        throw lastError;
-      }
-
-      // Don't wait after the last attempt
-      if (attempt < maxRetries) {
-        // Wait before retry (exponential backoff: 1s, 2s)
-        await new Promise((resolve) => setTimeout(resolve, 1000 * (attempt + 1)));
-      }
-    }
-  }
-
-  throw lastError ?? new Error("Fetch failed after retries");
-}
-
-// Validate URL is safe to fetch (http/https only, no private IPs/localhost)
-function isUrlSafeToFetch(urlString: string): { valid: boolean; error?: string } {
-  try {
-    const url = new URL(urlString);
-
-    // Only allow http/https
-    if (url.protocol !== "http:" && url.protocol !== "https:") {
-      return { valid: false, error: "Only http/https URLs are allowed" };
-    }
-
-    // Block localhost and common private hostnames
-    const hostname = url.hostname.toLowerCase();
-    if (
-      hostname === "localhost" ||
-      hostname === "127.0.0.1" ||
-      hostname.endsWith(".local") ||
-      hostname.endsWith(".internal")
-    ) {
-      return { valid: false, error: "Private/localhost URLs are not allowed" };
-    }
-
-    // Block IPv6 localhost and private ranges
-    // URL.hostname returns IPv6 without brackets (e.g., "::1" not "[::1]")
-    if (
-      hostname === "::1" ||
-      hostname.startsWith("fc") || // fc00::/7 (Unique Local Address)
-      hostname.startsWith("fd") || // fc00::/7 (Unique Local Address)
-      hostname.startsWith("fe80") || // fe80::/10 (Link-local)
-      hostname.startsWith("::ffff:127.") || // IPv4-mapped localhost
-      hostname.startsWith("::ffff:10.") || // IPv4-mapped 10.x.x.x
-      hostname.startsWith("::ffff:192.168.") || // IPv4-mapped 192.168.x.x
-      hostname.startsWith("::ffff:172.") // IPv4-mapped 172.x.x.x (needs more specific check below)
-    ) {
-      return { valid: false, error: "Private/localhost IPv6 addresses are not allowed" };
-    }
-
-    // Block private IP ranges (RFC1918)
-    const ipMatch = hostname.match(/^(\d+)\.(\d+)\.(\d+)\.(\d+)$/);
-    if (ipMatch) {
-      const [, a, b] = ipMatch.map(Number);
-      // 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 169.254.0.0/16
-      if (
-        a === 10 ||
-        a === 127 ||
-        (a === 172 && b >= 16 && b <= 31) ||
-        (a === 192 && b === 168) ||
-        (a === 169 && b === 254)
-      ) {
-        return { valid: false, error: "Private IP addresses are not allowed" };
-      }
-    }
-
-    // URL length limit
-    if (urlString.length > 2048) {
-      return { valid: false, error: "URL is too long" };
-    }
-
-    return { valid: true };
-  } catch {
-    return { valid: false, error: "Invalid URL format" };
-  }
-}
+import { fetchPageMarkdownSchema, fetchPageMarkdownTool } from "@/mcp/tools/fetch-page-markdown";
+import {
+  filterBookmarksByTags,
+  filterBookmarksByTagsSchema,
+} from "@/mcp/tools/filter-bookmarks-by-tags";
+import { getBookmark, getBookmarkSchema } from "@/mcp/tools/get-bookmark";
+import { listBookmarks, listBookmarksSchema } from "@/mcp/tools/list-bookmarks";
+import { listTags, listTagsSchema } from "@/mcp/tools/list-tags";
+import { searchBookmarks, searchBookmarksSchema } from "@/mcp/tools/search-bookmarks";
+import type { ToolResult } from "@/mcp/types";
 
 interface ChatRequestBody {
-  messages: UIMessage[];
+  id?: string;
+  trigger?: "submit-message" | "regenerate-message";
+  message?: UIMessage;
+  messageId?: string;
   context: {
-    url: string;
+    url?: string;
+    query?: string;
     markdown?: string;
     metadata?: PageMetadata;
     existingComment?: string;
     existingTags?: string[];
   };
+}
+
+function toToolOutput<T>(result: ToolResult<T>): T | { error: string } {
+  return result.success ? result.data : { error: result.error };
 }
 
 export async function POST(request: NextRequest) {
@@ -152,18 +66,33 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const body = (await request.json()) as ChatRequestBody;
-    const { messages, context } = body;
-
-    if (!Array.isArray(messages) || messages.length === 0) {
-      return new Response(JSON.stringify({ error: "Messages are required" }), {
+    const mcpContext = await buildMcpContextForUser(session.user.id, env.DB);
+    if (!mcpContext) {
+      return new Response(JSON.stringify({ error: "User not found" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    if (!mcpContext.hatenaId) {
+      return new Response(JSON.stringify({ error: "Hatena not connected" }), {
         status: 400,
         headers: { "Content-Type": "application/json" },
       });
     }
+    const hatenaId = mcpContext.hatenaId;
 
-    if (!context?.url) {
-      return new Response(JSON.stringify({ error: "Context URL is required" }), {
+    const body = (await request.json()) as ChatRequestBody;
+    const { context } = body;
+
+    if (!body.id) {
+      return new Response(JSON.stringify({ error: "Session ID is required" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    const threadId = body.id;
+    if ((body.trigger ?? "submit-message") === "submit-message" && !body.message) {
+      return new Response(JSON.stringify({ error: "Latest message is required" }), {
         status: 400,
         headers: { "Content-Type": "application/json" },
       });
@@ -183,6 +112,7 @@ export async function POST(request: NextRequest) {
 
     const chatContext: ChatContext = {
       url: context.url,
+      query: context.query,
       markdown: context.markdown,
       metadata: context.metadata,
       existingComment: context.existingComment,
@@ -195,102 +125,105 @@ export async function POST(request: NextRequest) {
     // Build user context message (page content as data)
     const userContextMessage = buildChatUserContext(chatContext);
 
-    // Convert UIMessage format to ModelMessage format for streamText
-    const modelMessages = await convertToModelMessages(messages);
-
-    // Prepend the context as the first user message if this is the first interaction
-    // (i.e., messages only contain the current user message)
-    const messagesWithContext =
-      messages.length === 1
-        ? [
-            { role: "user" as const, content: userContextMessage },
-            {
-              role: "assistant" as const,
-              content: "I understand the page context. How can I help you?",
-            },
-            ...modelMessages,
-          ]
-        : modelMessages;
-
     // Create tools
-    const cfAccountId = env.BROWSER_RENDERING_ACCOUNT_ID;
-    const cfApiToken = env.BROWSER_RENDERING_API_TOKEN;
+    const toolEnv = {
+      HATENA_CONSUMER_KEY: env.HATENA_CONSUMER_KEY,
+      HATENA_CONSUMER_SECRET: env.HATENA_CONSUMER_SECRET,
+      BROWSER_RENDERING_ACCOUNT_ID: env.BROWSER_RENDERING_ACCOUNT_ID,
+      BROWSER_RENDERING_API_TOKEN: env.BROWSER_RENDERING_API_TOKEN,
+    };
 
-    const tools = {
-      // Web search tool (OpenAI built-in) - always enabled
+    const tools: ToolSet = {
       web_search: openai.tools.webSearch({}),
-      // Markdown fetch tool - always enabled
       fetch_markdown: tool({
         description:
-          "Fetch the markdown content of a web page. Use this when you need to read the actual content of a URL that was mentioned or when the user asks about a specific page.",
-        inputSchema: z.object({
-          url: z.string().url().describe("The URL of the web page to fetch"),
-        }),
-        execute: async ({ url }) => {
-          // Validate URL before fetching
-          const urlCheck = isUrlSafeToFetch(url);
-          if (!urlCheck.valid) {
-            return { error: urlCheck.error };
-          }
-
-          // Check if Browser Rendering is configured
-          if (!cfAccountId || !cfApiToken) {
-            return { error: "Browser Rendering is not configured" };
-          }
-
-          try {
-            const response = await fetchWithRetry(
-              `https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/browser-rendering/markdown`,
-              {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  Authorization: `Bearer ${cfApiToken}`,
-                },
-                body: JSON.stringify({ url }),
-              },
-              { timeoutMs: 15000, maxRetries: 2 },
-            );
-
-            if (!response.ok) {
-              return { error: `Failed to fetch: ${response.status}` };
-            }
-
-            const data = (await response.json()) as {
-              success: boolean;
-              result?: string;
-              errors?: unknown[];
-            };
-
-            if (data.success && data.result) {
-              // Truncate to avoid excessive token usage
-              const markdown = data.result.slice(0, 50000);
-              return { markdown };
-            }
-
-            return { error: "Failed to extract markdown from page" };
-          } catch (error) {
-            // Provide more specific error messages
-            if (error instanceof Error && error.name === "AbortError") {
-              return { error: "Request timed out after retries. The page may be slow to respond." };
-            }
-            return { error: error instanceof Error ? error.message : "Unknown error" };
-          }
-        },
+          "Fetch the markdown content of a public web page by URL. Use this when you need the actual page content.",
+        inputSchema: fetchPageMarkdownSchema,
+        execute: async (input) =>
+          toToolOutput(await fetchPageMarkdownTool(input, mcpContext, toolEnv)),
+      }),
+      list_bookmarks: tool({
+        description:
+          "List your Hatena bookmarks in reverse chronological order. Use this for browsing recent bookmarks or paginating through them.",
+        inputSchema: listBookmarksSchema,
+        execute: async (input) => toToolOutput(await listBookmarks(input, mcpContext, toolEnv)),
+      }),
+      list_tags: tool({
+        description: "List your Hatena bookmark tags with counts.",
+        inputSchema: listTagsSchema,
+        execute: async (input) => toToolOutput(await listTags(input, mcpContext, toolEnv)),
+      }),
+      search_bookmarks: tool({
+        description:
+          "Search your Hatena bookmarks by keyword across title, URL, comment text, and tags. Use this first when the user asks about previously saved bookmarks.",
+        inputSchema: searchBookmarksSchema,
+        execute: async (input) => toToolOutput(await searchBookmarks(input, mcpContext, toolEnv)),
+      }),
+      filter_bookmarks_by_tags: tool({
+        description: "Filter your Hatena bookmarks by one or more tags.",
+        inputSchema: filterBookmarksByTagsSchema,
+        execute: async (input) =>
+          toToolOutput(await filterBookmarksByTags(input, mcpContext, toolEnv)),
+      }),
+      get_bookmark: tool({
+        description:
+          "Get the exact Hatena bookmark for a specific URL. Use this when the user asks whether a URL is already bookmarked or wants its saved comment/tags.",
+        inputSchema: getBookmarkSchema,
+        execute: async (input) => toToolOutput(await getBookmark(input, mcpContext, toolEnv)),
       }),
     };
 
+    const previousThread = await getChatThreadForHatenaAccount(hatenaId, threadId, env.DB);
+    const previousMessages = previousThread?.messages ?? [];
+    const requestMessages = applyChatRequestToMessages(previousMessages, body);
+
+    const contextMessages: UIMessage[] =
+      requestMessages.length === 1
+        ? [
+            {
+              id: `context-${threadId}`,
+              role: "user",
+              parts: [{ type: "text", text: userContextMessage }],
+            },
+            {
+              id: `context-ack-${threadId}`,
+              role: "assistant",
+              parts: [
+                { type: "text", text: "I understand the search context. How can I help you?" },
+              ],
+            },
+          ]
+        : [];
+
     const result = streamText({
-      model: openai("gpt-4o-mini"),
+      model: openai("gpt-5.4"),
       system: systemPrompt,
-      messages: messagesWithContext,
+      messages: await convertToModelMessages([...contextMessages, ...requestMessages]),
       tools,
-      maxOutputTokens: 2048,
-      stopWhen: stepCountIs(5), // Limit tool call loops to prevent abuse
+      maxOutputTokens: 3072,
+      stopWhen: stepCountIs(8),
     });
 
     // Use toUIMessageStreamResponse to include tool call information in the stream
-    return result.toUIMessageStreamResponse();
+    return result.toUIMessageStreamResponse({
+      originalMessages: requestMessages,
+      onFinish: async ({ messages: finalMessages, isAborted }) => {
+        if (isAborted) {
+          return;
+        }
+
+        await saveChatThreadForHatenaAccount({
+          threadId,
+          userId: session.user.id,
+          hatenaId,
+          query: context.query,
+          url: context.url,
+          title: context.metadata?.title || context.query || context.url || "Search Session",
+          messages: finalMessages,
+          dbBinding: env.DB,
+        });
+      },
+    });
   } catch (error) {
     console.error("Chat API error:", error);
     return new Response(

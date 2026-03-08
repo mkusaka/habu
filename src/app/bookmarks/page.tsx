@@ -14,6 +14,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ExternalLink,
+  Search,
   Settings,
   Tags,
 } from "lucide-react";
@@ -432,6 +433,15 @@ export default async function BookmarksPage({ searchParams }: BookmarksPageProps
           <TooltipProvider>
             <BulkRegenerateButton page={page} tags={tags} />
           </TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Link href="/search" className={buttonVariants({ variant: "ghost", size: "icon" })}>
+                <Search className="w-5 h-5" />
+                <span className="sr-only">Search</span>
+              </Link>
+            </TooltipTrigger>
+            <TooltipContent>Search</TooltipContent>
+          </Tooltip>
           <RefreshButton />
           <LinkButton href="/" variant="ghost" size="icon">
             <Home className="w-5 h-5" />

@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, integer, index } from "drizzle-orm/sqlite-core";
 import { relations } from "drizzle-orm";
 import { sql } from "drizzle-orm";
 
@@ -172,10 +172,40 @@ export const hatenaTokens = sqliteTable("hatena_tokens", {
     .default(sql`(unixepoch('now') * 1000)`),
 });
 
+export const chatThreads = sqliteTable(
+  "chat_threads",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    hatenaId: text("hatena_id").references(() => hatenaTokens.hatenaId, { onDelete: "cascade" }),
+    url: text("url"),
+    query: text("query"),
+    title: text("title"),
+    messages: text("messages").notNull().default("[]"),
+    messageCount: integer("message_count").notNull().default(0),
+    lastMessagePreview: text("last_message_preview"),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(unixepoch('now') * 1000)`),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(unixepoch('now') * 1000)`),
+  },
+  (table) => ({
+    hatenaIdUpdatedAtIdx: index("chat_threads_hatena_id_updated_at_idx").on(
+      table.hatenaId,
+      table.updatedAt,
+    ),
+  }),
+);
+
 // Relations
 export const usersRelations = relations(users, ({ many, one }) => ({
   sessions: many(sessions),
   accounts: many(accounts),
+  chatThreads: many(chatThreads),
   hatenaToken: one(hatenaTokens, {
     fields: [users.hatenaId],
     references: [hatenaTokens.hatenaId],
@@ -184,4 +214,11 @@ export const usersRelations = relations(users, ({ many, one }) => ({
 
 export const hatenaTokensRelations = relations(hatenaTokens, ({ many }) => ({
   users: many(users),
+}));
+
+export const chatThreadsRelations = relations(chatThreads, ({ one }) => ({
+  user: one(users, {
+    fields: [chatThreads.userId],
+    references: [users.id],
+  }),
 }));

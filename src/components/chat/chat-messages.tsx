@@ -15,6 +15,10 @@ import {
   Loader2,
   Search,
   FileText,
+  Bookmark,
+  Sparkles,
+  Trash2,
+  Plus,
   CheckCircle2,
   XCircle,
   ChevronDown,
@@ -48,8 +52,8 @@ export function ChatMessages({
     return (
       <div className="flex-1 flex items-center justify-center p-4">
         <p className="text-muted-foreground text-sm text-center">
-          Ask anything about this page.
-          <br />I can help summarize, explain, or suggest bookmark tags.
+          Search this page, linked URLs, or your bookmarks.
+          <br />I can also search your bookmarks and fetch linked pages when needed.
         </p>
       </div>
     );
@@ -222,11 +226,23 @@ function ToolInvocationDisplay({ toolPart }: { toolPart: ToolPart }) {
   const toolName = getToolName(toolPart);
   const state = toolPart.state;
 
-  // Get appropriate icon for the tool
-  const ToolIcon = toolName === "web_search" ? Search : FileText;
+  const toolDisplay = {
+    web_search: { icon: Search, label: "Web Search" },
+    fetch_markdown: { icon: FileText, label: "Fetch Markdown" },
+    list_bookmarks: { icon: Bookmark, label: "List Bookmarks" },
+    search_bookmarks: { icon: Search, label: "Search Bookmarks" },
+    get_bookmark: { icon: Bookmark, label: "Get Bookmark" },
+    add_bookmark: { icon: Plus, label: "Add Bookmark" },
+    delete_bookmark: { icon: Trash2, label: "Delete Bookmark" },
+    suggest_comment: { icon: Sparkles, label: "Suggest Comment" },
+  } as const;
 
-  // Get display name for the tool
-  const displayName = toolName === "web_search" ? "Web Search" : "Fetch Page";
+  const { icon: ToolIcon, label: displayName } = toolDisplay[
+    toolName as keyof typeof toolDisplay
+  ] ?? {
+    icon: FileText,
+    label: toolName,
+  };
 
   // Determine loading state (input streaming or executing)
   const isLoading =

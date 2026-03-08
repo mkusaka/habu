@@ -120,8 +120,8 @@ export function SearchLandingClient({
       <main className="px-4 py-5 sm:px-6">
         <div className="mx-auto flex max-w-3xl flex-col gap-6">
           <Card className="gap-0 py-0">
-            <CardHeader className="gap-1 border-b px-4 py-4 sm:px-5">
-              <CardTitle className="text-base">Start Search Session</CardTitle>
+            <CardHeader className="gap-1 border-b px-4 py-3 sm:px-5">
+              <CardTitle className="text-base">Ask about your bookmarks</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4 px-4 py-4 sm:px-5">
               <form onSubmit={handleStartSearch} className="space-y-4">
@@ -132,7 +132,7 @@ export function SearchLandingClient({
                     onChange={(e: ChangeEvent<HTMLTextAreaElement>) =>
                       setMessageInput(e.target.value)
                     }
-                    placeholder="Ask about your bookmarks, or start from the optional URL above..."
+                    placeholder="Ask about your bookmarks..."
                     rows={3}
                     className="resize-none"
                   />

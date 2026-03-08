@@ -25,8 +25,7 @@ const TwitterThreadNullSchema = z.object({
 
 const TwitterThreadResponseSchema = z.union([TwitterThreadResultSchema, TwitterThreadNullSchema]);
 
-export type TwitterThreadTweet = z.infer<typeof ThreadTweetSchema>;
-export type TwitterThreadData = z.infer<typeof TwitterThreadResultSchema>;
+type TwitterThreadData = z.infer<typeof TwitterThreadResultSchema>;
 
 function extractFirstJsonObject(text: string): string | null {
   const start = text.indexOf("{");

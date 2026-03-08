@@ -15,9 +15,9 @@ export const suggestCommentSchema = z.object({
     .describe("Optional user-provided context or instructions for the AI suggestion"),
 });
 
-export type SuggestCommentInput = z.infer<typeof suggestCommentSchema>;
+type SuggestCommentInput = z.infer<typeof suggestCommentSchema>;
 
-export interface SuggestCommentResult {
+interface SuggestCommentResult {
   summary: string;
   tags: string[];
   formattedComment: string;

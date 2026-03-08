@@ -8,12 +8,12 @@ const TWITTER_PROFILE_PATTERNS = [
   new URLPattern({ hostname: "{:sub.}?x.com", pathname: "/:handle{/*}?" }),
 ] as const;
 
-export type TwitterStatusMatch = {
+type TwitterStatusMatch = {
   user: string;
   id: string;
 };
 
-export function matchTwitterStatusUrl(input: string | URL): TwitterStatusMatch | null {
+function matchTwitterStatusUrl(input: string | URL): TwitterStatusMatch | null {
   const urlString = typeof input === "string" ? input : input.href;
 
   for (const pattern of TWITTER_STATUS_PATTERNS) {

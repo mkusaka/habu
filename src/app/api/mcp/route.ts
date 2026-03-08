@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { createAuth } from "@/lib/auth";
@@ -35,7 +34,6 @@ async function verifyMcpAuth(request: NextRequest, env: CloudflareEnv): Promise<
     return null;
   }
 
-  const token = authorization.replace("Bearer ", "");
   const auth = createAuth(env.DB);
 
   try {

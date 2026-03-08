@@ -10,9 +10,9 @@ export const listBookmarksSchema = z.object({
   offset: z.number().min(0).default(0).describe("Offset for pagination"),
 });
 
-export type ListBookmarksInput = z.infer<typeof listBookmarksSchema>;
+type ListBookmarksInput = z.infer<typeof listBookmarksSchema>;
 
-export interface BookmarkItem {
+interface BookmarkItem {
   url: string;
   title: string;
   comment: string;
@@ -20,7 +20,7 @@ export interface BookmarkItem {
   bookmarkedAt: string;
 }
 
-export interface ListBookmarksResult {
+interface ListBookmarksResult {
   bookmarks: BookmarkItem[];
   username: string;
 }

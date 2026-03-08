@@ -9,9 +9,9 @@ export const getBookmarkSchema = z.object({
   url: z.string().url().describe("The URL to get bookmark information for"),
 });
 
-export type GetBookmarkInput = z.infer<typeof getBookmarkSchema>;
+type GetBookmarkInput = z.infer<typeof getBookmarkSchema>;
 
-export interface BookmarkInfo {
+interface BookmarkInfo {
   url: string;
   comment: string;
   tags: string[];

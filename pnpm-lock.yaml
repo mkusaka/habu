@@ -139,13 +139,13 @@ importers:
         specifier: 4.2.1
         version: 4.2.1
       '@testing-library/jest-dom':
-        specifier: ^6.9.1
+        specifier: 6.9.1
         version: 6.9.1
       '@testing-library/react':
-        specifier: ^16.3.2
+        specifier: 16.3.2
         version: 16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       '@testing-library/user-event':
-        specifier: ^14.6.1
+        specifier: 14.6.1
         version: 14.6.1(@testing-library/dom@10.4.1)
       '@types/node':
         specifier: 24.11.0
@@ -169,7 +169,7 @@ importers:
         specifier: 0.31.9
         version: 0.31.9
       happy-dom:
-        specifier: ^20.8.3
+        specifier: 20.8.3
         version: 20.8.3
       knip:
         specifier: ^5.86.0

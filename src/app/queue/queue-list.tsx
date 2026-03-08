@@ -8,6 +8,7 @@ import { saveBookmark } from "@/lib/bookmark-client";
 import type { BookmarkQueue } from "@/types/habu";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -560,12 +561,9 @@ export function QueueList() {
                           {item.status === "done" && displayTags && displayTags.length > 0 && (
                             <div className="flex flex-wrap gap-1 mt-1">
                               {displayTags.map((tag, i) => (
-                                <span
-                                  key={i}
-                                  className="px-1.5 py-0.5 bg-primary/10 text-primary rounded text-xs"
-                                >
+                                <Badge key={i} variant="secondary">
                                   {tag}
-                                </span>
+                                </Badge>
                               ))}
                             </div>
                           )}

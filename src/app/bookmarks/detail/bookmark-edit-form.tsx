@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
@@ -437,9 +438,9 @@ export function BookmarkEditForm({
         {currentTags.length > 0 && (
           <div className="flex flex-wrap gap-1">
             {currentTags.map((tag, i) => (
-              <span key={i} className="px-2 py-0.5 bg-primary/10 text-primary rounded text-xs">
+              <Badge key={i} variant="secondary">
                 {tag}
-              </span>
+              </Badge>
             ))}
           </div>
         )}
@@ -498,12 +499,9 @@ export function BookmarkEditForm({
               {generatedResult.tags && generatedResult.tags.length > 0 && (
                 <div className="flex flex-wrap gap-1 mb-2">
                   {generatedResult.tags.map((tag, i) => (
-                    <span
-                      key={i}
-                      className="px-2 py-0.5 bg-primary/10 text-primary rounded text-xs"
-                    >
+                    <Badge key={i} variant="secondary">
                       {tag}
-                    </span>
+                    </Badge>
                   ))}
                 </div>
               )}
@@ -671,9 +669,9 @@ export function BookmarkEditForm({
                     </summary>
                     <div className="mt-2 bg-background p-2 rounded text-xs flex flex-wrap gap-1">
                       {generatedResult.tags.map((tag, i) => (
-                        <span key={i} className="px-2 py-0.5 bg-primary/10 text-primary rounded">
+                        <Badge key={i} variant="secondary">
                           {tag}
-                        </span>
+                        </Badge>
                       ))}
                     </div>
                   </details>

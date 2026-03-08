@@ -356,17 +356,9 @@ async function BookmarkList({ page, tags }: { page: number; tags: string[] }) {
               {bookmark.tags.length > 0 && (
                 <div className="relative z-10 flex flex-wrap gap-1 mt-1">
                   {bookmark.tags.map((tag, i) => (
-                    <Link
-                      key={i}
-                      href={buildBookmarksHref(1, addTagFilter(tags, tag))}
-                      className={`px-1.5 py-0.5 rounded text-xs transition-colors ${
-                        tags.includes(tag)
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-primary/10 text-primary hover:bg-primary/20"
-                      }`}
-                    >
-                      {tag}
-                    </Link>
+                    <Badge key={i} asChild variant={tags.includes(tag) ? "default" : "secondary"}>
+                      <Link href={buildBookmarksHref(1, addTagFilter(tags, tag))}>{tag}</Link>
+                    </Badge>
                   ))}
                 </div>
               )}

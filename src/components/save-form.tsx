@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { queueBookmark } from "@/lib/bookmark-client";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -802,12 +803,9 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
                 {generatedResult.tags && generatedResult.tags.length > 0 && (
                   <div className="flex flex-wrap gap-1 mb-2">
                     {generatedResult.tags.map((tag, i) => (
-                      <span
-                        key={i}
-                        className="px-2 py-0.5 bg-primary/10 text-primary rounded text-xs"
-                      >
+                      <Badge key={i} variant="secondary">
                         {tag}
-                      </span>
+                      </Badge>
                     ))}
                   </div>
                 )}
@@ -986,9 +984,9 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
                       </summary>
                       <div className="mt-2 bg-background p-2 rounded text-xs flex flex-wrap gap-1">
                         {generatedResult.tags.map((tag, i) => (
-                          <span key={i} className="px-2 py-0.5 bg-primary/10 text-primary rounded">
+                          <Badge key={i} variant="secondary">
                             {tag}
-                          </span>
+                          </Badge>
                         ))}
                       </div>
                     </details>
@@ -1129,12 +1127,9 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
                     {existingBookmark.tags.length > 0 && (
                       <div className="flex flex-wrap gap-1 mb-2">
                         {existingBookmark.tags.map((tag, i) => (
-                          <span
-                            key={i}
-                            className="px-2 py-0.5 bg-primary/10 text-primary rounded text-xs"
-                          >
+                          <Badge key={i} variant="secondary">
                             {tag}
-                          </span>
+                          </Badge>
                         ))}
                       </div>
                     )}

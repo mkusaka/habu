@@ -55,7 +55,7 @@ describe("ChatPageClient", () => {
 
     expect(screen.queryByText("Open Search Menu")).toBeNull();
     expect(screen.queryByText("Search Home")).toBeNull();
-    assert.ok(screen.getByRole("button", { name: "Show search controls" }));
+    assert.ok(screen.getByRole("button", { name: "Show search options" }));
     assert.ok(screen.getByRole("link", { name: "Histories" }));
     assert.ok(screen.getByRole("link", { name: "Open Bookmark Detail" }));
     assert.ok(screen.getByRole("link", { name: "Open Page" }));

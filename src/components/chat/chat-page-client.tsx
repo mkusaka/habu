@@ -4,7 +4,7 @@ import { useCallback, useMemo, useState, type ChangeEvent, type FormEvent } from
 import { useRouter } from "next/navigation";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
-import { Bookmark, ExternalLink, AlertCircle, History, Menu } from "lucide-react";
+import { Bookmark, ExternalLink, AlertCircle, History, Menu, Search } from "lucide-react";
 import { ChatMessages } from "./chat-messages";
 import { ChatInput } from "./chat-input";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -14,6 +14,8 @@ import { SearchPanel } from "./search-panel";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { Card } from "@/components/ui/card";
+import { SearchPageShell } from "./search-page-shell";
 
 interface ChatPageClientProps {
   sessionId: string;
@@ -191,10 +193,28 @@ export function ChatPageClient({
     });
   };
 
+  const description = error ? (
+    <div className="inline-flex items-center gap-2 rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+      <AlertCircle className="h-4 w-4" />
+      <span>{error}</span>
+    </div>
+  ) : selectedUrl || initialQuery ? (
+    <div className="flex flex-col gap-1 text-sm text-muted-foreground">
+      {initialQuery ? <span className="truncate">Query: {initialQuery}</span> : null}
+      {selectedUrl ? <span className="break-all">{selectedUrl}</span> : null}
+    </div>
+  ) : (
+    <p className="text-sm text-muted-foreground">Ask about your bookmarks.</p>
+  );
+
   return (
-    <div className="flex min-h-screen flex-col bg-background">
-      <header className="border-b px-4 py-4 sm:px-6">
-        <div className="flex flex-wrap items-center gap-2">
+    <SearchPageShell
+      title={title || initialQuery || "Search"}
+      icon={Search}
+      description={description}
+      bodyClassName="space-y-4"
+      actions={
+        <>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -202,13 +222,13 @@ export function ChatPageClient({
                 variant="ghost"
                 size="icon"
                 onClick={() => setIsSearchPanelOpen((open) => !open)}
-                aria-label={isSearchPanelOpen ? "Hide search controls" : "Show search controls"}
+                aria-label={isSearchPanelOpen ? "Hide search options" : "Show search options"}
               >
                 <Menu className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              {isSearchPanelOpen ? "Hide Search Controls" : "Show Search Controls"}
+              {isSearchPanelOpen ? "Hide Search Options" : "Show Search Options"}
             </TooltipContent>
           </Tooltip>
           <Tooltip>
@@ -223,7 +243,7 @@ export function ChatPageClient({
             </TooltipTrigger>
             <TooltipContent>Histories</TooltipContent>
           </Tooltip>
-          {selectedUrl && (
+          {selectedUrl ? (
             <Tooltip>
               <TooltipTrigger asChild>
                 <Link
@@ -236,8 +256,8 @@ export function ChatPageClient({
               </TooltipTrigger>
               <TooltipContent>Open Bookmark Detail</TooltipContent>
             </Tooltip>
-          )}
-          {selectedUrl && (
+          ) : null}
+          {selectedUrl ? (
             <Tooltip>
               <TooltipTrigger asChild>
                 <a
@@ -253,64 +273,48 @@ export function ChatPageClient({
               </TooltipTrigger>
               <TooltipContent>Open Page</TooltipContent>
             </Tooltip>
-          )}
-        </div>
-        <div className="mt-3">
-          <h1 className="text-xl font-semibold">{title || initialQuery || "Search"}</h1>
-          {error ? (
-            <div className="mt-2 inline-flex items-center gap-2 rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-              <AlertCircle className="h-4 w-4" />
-              <span>{error}</span>
-            </div>
-          ) : selectedUrl || initialQuery ? (
-            <div className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
-              {initialQuery && <span className="truncate">Query: {initialQuery}</span>}
-              {selectedUrl && <span className="truncate">{selectedUrl}</span>}
-            </div>
-          ) : (
-            <p className="mt-1 text-sm text-muted-foreground">
-              Ask about your bookmarks or start from an optional page URL.
-            </p>
-          )}
-        </div>
-      </header>
-
-      {isSearchPanelOpen && (
-        <div className="border-b bg-muted/20">
-          <SearchPanel
-            activeSessionId={sessionId}
-            queryInput={queryInput}
-            urlInput={urlInput}
-            historyThreads={historyThreads}
-            historyTitle="Recent History"
-            historyLimit={5}
-            showQueryInput={false}
-            onQueryChange={setQueryInput}
-            onUrlChange={setUrlInput}
-            onStartSearch={handleStartSearch}
-            onOpenSearch={openSearchSession}
-          />
-        </div>
-      )}
-
-      <main className="flex min-h-0 flex-1 flex-col">
-        {error ? (
-          <div className="flex flex-1 items-center justify-center px-4 py-8 sm:px-6">
-            <div className="max-w-md text-center text-sm text-muted-foreground">
-              Fix the search inputs in the menu above and try again.
-            </div>
-          </div>
-        ) : (
-          <div className="min-h-0 flex-1">
-            <ChatConversation
-              key={sessionId}
-              sessionId={sessionId}
-              context={context}
-              initialMessages={initialMessages}
+          ) : null}
+        </>
+      }
+    >
+      <Card className="min-h-[calc(100dvh-13rem)] gap-0 overflow-hidden py-0">
+        {isSearchPanelOpen ? (
+          <div className="border-b bg-muted/20">
+            <SearchPanel
+              activeSessionId={sessionId}
+              queryInput={queryInput}
+              urlInput={urlInput}
+              historyThreads={historyThreads}
+              historyTitle="Recent History"
+              historyLimit={5}
+              showQueryInput={false}
+              onQueryChange={setQueryInput}
+              onUrlChange={setUrlInput}
+              onStartSearch={handleStartSearch}
+              onOpenSearch={openSearchSession}
             />
           </div>
-        )}
-      </main>
-    </div>
+        ) : null}
+
+        <main className="flex min-h-0 flex-1 flex-col">
+          {error ? (
+            <div className="flex flex-1 items-center justify-center px-4 py-8">
+              <div className="max-w-md text-center text-sm text-muted-foreground">
+                Fix the search inputs in the menu above and try again.
+              </div>
+            </div>
+          ) : (
+            <div className="min-h-0 flex-1">
+              <ChatConversation
+                key={sessionId}
+                sessionId={sessionId}
+                context={context}
+                initialMessages={initialMessages}
+              />
+            </div>
+          )}
+        </main>
+      </Card>
+    </SearchPageShell>
   );
 }

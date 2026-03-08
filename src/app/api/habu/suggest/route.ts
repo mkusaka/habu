@@ -17,7 +17,7 @@ import { fetchPageMeta, isMetaExtractionResult } from "@/lib/page-meta";
 import { fetchPageMarkdown } from "@/lib/page-markdown";
 import type { WorkflowStepMeta } from "@/lib/mastra-workflow-progress";
 import { calculateBodySize, HATENA_BODY_LIMIT } from "@/lib/hatena-body-limit";
-import { isTwitterStatusUrl } from "@/lib/twitter-oembed";
+import { validateSameOrigin } from "@/lib/same-origin";
 
 const HATENA_TAGS_API_URL = "https://bookmark.hatenaapis.com/rest/1/my/tags";
 const MAX_MARKDOWN_CHARS = 800000;
@@ -134,25 +134,11 @@ export async function POST(request: NextRequest) {
     const streamMode =
       request.nextUrl.searchParams.get("stream") === "1" || accept.includes("text/event-stream");
 
-    // CSRF protection
-    const origin = request.headers.get("origin");
-    const referer = request.headers.get("referer");
-    const requestUrl = new URL(request.url);
-    const expectedOrigin = requestUrl.origin;
-
-    if (origin && origin !== expectedOrigin) {
-      return NextResponse.json({ success: false, error: "Invalid origin" } as SuggestResponse, {
+    const csrfError = validateSameOrigin(request);
+    if (csrfError) {
+      return NextResponse.json({ success: false, error: csrfError } as SuggestResponse, {
         status: 403,
       });
-    }
-
-    if (!origin && referer) {
-      const refererUrl = new URL(referer);
-      if (refererUrl.origin !== expectedOrigin) {
-        return NextResponse.json({ success: false, error: "Invalid referer" } as SuggestResponse, {
-          status: 403,
-        });
-      }
     }
 
     // Get DB connection for auth

@@ -1,9 +1,6 @@
 import { z } from "zod";
-import { createSignedRequest } from "@/lib/hatena-oauth";
 import type { McpContext, ToolResult } from "../types";
-import { hasScope } from "../types";
-
-const HATENA_BOOKMARK_API_URL = "https://bookmark.hatenaapis.com/rest/1/my/bookmark";
+import { sendHatenaBookmarkRequest } from "./hatena-bookmark-request";
 
 export const getBookmarkSchema = z.object({
   url: z.string().url().describe("The URL to get bookmark information for"),
@@ -23,35 +20,18 @@ export async function getBookmark(
   context: McpContext,
   env: { HATENA_CONSUMER_KEY: string; HATENA_CONSUMER_SECRET: string },
 ): Promise<ToolResult<BookmarkInfo>> {
-  // Check scope
-  if (!hasScope(context, "bookmark:read")) {
-    return { success: false, error: "Permission denied: bookmark:read scope required" };
-  }
-
-  // Check Hatena connection
-  if (!context.hatenaToken) {
-    return { success: false, error: "Hatena not connected" };
-  }
-
-  const { accessToken, accessTokenSecret } = context.hatenaToken;
-
-  // Build API URL
-  const apiUrl = `${HATENA_BOOKMARK_API_URL}?url=${encodeURIComponent(input.url)}`;
-
-  // Create OAuth signed request
-  const authHeaders = createSignedRequest(
-    apiUrl,
+  const requestResult = await sendHatenaBookmarkRequest(
+    input.url,
     "GET",
-    accessToken,
-    accessTokenSecret,
-    env.HATENA_CONSUMER_KEY,
-    env.HATENA_CONSUMER_SECRET,
+    "bookmark:read",
+    context,
+    env,
   );
+  if (!requestResult.success) {
+    return requestResult;
+  }
 
-  const response = await fetch(apiUrl, {
-    method: "GET",
-    headers: authHeaders,
-  });
+  const { response } = requestResult.data;
 
   if (response.status === 404) {
     return { success: false, error: "Bookmark not found" };

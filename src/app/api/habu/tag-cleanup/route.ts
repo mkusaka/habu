@@ -5,6 +5,7 @@ import {
   findBookmarksByTag,
   updateBookmarkTags,
 } from "@/lib/hatena-bookmark-api";
+import { validateSameOrigin } from "@/lib/same-origin";
 import type {
   TagCleanupFailure,
   TagCleanupRequest,
@@ -13,26 +14,6 @@ import type {
 } from "@/types/habu";
 
 const MAX_PREVIEW_ITEMS = 50;
-
-function validateSameOrigin(request: NextRequest) {
-  const origin = request.headers.get("origin");
-  const referer = request.headers.get("referer");
-  const requestUrl = new URL(request.url);
-  const expectedOrigin = requestUrl.origin;
-
-  if (origin && origin !== expectedOrigin) {
-    return "Invalid origin";
-  }
-
-  if (!origin && referer) {
-    const refererUrl = new URL(referer);
-    if (refererUrl.origin !== expectedOrigin) {
-      return "Invalid referer";
-    }
-  }
-
-  return null;
-}
 
 function normalizeMappings(mappings: TagMappingCandidate[]) {
   const actionable: TagMappingCandidate[] = [];

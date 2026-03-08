@@ -9,6 +9,7 @@ import type { BookmarkRequest, BookmarkResponse, HatenaTagsResponse } from "@/ty
 import { mastra } from "@/mastra";
 import { RequestContext } from "@mastra/core/di";
 import { isBodyWithinLimit, maxEncodedCommentLength } from "@/lib/hatena-body-limit";
+import { validateSameOrigin } from "@/lib/same-origin";
 
 const HATENA_BOOKMARK_API_URL = "https://bookmark.hatenaapis.com/rest/1/my/bookmark";
 const HATENA_TAGS_API_URL = "https://bookmark.hatenaapis.com/rest/1/my/tags";
@@ -241,27 +242,11 @@ function fitCommentToBodyLimit(
 
 export async function POST(request: NextRequest) {
   try {
-    // CSRF protection: verify Origin/Referer
-    const origin = request.headers.get("origin");
-    const referer = request.headers.get("referer");
-    const requestUrl = new URL(request.url);
-    const expectedOrigin = requestUrl.origin;
-
-    // Check that the request comes from our own origin
-    if (origin && origin !== expectedOrigin) {
-      return NextResponse.json({ success: false, error: "Invalid origin" } as BookmarkResponse, {
+    const csrfError = validateSameOrigin(request);
+    if (csrfError) {
+      return NextResponse.json({ success: false, error: csrfError } as BookmarkResponse, {
         status: 403,
       });
-    }
-
-    // Fallback to referer check if origin is not present
-    if (!origin && referer) {
-      const refererUrl = new URL(referer);
-      if (refererUrl.origin !== expectedOrigin) {
-        return NextResponse.json({ success: false, error: "Invalid referer" } as BookmarkResponse, {
-          status: 403,
-        });
-      }
     }
 
     // Get DB connection for auth
@@ -499,23 +484,9 @@ export async function POST(request: NextRequest) {
  */
 export async function DELETE(request: NextRequest) {
   try {
-    // CSRF protection: verify Origin/Referer
-    const origin = request.headers.get("origin");
-    const referer = request.headers.get("referer");
-    const requestUrl = new URL(request.url);
-    const expectedOrigin = requestUrl.origin;
-
-    // Check that the request comes from our own origin
-    if (origin && origin !== expectedOrigin) {
-      return NextResponse.json({ success: false, error: "Invalid origin" }, { status: 403 });
-    }
-
-    // Fallback to referer check if origin is not present
-    if (!origin && referer) {
-      const refererUrl = new URL(referer);
-      if (refererUrl.origin !== expectedOrigin) {
-        return NextResponse.json({ success: false, error: "Invalid referer" }, { status: 403 });
-      }
+    const csrfError = validateSameOrigin(request);
+    if (csrfError) {
+      return NextResponse.json({ success: false, error: csrfError }, { status: 403 });
     }
 
     const { searchParams } = new URL(request.url);

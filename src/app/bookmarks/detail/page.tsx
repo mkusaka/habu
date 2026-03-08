@@ -17,8 +17,6 @@ import { fetchPageMeta, isMetaExtractionResult } from "@/lib/page-meta";
 import { normalizeTagFilters } from "@/lib/bookmark-tag-filter";
 import { buildBookmarksHref } from "@/lib/bookmark-paths";
 
-export const dynamic = "force-dynamic";
-
 const HATENA_BOOKMARK_API_URL = "https://bookmark.hatenaapis.com/rest/1/my/bookmark";
 
 interface HatenaBookmarkGetResponse {

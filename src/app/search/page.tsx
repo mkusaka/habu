@@ -9,8 +9,6 @@ import { LinkButton } from "@/components/ui/link-button";
 import { listChatThreadsForHatenaAccount } from "@/lib/chat-history";
 import { listBookmarks } from "@/mcp/tools/list-bookmarks";
 
-export const dynamic = "force-dynamic";
-
 interface SearchPageProps {
   searchParams: Promise<{ q?: string; url?: string }>;
 }

@@ -7,8 +7,6 @@ import { buildMcpContextForUser } from "@/lib/bookmark-user-context";
 import { LinkButton } from "@/components/ui/link-button";
 import { listChatThreadsForHatenaAccount } from "@/lib/chat-history";
 
-export const dynamic = "force-dynamic";
-
 export default async function SearchHistoriesPage() {
   const cookieStore = await cookies();
   const { env } = getCloudflareContext();

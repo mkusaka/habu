@@ -84,14 +84,12 @@ export async function POST(request: NextRequest) {
     const body = (await request.json()) as TagCleanupRequest;
     const mappings = normalizeMappings(body.mappings ?? []);
 
-    const missingWritePrivate = !authResult.context.scopes.includes("write_private");
     if (mappings.length === 0) {
       return NextResponse.json({
         success: true,
         mappings: [],
         totalMatched: 0,
         preview: [],
-        missingWritePrivate,
       } as TagCleanupResponse);
     }
 
@@ -130,7 +128,6 @@ export async function POST(request: NextRequest) {
         mappings,
         totalMatched: preview.length,
         preview: preview.slice(0, MAX_PREVIEW_ITEMS),
-        missingWritePrivate,
       } as TagCleanupResponse);
     }
 
@@ -162,7 +159,6 @@ export async function POST(request: NextRequest) {
       updatedCount,
       failed: failures,
       preview: preview.slice(0, MAX_PREVIEW_ITEMS),
-      missingWritePrivate,
     } as TagCleanupResponse);
   } catch (error) {
     console.error("Tag cleanup API error:", error);

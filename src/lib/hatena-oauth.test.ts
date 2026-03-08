@@ -1,6 +1,7 @@
 import { fetchMock } from "cloudflare:test";
 import { describe, it, expect, beforeAll, afterEach } from "vitest";
 import {
+  HATENA_OAUTH_SCOPE,
   getRequestToken,
   getAuthorizeUrl,
   getAccessToken,
@@ -38,6 +39,11 @@ describe("getAuthorizeUrl", () => {
 });
 
 describe("getRequestToken", () => {
+  it("requests only the public write scope set", () => {
+    expect(HATENA_OAUTH_SCOPE).toBe("read_public,read_private,write_public");
+    expect(HATENA_OAUTH_SCOPE).not.toContain("write_private");
+  });
+
   it("returns token and tokenSecret on success", async () => {
     fetchMock
       .get("https://www.hatena.com")

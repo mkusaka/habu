@@ -4,6 +4,7 @@ import CryptoJS from "crypto-js";
 const HATENA_REQUEST_TOKEN_URL = "https://www.hatena.com/oauth/initiate";
 const HATENA_AUTHORIZE_URL = "https://www.hatena.ne.jp/oauth/authorize";
 const HATENA_ACCESS_TOKEN_URL = "https://www.hatena.com/oauth/token";
+export const HATENA_OAUTH_SCOPE = "read_public,read_private,write_public";
 
 // OAuth 1.0a client setup
 // Note: oauth-1.0a library requires synchronous hash_function, so we use CryptoJS
@@ -33,8 +34,8 @@ export async function getRequestToken(
   // Scopes:
   // - read_public: Read public bookmarks
   // - read_private: Read private bookmarks and tags list
-  // - write_public/write_private: Create/edit public or private bookmarks
-  const scope = "read_public,read_private,write_public,write_private";
+  // - write_public: Create/edit bookmarks
+  const scope = HATENA_OAUTH_SCOPE;
   const requestData = {
     url: HATENA_REQUEST_TOKEN_URL,
     method: "POST",

@@ -2,7 +2,7 @@ import { extractTwitterHandle, isTwitterStatusUrl } from "./twitter-url";
 
 export { isTwitterStatusUrl } from "./twitter-url";
 
-export type TwitterOEmbedResponse = {
+type TwitterOEmbedResponse = {
   url?: string;
   author_name?: string;
   author_url?: string;
@@ -11,7 +11,7 @@ export type TwitterOEmbedResponse = {
   provider_url?: string;
 };
 
-export type TwitterOEmbed = {
+type TwitterOEmbed = {
   url: string;
   canonicalUrl?: string;
   authorName?: string;

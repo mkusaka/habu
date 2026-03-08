@@ -4,7 +4,7 @@ import { createAuth } from "@/lib/auth";
 import { getDb } from "@/db/client";
 import { users } from "@/db/schema";
 
-export interface HatenaRouteContext {
+interface HatenaRouteContext {
   userId: string;
   hatenaId: string;
   accessToken: string;
@@ -14,7 +14,7 @@ export interface HatenaRouteContext {
   scopes: string[];
 }
 
-export type HatenaRouteAuthResult =
+type HatenaRouteAuthResult =
   | {
       ok: true;
       context: HatenaRouteContext;

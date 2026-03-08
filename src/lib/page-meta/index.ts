@@ -2,8 +2,6 @@ import { MetaCollector, HtmlHandler, TitleHandler, MetaHandler, LinkHandler } fr
 import type { MetaExtractionResult, NonHtmlResponse, PageMetaResult } from "./types";
 import { fetchTwitterOEmbed, isTwitterStatusUrl } from "../twitter-oembed";
 
-export type { MetaExtractionResult, NonHtmlResponse, PageMetaResult };
-
 const LOOP_DETECTION_HEADER = "X-Page-Meta-Request";
 
 async function fetchTwitterMeta(target: URL): Promise<MetaExtractionResult | null> {

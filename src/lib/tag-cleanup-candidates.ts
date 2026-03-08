@@ -1,6 +1,6 @@
 import type { HatenaTag, TagMappingAction, TagMappingCandidate } from "@/types/habu";
 
-export interface GeneratedTagMappingCandidate {
+interface GeneratedTagMappingCandidate {
   sourceTag: string;
   action: TagMappingAction;
   targetTag?: string | null;

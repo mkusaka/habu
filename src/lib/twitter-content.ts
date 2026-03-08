@@ -2,7 +2,7 @@ import { fetchTwitterOEmbed, formatTwitterMarkdown, isTwitterStatusUrl } from ".
 import { fetchTwitterThreadViaGrok, formatTwitterThreadMarkdown } from "./twitter-grok";
 import { fetchTwitterStatusViaXApi, formatTwitterStatusMarkdown } from "./twitter-x-api";
 
-export type TwitterMarkdownResult = {
+type TwitterMarkdownResult = {
   markdown: string;
   source: "x-api" | "grok" | "oembed";
 };

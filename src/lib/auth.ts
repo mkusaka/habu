@@ -91,6 +91,3 @@ export function createAuth(db: D1Database) {
     },
   });
 }
-
-// Type-safe auth client
-export type Auth = ReturnType<typeof createAuth>;

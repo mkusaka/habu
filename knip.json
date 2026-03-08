@@ -1,0 +1,16 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": [
+    "open-next.config.ts",
+    "vitest.dom.config.ts",
+    "src/polyfills.ts",
+    "src/app/sw.ts",
+    "src/**/*.test.ts",
+    "src/**/*.test.tsx"
+  ],
+  "project": [
+    "src/**/*.{ts,tsx}",
+    "*.config.{js,cjs,mjs,ts}",
+    "*.{js,mjs,ts}"
+  ]
+}

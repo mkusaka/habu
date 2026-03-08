@@ -19,9 +19,9 @@ export const addBookmarkSchema = z.object({
     .describe("Optional tags for the bookmark (max 10 tags)"),
 });
 
-export type AddBookmarkInput = z.infer<typeof addBookmarkSchema>;
+type AddBookmarkInput = z.infer<typeof addBookmarkSchema>;
 
-export interface AddBookmarkResult {
+interface AddBookmarkResult {
   url: string;
   comment: string;
 }

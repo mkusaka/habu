@@ -2,7 +2,7 @@
 
 import assert from "node:assert/strict";
 import type { AnchorHTMLAttributes, ReactNode } from "react";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ChatPageClient } from "./chat-page-client";
 
@@ -94,5 +94,36 @@ describe("ChatPageClient", () => {
 
     expect(sendMessageMock).toHaveBeenCalledWith({ text: "golden ratio ui library" });
     expect(screen.queryByText(/^Query:/)).toBeNull();
+  });
+
+  it("edits a user message inline", () => {
+    chatState.messages = [
+      {
+        id: "message-1",
+        role: "user",
+        parts: [{ type: "text", text: "Original question" }],
+      },
+    ];
+
+    render(
+      <ChatPageClient
+        sessionId="session-1"
+        context={{ query: "Original question" }}
+        initialMessages={chatState.messages as never[]}
+        historyThreads={[]}
+        title="Search"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /Original question/i }));
+
+    const inlineEditor = screen.getByDisplayValue("Original question");
+    fireEvent.change(inlineEditor, { target: { value: "Edited question" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    expect(sendMessageMock).toHaveBeenCalledWith({
+      text: "Edited question",
+      messageId: "message-1",
+    });
   });
 });

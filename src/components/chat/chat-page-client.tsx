@@ -43,6 +43,7 @@ function ChatConversation({
   const router = useRouter();
   const [input, setInput] = useState("");
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [editingText, setEditingText] = useState("");
 
   const transport = useMemo(
     () =>
@@ -112,14 +113,6 @@ function ChatConversation({
     e.preventDefault();
     if (!input.trim() || isLoading) return;
 
-    if (editingMessageId) {
-      const targetMessageId = editingMessageId;
-      setEditingMessageId(null);
-      sendMessage({ text: input, messageId: targetMessageId });
-      setInput("");
-      return;
-    }
-
     sendMessage({ text: input });
     setInput("");
   };
@@ -128,14 +121,28 @@ function ChatConversation({
     (messageId: string, text: string) => {
       if (isLoading) return;
       setEditingMessageId(messageId);
-      setInput(text);
+      setEditingText(text);
     },
     [isLoading],
   );
 
+  const handleSaveEdit = useCallback(
+    (messageId: string) => {
+      const nextText = editingText.trim();
+      if (!nextText || isLoading) {
+        return;
+      }
+
+      setEditingMessageId(null);
+      setEditingText("");
+      sendMessage({ text: nextText, messageId });
+    },
+    [editingText, isLoading, sendMessage],
+  );
+
   const handleCancelEdit = useCallback(() => {
     setEditingMessageId(null);
-    setInput("");
+    setEditingText("");
   }, []);
 
   return (
@@ -145,6 +152,10 @@ function ChatConversation({
         isLoading={isLoading}
         onEditMessage={handleEditMessage}
         editingMessageId={editingMessageId}
+        editingText={editingText}
+        onEditingTextChange={setEditingText}
+        onSaveEdit={handleSaveEdit}
+        onCancelEdit={handleCancelEdit}
       />
 
       {error && (
@@ -157,12 +168,10 @@ function ChatConversation({
         input={input}
         onChange={handleInputChange}
         onSubmit={handleSubmit}
-        disabled={isLoading}
+        disabled={isLoading || !!editingMessageId}
         isLoading={isLoading}
         isStreaming={isStreaming}
         onStop={stop}
-        isEditing={!!editingMessageId}
-        onCancelEdit={handleCancelEdit}
       />
     </div>
   );

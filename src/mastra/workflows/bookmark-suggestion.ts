@@ -8,6 +8,7 @@ import { fetchTwitterMarkdown } from "@/lib/twitter-content";
 import { isTwitterStatusUrl } from "@/lib/twitter-oembed";
 import { fetchGrokWebContext } from "@/lib/grok-context";
 import { resolveCanonicalUrl } from "@/lib/url-cleaner";
+import { runJudgedGenerationLoop, throwIfAborted } from "@/lib/judged-generation";
 
 // Lazy-initialized OpenAI client for moderation API
 let openaiClient: OpenAI | null = null;
@@ -23,81 +24,8 @@ const openai = createOpenAI();
 
 // Constants
 const MAX_MARKDOWN_CHARS = 800000;
-const MAX_JUDGE_ATTEMPTS = 3;
 const PARALLEL_GENERATION_COUNT = 3;
 const MAX_SCHEMA_RETRIES = 5;
-
-type JudgedAttemptResult<T> =
-  | {
-      type: "accepted";
-      value: T;
-      successMessage?: string;
-    }
-  | {
-      type: "rejected";
-      feedback: string;
-    }
-  | {
-      type: "final";
-      value: T;
-    };
-
-function throwIfAborted(signal: AbortSignal) {
-  if (signal.aborted) {
-    throw new DOMException("Aborted", "AbortError");
-  }
-}
-
-async function runJudgedGenerationLoop<T>(options: {
-  label: string;
-  runnerId: number;
-  signal: AbortSignal;
-  runAttempt: (params: {
-    attempt: number;
-    feedback: string;
-    isLastAttempt: boolean;
-    signal: AbortSignal;
-  }) => Promise<JudgedAttemptResult<T>>;
-}): Promise<T> {
-  let feedback = "";
-  let finalValue: T | undefined;
-
-  for (let attempt = 0; attempt < MAX_JUDGE_ATTEMPTS; attempt++) {
-    throwIfAborted(options.signal);
-
-    const isLastAttempt = attempt === MAX_JUDGE_ATTEMPTS - 1;
-    const result = await options.runAttempt({
-      attempt,
-      feedback,
-      isLastAttempt,
-      signal: options.signal,
-    });
-
-    if (result.type === "accepted") {
-      const suffix = result.successMessage ? ` ${result.successMessage}` : "";
-      console.log(
-        `[${options.label}] Runner ${options.runnerId} passed on attempt ${attempt + 1}${suffix}`,
-      );
-      return result.value;
-    }
-
-    if (result.type === "final") {
-      finalValue = result.value;
-      break;
-    }
-
-    feedback = result.feedback;
-    console.log(
-      `[${options.label}] Runner ${options.runnerId} attempt ${attempt + 1} rejected: ${feedback}`,
-    );
-  }
-
-  if (finalValue === undefined) {
-    throw new Error(`[${options.label}] No generation result`);
-  }
-
-  return finalValue;
-}
 
 // Helper: Retry wrapper for generateObject schema errors
 async function generateObjectWithRetry<T extends z.ZodType>(

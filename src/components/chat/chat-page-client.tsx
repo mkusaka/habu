@@ -147,32 +147,39 @@ function ChatConversation({
 
   return (
     <div className="flex flex-1 min-h-0 flex-col">
-      <ChatMessages
-        messages={messages}
-        isLoading={isLoading}
-        onEditMessage={handleEditMessage}
-        editingMessageId={editingMessageId}
-        editingText={editingText}
-        onEditingTextChange={setEditingText}
-        onSaveEdit={handleSaveEdit}
-        onCancelEdit={handleCancelEdit}
-      />
-
       {error && (
-        <div className="border-t bg-destructive/10 px-4 py-2 text-sm text-destructive">
+        <div className="border-b bg-destructive/10 px-4 py-2 text-sm text-destructive">
           Error: {error.message}
         </div>
       )}
 
-      <ChatInput
-        input={input}
-        onChange={handleInputChange}
-        onSubmit={handleSubmit}
-        disabled={isLoading || !!editingMessageId}
-        isLoading={isLoading}
-        isStreaming={isStreaming}
-        onStop={stop}
-      />
+      <div className="min-h-0 flex-1 pb-40 md:pb-32">
+        <ChatMessages
+          messages={messages}
+          isLoading={isLoading}
+          onEditMessage={handleEditMessage}
+          editingMessageId={editingMessageId}
+          editingText={editingText}
+          onEditingTextChange={setEditingText}
+          onSaveEdit={handleSaveEdit}
+          onCancelEdit={handleCancelEdit}
+        />
+      </div>
+
+      <div className="fixed inset-x-0 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-40 px-4 md:bottom-6">
+        <div className="mx-auto max-w-4xl">
+          <ChatInput
+            input={input}
+            onChange={handleInputChange}
+            onSubmit={handleSubmit}
+            disabled={isLoading || !!editingMessageId}
+            isLoading={isLoading}
+            isStreaming={isStreaming}
+            onStop={stop}
+            placeholder={editingMessageId ? "Finish editing the message above..." : undefined}
+          />
+        </div>
+      </div>
     </div>
   );
 }

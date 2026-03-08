@@ -117,6 +117,9 @@ describe("ChatPageClient", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /Original question/i }));
 
+    assert.ok(
+      screen.getByPlaceholderText("Finish editing the message above...").hasAttribute("disabled"),
+    );
     const inlineEditor = screen.getByDisplayValue("Original question");
     fireEvent.change(inlineEditor, { target: { value: "Edited question" } });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));

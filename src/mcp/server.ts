@@ -1,14 +1,18 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { McpContext } from "./types";
 import { addBookmark, addBookmarkSchema } from "./tools/add-bookmark";
+import { fetchPageMarkdownSchema, fetchPageMarkdownTool } from "./tools/fetch-page-markdown";
 import { getBookmark, getBookmarkSchema } from "./tools/get-bookmark";
 import { listBookmarks, listBookmarksSchema } from "./tools/list-bookmarks";
+import { searchBookmarks, searchBookmarksSchema } from "./tools/search-bookmarks";
 import { deleteBookmark, deleteBookmarkSchema } from "./tools/delete-bookmark";
 import { suggestComment, suggestCommentSchema } from "./tools/suggest-comment";
 
 export interface McpEnv {
   HATENA_CONSUMER_KEY: string;
   HATENA_CONSUMER_SECRET: string;
+  BROWSER_RENDERING_ACCOUNT_ID?: string;
+  BROWSER_RENDERING_API_TOKEN?: string;
 }
 
 export function createMcpServer(context: McpContext, env: McpEnv): McpServer {
@@ -106,6 +110,51 @@ export function createMcpServer(context: McpContext, env: McpEnv): McpServer {
   );
 
   server.tool(
+    "search_bookmarks",
+    "Search your Hatena bookmarks by keyword. Searches title, URL, comment text, and tags.",
+    searchBookmarksSchema.shape,
+    async (params) => {
+      const input = searchBookmarksSchema.parse(params);
+      const result = await searchBookmarks(input, context, env);
+
+      if (result.success) {
+        const { data } = result;
+        if (data.bookmarks.length === 0) {
+          return {
+            content: [
+              {
+                type: "text" as const,
+                text: `No bookmarks found for query: ${data.query}`,
+              },
+            ],
+          };
+        }
+
+        const bookmarkList = data.bookmarks
+          .map(
+            (b, i) =>
+              `${i + 1}. ${b.title}\n   URL: ${b.url}\n   Comment: ${b.comment || "(no comment)"}\n   Tags: ${b.tags.length > 0 ? b.tags.join(", ") : "(no tags)"}${b.snippet ? `\n   Snippet: ${b.snippet}` : ""}${b.bookmarkedAt ? `\n   Created: ${b.bookmarkedAt}` : ""}`,
+          )
+          .join("\n\n");
+
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `Search results for "${data.query}" (${data.bookmarks.length}/${data.total} shown):\n\n${bookmarkList}`,
+            },
+          ],
+        };
+      } else {
+        return {
+          content: [{ type: "text" as const, text: `Error: ${result.error}` }],
+          isError: true,
+        };
+      }
+    },
+  );
+
+  server.tool(
     "delete_bookmark",
     "Delete a bookmark by URL.",
     deleteBookmarkSchema.shape,
@@ -119,6 +168,33 @@ export function createMcpServer(context: McpContext, env: McpEnv): McpServer {
             {
               type: "text" as const,
               text: `Bookmark deleted successfully!\nURL: ${result.data.url}`,
+            },
+          ],
+        };
+      } else {
+        return {
+          content: [{ type: "text" as const, text: `Error: ${result.error}` }],
+          isError: true,
+        };
+      }
+    },
+  );
+
+  server.tool(
+    "fetch_page_markdown",
+    "Fetch the markdown content of a public web page by URL.",
+    fetchPageMarkdownSchema.shape,
+    async (params) => {
+      const input = fetchPageMarkdownSchema.parse(params);
+      const result = await fetchPageMarkdownTool(input, context, env);
+
+      if (result.success) {
+        const { data } = result;
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `URL: ${data.url}\nSource: ${data.source || "unknown"}\n\n${data.markdown}`,
             },
           ],
         };

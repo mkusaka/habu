@@ -1,11 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { createAuth } from "@/lib/auth";
-import { getDb } from "@/db/client";
-import { users } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { buildMcpContextForUser } from "@/lib/bookmark-user-context";
 import { createMcpServer } from "@/mcp/server";
 import type { McpContext } from "@/mcp/types";
 
@@ -35,7 +32,6 @@ async function verifyMcpAuth(request: NextRequest, env: CloudflareEnv): Promise<
     return null;
   }
 
-  const token = authorization.replace("Bearer ", "");
   const auth = createAuth(env.DB);
 
   try {
@@ -48,32 +44,7 @@ async function verifyMcpAuth(request: NextRequest, env: CloudflareEnv): Promise<
       return null;
     }
 
-    // Get user with hatenaToken relation
-    const db = getDb(env.DB);
-    const user = await db.query.users.findFirst({
-      where: eq(users.id, session.user.id),
-      with: { hatenaToken: true },
-    });
-
-    if (!user) {
-      return null;
-    }
-
-    // Extract scopes from JWT (stored in token claims)
-    // For now, use the session to get basic info
-    // TODO: Extract scopes from JWT claims when Better Auth OAuth Provider supports it
-    const scopes = ["bookmark:read", "bookmark:write", "bookmark:delete", "bookmark:suggest"];
-
-    return {
-      userId: user.id,
-      scopes,
-      hatenaToken: user.hatenaToken
-        ? {
-            accessToken: user.hatenaToken.accessToken,
-            accessTokenSecret: user.hatenaToken.accessTokenSecret,
-          }
-        : null,
-    };
+    return await buildMcpContextForUser(session.user.id, env.DB);
   } catch (error) {
     console.error("JWT verification failed:", error);
     return null;
@@ -90,6 +61,8 @@ async function handleMcpRequest(
   const server = createMcpServer(context, {
     HATENA_CONSUMER_KEY: env.HATENA_CONSUMER_KEY,
     HATENA_CONSUMER_SECRET: env.HATENA_CONSUMER_SECRET,
+    BROWSER_RENDERING_ACCOUNT_ID: env.BROWSER_RENDERING_ACCOUNT_ID,
+    BROWSER_RENDERING_API_TOKEN: env.BROWSER_RENDERING_API_TOKEN,
   });
 
   // Create transport for this request (stateless mode)

@@ -1,0 +1,86 @@
+import { fetchMock } from "cloudflare:test";
+import { afterEach, beforeAll, describe, expect, it } from "vitest";
+import { searchBookmarks } from "./search-bookmarks";
+import type { McpContext } from "../types";
+
+beforeAll(() => {
+  fetchMock.activate();
+  fetchMock.disableNetConnect();
+});
+
+afterEach(() => {
+  fetchMock.assertNoPendingInterceptors();
+});
+
+const baseContext: McpContext = {
+  userId: "user-1",
+  scopes: ["bookmark:read"],
+  hatenaToken: {
+    accessToken: "access-token",
+    accessTokenSecret: "access-token-secret",
+  },
+};
+
+describe("searchBookmarks", () => {
+  it("returns permission denied without bookmark:read scope", async () => {
+    const result = await searchBookmarks(
+      { query: "ai", limit: 10, offset: 0 },
+      { ...baseContext, scopes: [] },
+      { HATENA_CONSUMER_KEY: "key", HATENA_CONSUMER_SECRET: "secret" },
+    );
+
+    expect(result).toEqual({
+      success: false,
+      error: "Permission denied: bookmark:read scope required",
+    });
+  });
+
+  it("maps Hatena search results into bookmark items", async () => {
+    fetchMock
+      .get("https://b.hatena.ne.jp")
+      .intercept({ path: /\/my\/search\/json\?/, method: "GET" })
+      .reply(
+        200,
+        JSON.stringify({
+          total: 1,
+          bookmarks: [
+            {
+              title: "Agentic Search",
+              entry_url: "https://example.com/agentic-search",
+              comment: "[ai][search]Great overview",
+              snippet: "overview of agentic search",
+              timestamp: 1762502400,
+              count: 42,
+              private: 0,
+            },
+          ],
+        }),
+        { headers: { "content-type": "application/json; charset=utf-8" } },
+      );
+
+    const result = await searchBookmarks({ query: "agentic", limit: 10, offset: 0 }, baseContext, {
+      HATENA_CONSUMER_KEY: "key",
+      HATENA_CONSUMER_SECRET: "secret",
+    });
+
+    expect(result).toEqual({
+      success: true,
+      data: {
+        query: "agentic",
+        total: 1,
+        bookmarks: [
+          {
+            url: "https://example.com/agentic-search",
+            title: "Agentic Search",
+            comment: "Great overview",
+            tags: ["ai", "search"],
+            snippet: "overview of agentic search",
+            bookmarkedAt: "2025-11-07T08:00:00.000Z",
+            isPrivate: false,
+            bookmarkCount: 42,
+          },
+        ],
+      },
+    });
+  });
+});

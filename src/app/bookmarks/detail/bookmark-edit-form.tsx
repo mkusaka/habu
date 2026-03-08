@@ -17,8 +17,6 @@ import {
   MessageCircle,
   Trash2,
 } from "lucide-react";
-import { ChatPanel } from "@/components/chat/chat-panel";
-import type { ChatContext, PageMetadata } from "@/lib/chat-context";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,6 +31,7 @@ import {
 import { deleteBookmark } from "@/lib/bookmark-client";
 import { isBodyWithinLimit } from "@/lib/hatena-body-limit";
 import { useRouter } from "next/navigation";
+import { LinkButton } from "@/components/ui/link-button";
 import { WorkflowProgress } from "@/components/workflow-progress";
 import {
   formatWorkflowStepMeta,
@@ -65,18 +64,15 @@ interface BookmarkEditFormProps {
   bookmarkUrl: string;
   initialComment: string;
   bookmarkedAt?: string;
-  pageMetadata?: PageMetadata;
 }
 
 export function BookmarkEditForm({
   bookmarkUrl,
   initialComment,
   bookmarkedAt,
-  pageMetadata,
 }: BookmarkEditFormProps) {
   const router = useRouter();
   const [comment, setComment] = useState(initialComment);
-  const [isChatOpen, setIsChatOpen] = useState(false);
   const [context, setContext] = useState("");
   const [showContext, setShowContext] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -828,10 +824,15 @@ export function BookmarkEditForm({
       </div>
 
       {/* Chat Button */}
-      <Button onClick={() => setIsChatOpen(true)} variant="outline" className="w-full" size="lg">
+      <LinkButton
+        href={`/search?url=${encodeURIComponent(bookmarkUrl)}`}
+        variant="outline"
+        className="w-full"
+        size="lg"
+      >
         <MessageCircle className="w-4 h-4 mr-2" />
-        Chat about this page
-      </Button>
+        Open Search Page
+      </LinkButton>
 
       {/* Delete Button */}
       <AlertDialog>
@@ -863,20 +864,6 @@ export function BookmarkEditForm({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {/* Chat Panel */}
-      <ChatPanel
-        isOpen={isChatOpen}
-        onClose={() => setIsChatOpen(false)}
-        context={
-          {
-            url: bookmarkUrl,
-            metadata: pageMetadata,
-            existingComment: comment,
-            existingTags: currentTags,
-          } satisfies ChatContext
-        }
-      />
     </>
   );
 }

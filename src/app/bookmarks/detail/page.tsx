@@ -249,7 +249,6 @@ async function BookmarkDetailContent({ bookmarkUrl }: { bookmarkUrl: string }) {
         bookmarkUrl={bookmarkUrl}
         initialComment={initialComment}
         bookmarkedAt={result.bookmark?.created_datetime}
-        pageMetadata={result.metadata}
       />
 
       {/* Navigation */}

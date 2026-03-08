@@ -14,90 +14,24 @@ import type {
 import { mastra } from "@/mastra";
 import { RequestContext } from "@mastra/core/di";
 import { fetchPageMeta, isMetaExtractionResult } from "@/lib/page-meta";
-import { isTwitterStatusUrl } from "@/lib/twitter-oembed";
-import { fetchTwitterMarkdown } from "@/lib/twitter-content";
+import { fetchPageMarkdown } from "@/lib/page-markdown";
 import type { WorkflowStepMeta } from "@/lib/mastra-workflow-progress";
 import { calculateBodySize, HATENA_BODY_LIMIT } from "@/lib/hatena-body-limit";
+import { isTwitterStatusUrl } from "@/lib/twitter-oembed";
 
 const HATENA_TAGS_API_URL = "https://bookmark.hatenaapis.com/rest/1/my/tags";
 const MAX_MARKDOWN_CHARS = 800000;
 
-/**
- * Fetch markdown content from Cloudflare Browser Rendering
- */
 async function fetchMarkdown(
   url: string,
   cfAccountId: string,
   cfApiToken: string,
 ): Promise<{ markdown: string; error?: string }> {
-  if (isTwitterStatusUrl(url)) {
-    try {
-      const twitter = await fetchTwitterMarkdown(url);
-      if (twitter?.markdown) {
-        return { markdown: twitter.markdown.slice(0, MAX_MARKDOWN_CHARS) };
-      }
-    } catch {
-      // fall through to rendering
-    }
-  }
-
-  if (!cfAccountId || !cfApiToken) {
-    return { markdown: "", error: "Missing CF credentials" };
-  }
-
-  try {
-    const response = await fetch(
-      `https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/browser-rendering/markdown`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${cfApiToken}`,
-        },
-        body: JSON.stringify({ url }),
-      },
-    );
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Markdown fetch failed:", response.status, errorText);
-      return { markdown: "", error: `HTTP ${response.status}: ${errorText.slice(0, 200)}` };
-    }
-
-    const data = (await response.json()) as {
-      success: boolean;
-      result?: string;
-      errors?: unknown[];
-    };
-    if (data.success && data.result) {
-      const markdown = data.result.slice(0, MAX_MARKDOWN_CHARS);
-
-      if (
-        isTwitterStatusUrl(url) &&
-        (markdown.includes("Something went wrong") ||
-          (markdown.includes("Try again") && markdown.includes("x.com")) ||
-          markdown.includes("Some privacy related extensions may cause issues on x.com"))
-      ) {
-        try {
-          const twitter = await fetchTwitterMarkdown(url);
-          if (twitter?.markdown) {
-            return { markdown: twitter.markdown.slice(0, MAX_MARKDOWN_CHARS) };
-          }
-        } catch {
-          // ignore
-        }
-        return { markdown: "", error: "X returned an interstitial error page" };
-      }
-
-      return { markdown };
-    }
-
-    console.error("Markdown API returned failure:", data);
-    return { markdown: "", error: `API error: ${JSON.stringify(data.errors)}` };
-  } catch (error) {
-    console.error("Markdown fetch exception:", error);
-    return { markdown: "", error: error instanceof Error ? error.message : "Unknown error" };
-  }
+  return fetchPageMarkdown(url, {
+    cfAccountId,
+    cfApiToken,
+    maxChars: MAX_MARKDOWN_CHARS,
+  });
 }
 
 /**

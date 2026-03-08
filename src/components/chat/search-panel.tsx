@@ -12,6 +12,7 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import type { ChatThreadSummary } from "@/lib/chat-history";
 import { cn } from "@/lib/utils";
 
@@ -83,9 +84,9 @@ export function SearchPanel({
         </Button>
       </form>
 
-      <div className="min-h-0 flex-1 overflow-y-auto p-3">
-        <div className="px-1 pb-2 text-xs font-medium text-muted-foreground">{historyTitle}</div>
-        <div className="space-y-2">
+      <ScrollArea className="min-h-0 flex-1">
+        <div className="space-y-2 p-3">
+          <div className="px-1 pb-2 text-xs font-medium text-muted-foreground">{historyTitle}</div>
           {visibleHistory.length === 0 ? (
             <Card className="gap-0 py-0">
               <CardContent className="px-3 py-3">
@@ -139,7 +140,7 @@ export function SearchPanel({
             ))
           )}
         </div>
-      </div>
+      </ScrollArea>
     </>
   );
 }

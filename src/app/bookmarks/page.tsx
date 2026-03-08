@@ -12,6 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { LinkButton } from "@/components/ui/link-button";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Pagination as UIPagination,
   PaginationContent,
@@ -244,31 +245,33 @@ function extractComment(comment: string) {
 function BookmarkListLoading({ page, tags }: { page: number; tags: string[] }) {
   return (
     <div className="flex flex-col flex-1 min-h-0">
-      <div className="h-full overflow-auto space-y-2">
-        {Array.from({ length: 20 }).map((_, i) => (
-          <div key={i} className="w-full p-3 rounded-md border">
-            {/* Header skeleton */}
-            <div className="flex items-center gap-2">
-              <Skeleton className="h-4 flex-1" />
-              <div className="flex items-center gap-1 flex-shrink-0">
-                <Skeleton className="h-6 w-6 rounded" />
-                <Skeleton className="h-6 w-6 rounded" />
-                <Skeleton className="h-6 w-6 rounded" />
+      <ScrollArea className="h-full">
+        <div className="space-y-2">
+          {Array.from({ length: 20 }).map((_, i) => (
+            <div key={i} className="w-full p-3 rounded-md border">
+              {/* Header skeleton */}
+              <div className="flex items-center gap-2">
+                <Skeleton className="h-4 flex-1" />
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  <Skeleton className="h-6 w-6 rounded" />
+                  <Skeleton className="h-6 w-6 rounded" />
+                  <Skeleton className="h-6 w-6 rounded" />
+                </div>
+              </div>
+              {/* Body skeleton */}
+              <div className="mt-1 space-y-1">
+                <div className="flex gap-1">
+                  <Skeleton className="h-5 w-12 rounded" />
+                  <Skeleton className="h-5 w-16 rounded" />
+                  <Skeleton className="h-5 w-10 rounded" />
+                </div>
+                <Skeleton className="h-3 w-full" />
+                <Skeleton className="h-3 w-24" />
               </div>
             </div>
-            {/* Body skeleton */}
-            <div className="mt-1 space-y-1">
-              <div className="flex gap-1">
-                <Skeleton className="h-5 w-12 rounded" />
-                <Skeleton className="h-5 w-16 rounded" />
-                <Skeleton className="h-5 w-10 rounded" />
-              </div>
-              <Skeleton className="h-3 w-full" />
-              <Skeleton className="h-3 w-24" />
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      </ScrollArea>
       {/* Pagination (footer) - show during loading to keep layout stable */}
       <Pagination page={page} hasMore={true} tags={tags} />
     </div>
@@ -311,67 +314,69 @@ async function BookmarkList({ page, tags }: { page: number; tags: string[] }) {
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
-      <div className="h-full overflow-auto space-y-2">
-        {bookmarks.map((bookmark, index) => (
-          <div
-            key={`${bookmark.url}-${index}`}
-            className="relative w-full text-left p-3 rounded-md border hover:bg-muted/50 transition-colors"
-          >
-            <Link
-              href={buildBookmarkDetailHref(bookmark.url, page, tags)}
-              className="absolute inset-0"
-              aria-label={`Edit bookmark: ${bookmark.title || bookmark.url}`}
-            />
-            {/* Header: Title + Action buttons */}
-            <div className="flex items-center gap-2">
-              <h3 className="font-medium text-sm truncate flex-1 min-w-0">
-                {bookmark.title || bookmark.url}
-              </h3>
-              <div className="relative z-10 flex items-center gap-1 flex-shrink-0">
-                <RegenerateButton url={bookmark.url} title={bookmark.title} />
-                <a
-                  href={bookmark.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="p-1 text-muted-foreground hover:text-foreground cursor-pointer"
-                  title="Open page"
-                >
-                  <ExternalLink className="w-4 h-4" />
-                </a>
-                <a
-                  href={`https://b.hatena.ne.jp/entry/${bookmark.url.startsWith("https://") ? "s/" + bookmark.url.slice(8) : bookmark.url}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="p-1 text-muted-foreground hover:text-foreground cursor-pointer"
-                  title="View on Hatena Bookmark"
-                >
-                  <Bookmark className="w-4 h-4" />
-                </a>
+      <ScrollArea className="h-full">
+        <div className="space-y-2">
+          {bookmarks.map((bookmark, index) => (
+            <div
+              key={`${bookmark.url}-${index}`}
+              className="relative w-full text-left p-3 rounded-md border hover:bg-muted/50 transition-colors"
+            >
+              <Link
+                href={buildBookmarkDetailHref(bookmark.url, page, tags)}
+                className="absolute inset-0"
+                aria-label={`Edit bookmark: ${bookmark.title || bookmark.url}`}
+              />
+              {/* Header: Title + Action buttons */}
+              <div className="flex items-center gap-2">
+                <h3 className="font-medium text-sm truncate flex-1 min-w-0">
+                  {bookmark.title || bookmark.url}
+                </h3>
+                <div className="relative z-10 flex items-center gap-1 flex-shrink-0">
+                  <RegenerateButton url={bookmark.url} title={bookmark.title} />
+                  <a
+                    href={bookmark.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-1 text-muted-foreground hover:text-foreground cursor-pointer"
+                    title="Open page"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                  </a>
+                  <a
+                    href={`https://b.hatena.ne.jp/entry/${bookmark.url.startsWith("https://") ? "s/" + bookmark.url.slice(8) : bookmark.url}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-1 text-muted-foreground hover:text-foreground cursor-pointer"
+                    title="View on Hatena Bookmark"
+                  >
+                    <Bookmark className="w-4 h-4" />
+                  </a>
+                </div>
+              </div>
+              {/* Body: Tags, Comment, Date */}
+              <div className="mt-1">
+                {bookmark.tags.length > 0 && (
+                  <div className="relative z-10 flex flex-wrap gap-1 mt-1">
+                    {bookmark.tags.map((tag, i) => (
+                      <Badge key={i} asChild variant={tags.includes(tag) ? "default" : "secondary"}>
+                        <Link href={buildBookmarksHref(1, addTagFilter(tags, tag))}>{tag}</Link>
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+                {extractComment(bookmark.comment) && (
+                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                    {extractComment(bookmark.comment)}
+                  </p>
+                )}
+                <p className="text-xs text-muted-foreground mt-1">
+                  {formatDate(bookmark.bookmarkedAt)}
+                </p>
               </div>
             </div>
-            {/* Body: Tags, Comment, Date */}
-            <div className="mt-1">
-              {bookmark.tags.length > 0 && (
-                <div className="relative z-10 flex flex-wrap gap-1 mt-1">
-                  {bookmark.tags.map((tag, i) => (
-                    <Badge key={i} asChild variant={tags.includes(tag) ? "default" : "secondary"}>
-                      <Link href={buildBookmarksHref(1, addTagFilter(tags, tag))}>{tag}</Link>
-                    </Badge>
-                  ))}
-                </div>
-              )}
-              {extractComment(bookmark.comment) && (
-                <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                  {extractComment(bookmark.comment)}
-                </p>
-              )}
-              <p className="text-xs text-muted-foreground mt-1">
-                {formatDate(bookmark.bookmarkedAt)}
-              </p>
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      </ScrollArea>
 
       {/* Pagination (footer) */}
       <Pagination page={page} hasMore={hasMore} tags={tags} />

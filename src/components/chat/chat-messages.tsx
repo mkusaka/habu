@@ -35,6 +35,7 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface ChatMessagesProps {
   messages: UIMessage[];
@@ -75,28 +76,30 @@ export function ChatMessages({
   }
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 space-y-4">
-      {messages.map((message) => (
-        <ChatMessage
-          key={message.id}
-          message={message}
-          onEdit={onEditMessage}
-          isEditing={editingMessageId === message.id}
-        />
-      ))}
-      {isLoading && messages[messages.length - 1]?.role === "user" && (
-        <div className="flex items-start gap-3">
-          <div className="shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-            <Bot className="w-4 h-4 text-primary" />
+    <ScrollArea className="flex-1">
+      <div className="space-y-4 p-4">
+        {messages.map((message) => (
+          <ChatMessage
+            key={message.id}
+            message={message}
+            onEdit={onEditMessage}
+            isEditing={editingMessageId === message.id}
+          />
+        ))}
+        {isLoading && messages[messages.length - 1]?.role === "user" && (
+          <div className="flex items-start gap-3">
+            <div className="shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+              <Bot className="w-4 h-4 text-primary" />
+            </div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Thinking...
+            </div>
           </div>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="w-4 h-4 animate-spin" />
-            Thinking...
-          </div>
-        </div>
-      )}
-      <div ref={messagesEndRef} />
-    </div>
+        )}
+        <div ref={messagesEndRef} />
+      </div>
+    </ScrollArea>
   );
 }
 
@@ -330,9 +333,11 @@ function ToolInvocationDisplay({ toolPart }: { toolPart: ToolPart }) {
         )}
       </button>
       {isExpanded && resultText && (
-        <div className="mt-1 p-2 bg-muted/30 rounded border border-border/50 max-h-64 overflow-auto">
-          <pre className="whitespace-pre-wrap break-words text-xs font-mono">{resultText}</pre>
-        </div>
+        <ScrollArea className="mt-1 max-h-64 rounded border border-border/50 bg-muted/30">
+          <div className="p-2">
+            <pre className="whitespace-pre-wrap break-words text-xs font-mono">{resultText}</pre>
+          </div>
+        </ScrollArea>
       )}
     </div>
   );

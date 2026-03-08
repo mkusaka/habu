@@ -6,6 +6,7 @@ import { SearchLandingClient } from "@/components/chat/search-landing-client";
 import { buildMcpContextForUser } from "@/lib/bookmark-user-context";
 import { LinkButton } from "@/components/ui/link-button";
 import { listChatThreadsForHatenaAccount } from "@/lib/chat-history";
+import { listBookmarks } from "@/mcp/tools/list-bookmarks";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +16,6 @@ interface SearchPageProps {
 
 export default async function SearchPage({ searchParams }: SearchPageProps) {
   const params = await searchParams;
-  const query = params.q?.trim() || undefined;
   const initialUrl = params.url?.trim() || undefined;
 
   const cookieStore = await cookies();
@@ -58,11 +58,16 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   }
 
   const historyThreads = await listChatThreadsForHatenaAccount(mcpContext.hatenaId, env.DB);
+  const recentBookmarksResult = await listBookmarks({ limit: 5, offset: 0 }, mcpContext, {
+    HATENA_CONSUMER_KEY: env.HATENA_CONSUMER_KEY,
+    HATENA_CONSUMER_SECRET: env.HATENA_CONSUMER_SECRET,
+  });
+  const recentBookmarks = recentBookmarksResult.success ? recentBookmarksResult.data.bookmarks : [];
 
   return (
     <SearchLandingClient
-      initialQuery={query}
       initialUrl={initialUrl}
+      recentBookmarks={recentBookmarks}
       historyThreads={historyThreads}
     />
   );

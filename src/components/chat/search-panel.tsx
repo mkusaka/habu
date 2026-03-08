@@ -12,11 +12,11 @@ interface SearchPanelProps {
   queryInput: string;
   urlInput: string;
   historyThreads: ChatThreadSummary[];
+  showQueryInput?: boolean;
   submitLabel?: string;
   onQueryChange: (value: string) => void;
   onUrlChange: (value: string) => void;
   onStartSearch: (e: FormEvent<HTMLFormElement>) => void;
-  onStartBlankSearch?: () => void;
   onOpenSearch: (params: { query?: string; url?: string; sessionId?: string }) => void;
 }
 
@@ -35,23 +35,27 @@ export function SearchPanel({
   queryInput,
   urlInput,
   historyThreads,
+  showQueryInput = true,
   submitLabel = "Open Search",
   onQueryChange,
   onUrlChange,
   onStartSearch,
-  onStartBlankSearch,
   onOpenSearch,
 }: SearchPanelProps) {
   return (
     <>
       <form onSubmit={onStartSearch} className="space-y-2 border-b p-4">
-        <label className="text-xs font-medium text-muted-foreground">Search query</label>
-        <Input
-          value={queryInput}
-          onChange={(e) => onQueryChange(e.target.value)}
-          placeholder="recent AI bookmarks"
-          type="text"
-        />
+        {showQueryInput && (
+          <>
+            <label className="text-xs font-medium text-muted-foreground">Search query</label>
+            <Input
+              value={queryInput}
+              onChange={(e) => onQueryChange(e.target.value)}
+              placeholder="Search your bookmarks"
+              type="text"
+            />
+          </>
+        )}
         <label className="text-xs font-medium text-muted-foreground">Page URL (optional)</label>
         <Input
           value={urlInput}
@@ -59,17 +63,10 @@ export function SearchPanel({
           placeholder="https://example.com/article"
           type="url"
         />
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <Button type="submit" className="w-full">
-            <Plus className="mr-2 h-4 w-4" />
-            {submitLabel}
-          </Button>
-          {onStartBlankSearch && (
-            <Button type="button" variant="outline" className="w-full" onClick={onStartBlankSearch}>
-              Start Blank Search
-            </Button>
-          )}
-        </div>
+        <Button type="submit" className="w-full">
+          <Plus className="mr-2 h-4 w-4" />
+          {submitLabel}
+        </Button>
       </form>
 
       <div className="min-h-0 flex-1 overflow-y-auto p-2">

@@ -20,8 +20,13 @@ import {
   type PageMetadata,
 } from "@/lib/chat-context";
 import { fetchPageMarkdownSchema, fetchPageMarkdownTool } from "@/mcp/tools/fetch-page-markdown";
+import {
+  filterBookmarksByTags,
+  filterBookmarksByTagsSchema,
+} from "@/mcp/tools/filter-bookmarks-by-tags";
 import { getBookmark, getBookmarkSchema } from "@/mcp/tools/get-bookmark";
 import { listBookmarks, listBookmarksSchema } from "@/mcp/tools/list-bookmarks";
+import { listTags, listTagsSchema } from "@/mcp/tools/list-tags";
 import { searchBookmarks, searchBookmarksSchema } from "@/mcp/tools/search-bookmarks";
 import type { ToolResult } from "@/mcp/types";
 
@@ -143,11 +148,22 @@ export async function POST(request: NextRequest) {
         inputSchema: listBookmarksSchema,
         execute: async (input) => toToolOutput(await listBookmarks(input, mcpContext, toolEnv)),
       }),
+      list_tags: tool({
+        description: "List your Hatena bookmark tags with counts.",
+        inputSchema: listTagsSchema,
+        execute: async (input) => toToolOutput(await listTags(input, mcpContext, toolEnv)),
+      }),
       search_bookmarks: tool({
         description:
           "Search your Hatena bookmarks by keyword across title, URL, comment text, and tags. Use this first when the user asks about previously saved bookmarks.",
         inputSchema: searchBookmarksSchema,
         execute: async (input) => toToolOutput(await searchBookmarks(input, mcpContext, toolEnv)),
+      }),
+      filter_bookmarks_by_tags: tool({
+        description: "Filter your Hatena bookmarks by one or more tags.",
+        inputSchema: filterBookmarksByTagsSchema,
+        execute: async (input) =>
+          toToolOutput(await filterBookmarksByTags(input, mcpContext, toolEnv)),
       }),
       get_bookmark: tool({
         description:

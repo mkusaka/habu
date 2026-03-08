@@ -8,7 +8,7 @@ export default defineWorkersConfig({
     },
   },
   test: {
-    include: ["src/lib/**/*.test.ts", "src/lib/**/*.test.tsx"],
+    include: ["src/lib/**/*.test.ts", "src/lib/**/*.test.tsx", "src/mcp/tools/**/*.test.ts"],
     exclude: ["src/app/bookmarks/tags/*.test.tsx"],
     poolOptions: {
       workers: {

@@ -256,6 +256,7 @@ export function ChatPageClient({
             queryInput={queryInput}
             urlInput={urlInput}
             historyThreads={historyThreads}
+            showQueryInput={false}
             onQueryChange={setQueryInput}
             onUrlChange={setUrlInput}
             onStartSearch={handleStartSearch}

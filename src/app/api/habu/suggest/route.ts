@@ -17,6 +17,7 @@ import { fetchPageMeta, isMetaExtractionResult } from "@/lib/page-meta";
 import { fetchPageMarkdown } from "@/lib/page-markdown";
 import type { WorkflowStepMeta } from "@/lib/mastra-workflow-progress";
 import { calculateBodySize, HATENA_BODY_LIMIT } from "@/lib/hatena-body-limit";
+import { isTwitterStatusUrl } from "@/lib/twitter-oembed";
 import { validateSameOrigin } from "@/lib/same-origin";
 
 const HATENA_TAGS_API_URL = "https://bookmark.hatenaapis.com/rest/1/my/tags";

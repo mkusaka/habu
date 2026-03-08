@@ -21,6 +21,7 @@ const env = {
 
 const connectedContext: McpContext = {
   userId: "user-1",
+  hatenaId: "hatena-user",
   scopes: ["bookmark:read", "bookmark:delete"],
   hatenaToken: {
     accessToken: "access-token",

@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
+import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
+import { InputGroup, InputGroupTextarea } from "@/components/ui/input-group";
 import { toast } from "sonner";
 import {
   Loader2,
@@ -421,20 +421,23 @@ export function BookmarkEditForm({
       )}
 
       {/* Comment Input */}
-      <div className="space-y-2">
-        <Label htmlFor="comment">Comment</Label>
-        <Textarea
-          id="comment"
-          value={comment}
-          onChange={(e) => setComment(e.target.value)}
-          placeholder="Your comment"
-          rows={3}
-        />
-        {isCommentTooLong && (
-          <p className="text-sm text-red-500">
-            Comment is too long for this URL. Please shorten your comment.
-          </p>
-        )}
+      <Field data-invalid={isCommentTooLong ? true : undefined}>
+        <FieldLabel htmlFor="comment">Comment</FieldLabel>
+        <InputGroup>
+          <InputGroupTextarea
+            id="comment"
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            placeholder="Your comment"
+            rows={3}
+            aria-invalid={isCommentTooLong ? true : undefined}
+          />
+        </InputGroup>
+        <FieldError>
+          {isCommentTooLong
+            ? "Comment is too long for this URL. Please shorten your comment."
+            : undefined}
+        </FieldError>
         {currentTags.length > 0 && (
           <div className="flex flex-wrap gap-1">
             {currentTags.map((tag, i) => (
@@ -447,7 +450,7 @@ export function BookmarkEditForm({
         {currentCommentText && (
           <p className="text-xs text-muted-foreground">{currentCommentText}</p>
         )}
-      </div>
+      </Field>
 
       {/* Context Toggle */}
       <div className="space-y-2">
@@ -460,23 +463,25 @@ export function BookmarkEditForm({
           <span>Add context for AI generation</span>
         </button>
         {showContext && (
-          <div className="space-y-2">
-            <Label htmlFor="context" className="text-sm text-muted-foreground">
+          <Field>
+            <FieldLabel htmlFor="context">
               Context (for pages that fail to fetch or need extra info)
-            </Label>
-            <Textarea
-              id="context"
-              value={context}
-              onChange={(e) => setContext(e.target.value)}
-              placeholder="Paste page content, add notes, or provide context for AI to use..."
-              rows={5}
-              className="text-sm"
-            />
-            <p className="text-xs text-muted-foreground">
+            </FieldLabel>
+            <InputGroup>
+              <InputGroupTextarea
+                id="context"
+                value={context}
+                onChange={(e) => setContext(e.target.value)}
+                placeholder="Paste page content, add notes, or provide context for AI to use..."
+                rows={5}
+                className="text-sm"
+              />
+            </InputGroup>
+            <FieldDescription className="text-xs">
               This context will be used when generating summaries and tags. Useful for bot-blocked
               pages or to add supplementary information.
-            </p>
-          </div>
+            </FieldDescription>
+          </Field>
         )}
       </div>
 

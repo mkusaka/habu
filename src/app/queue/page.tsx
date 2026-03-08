@@ -63,9 +63,7 @@ export default async function QueuePage() {
 
         {/* Queue items */}
         <div className="flex-1 min-h-0 flex flex-col">
-          <div className="h-full overflow-auto">
-            <QueueList />
-          </div>
+          <QueueList />
         </div>
 
         {/* Action buttons */}

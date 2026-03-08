@@ -13,6 +13,7 @@ import { LinkButton } from "@/components/ui/link-button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BookmarkEditForm } from "./bookmark-edit-form";
 import { fetchPageMeta, isMetaExtractionResult } from "@/lib/page-meta";
+import { appendTagFilters, normalizeTagFilters } from "@/lib/bookmark-tag-filter";
 
 export const dynamic = "force-dynamic";
 
@@ -40,16 +41,12 @@ interface FetchResult {
   metadata?: PageMetadata;
 }
 
-function buildBookmarksHref(page: number, tag?: string) {
+function buildBookmarksHref(page: number, tags: readonly string[]) {
   const params = new URLSearchParams();
   if (page > 1) {
     params.set("page", String(page));
   }
-
-  const trimmed = tag?.trim();
-  if (trimmed) {
-    params.set("tag", trimmed);
-  }
+  appendTagFilters(params, tags);
 
   if (params.size === 0) {
     return "/bookmarks";
@@ -204,14 +201,14 @@ function BookmarkDetailLoading() {
 async function BookmarkDetailContent({
   bookmarkUrl,
   page,
-  tag,
+  tags,
 }: {
   bookmarkUrl: string;
   page: number;
-  tag?: string;
+  tags: string[];
 }) {
   const result = await fetchBookmarkData(bookmarkUrl);
-  const backHref = buildBookmarksHref(page, tag);
+  const backHref = buildBookmarksHref(page, tags);
 
   if (!result.success) {
     return (
@@ -291,14 +288,14 @@ async function BookmarkDetailContent({
 }
 
 interface BookmarkDetailPageProps {
-  searchParams: Promise<{ url?: string; page?: string; tag?: string }>;
+  searchParams: Promise<{ url?: string; page?: string; tag?: string | string[] }>;
 }
 
 export default async function BookmarkDetailPage({ searchParams }: BookmarkDetailPageProps) {
   const params = await searchParams;
   const bookmarkUrl = params.url || "";
   const page = Math.max(1, parseInt(params.page || "1", 10));
-  const tag = params.tag?.trim() || undefined;
+  const tags = normalizeTagFilters(params.tag);
 
   return (
     <div className="w-full py-8">
@@ -311,8 +308,11 @@ export default async function BookmarkDetailPage({ searchParams }: BookmarkDetai
           <Home className="w-5 h-5" />
         </LinkButton>
       </header>
-      <Suspense key={`${bookmarkUrl}:${page}:${tag ?? ""}`} fallback={<BookmarkDetailLoading />}>
-        <BookmarkDetailContent bookmarkUrl={bookmarkUrl} page={page} tag={tag} />
+      <Suspense
+        key={`${bookmarkUrl}:${page}:${tags.join("||")}`}
+        fallback={<BookmarkDetailLoading />}
+      >
+        <BookmarkDetailContent bookmarkUrl={bookmarkUrl} page={page} tags={tags} />
       </Suspense>
     </div>
   );

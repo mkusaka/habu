@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState, type ChangeEvent, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
@@ -20,6 +20,7 @@ import { SearchPageShell } from "./search-page-shell";
 interface ChatPageClientProps {
   sessionId: string;
   initialQuery?: string;
+  initialPrompt?: string;
   selectedUrl?: string;
   context: ChatContext;
   initialMessages: UIMessage[];
@@ -32,10 +33,12 @@ function ChatConversation({
   sessionId,
   context,
   initialMessages,
+  initialPrompt,
 }: {
   sessionId: string;
   context: ChatContext;
   initialMessages: UIMessage[];
+  initialPrompt?: string;
 }) {
   const router = useRouter();
   const [input, setInput] = useState("");
@@ -87,6 +90,19 @@ function ChatConversation({
 
   const isLoading = status === "streaming" || status === "submitted";
   const isStreaming = status === "streaming";
+
+  useEffect(() => {
+    if (initialMessages.length > 0 || messages.length > 0 || status !== "ready") {
+      return;
+    }
+
+    const prompt = initialPrompt?.trim();
+    if (!prompt) {
+      return;
+    }
+
+    sendMessage({ text: prompt });
+  }, [initialMessages.length, initialPrompt, messages.length, sendMessage, status]);
 
   const handleInputChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
     setInput(e.target.value);
@@ -155,6 +171,7 @@ function ChatConversation({
 export function ChatPageClient({
   sessionId,
   initialQuery,
+  initialPrompt,
   selectedUrl,
   context,
   initialMessages,
@@ -198,9 +215,8 @@ export function ChatPageClient({
       <AlertCircle className="h-4 w-4" />
       <span>{error}</span>
     </div>
-  ) : selectedUrl || initialQuery ? (
+  ) : selectedUrl ? (
     <div className="flex flex-col gap-1 text-sm text-muted-foreground">
-      {initialQuery ? <span className="truncate">Query: {initialQuery}</span> : null}
       {selectedUrl ? <span className="break-all">{selectedUrl}</span> : null}
     </div>
   ) : (
@@ -310,6 +326,7 @@ export function ChatPageClient({
                 sessionId={sessionId}
                 context={context}
                 initialMessages={initialMessages}
+                initialPrompt={initialPrompt}
               />
             </div>
           )}

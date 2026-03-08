@@ -7,21 +7,19 @@ import { getDb } from "@/db/client";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { createSignedRequest } from "@/lib/hatena-oauth";
-import {
-  Bookmark,
-  Home,
-  AlertCircle,
-  ChevronLeft,
-  ChevronRight,
-  ExternalLink,
-  Search,
-  Settings,
-  Tags,
-} from "lucide-react";
+import { Bookmark, Home, AlertCircle, ExternalLink, Search, Settings, Tags } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LinkButton } from "@/components/ui/link-button";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
+import {
+  Pagination as UIPagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Empty,
@@ -383,31 +381,33 @@ async function BookmarkList({ page, tags }: { page: number; tags: string[] }) {
 
 function Pagination({ page, hasMore, tags }: { page: number; hasMore: boolean; tags: string[] }) {
   return (
-    <div className="flex items-center justify-between shrink-0 pt-2">
-      {page > 1 ? (
-        <LinkButton href={buildBookmarksHref(page - 1, tags)} variant="outline" size="sm">
-          <ChevronLeft className="w-4 h-4 mr-1" />
-          Prev
-        </LinkButton>
-      ) : (
-        <span className="inline-flex items-center px-3 py-1.5 text-sm text-muted-foreground">
-          <ChevronLeft className="w-4 h-4 mr-1" />
-          Prev
-        </span>
-      )}
-      <span className="text-sm text-muted-foreground">Page {page}</span>
-      {hasMore ? (
-        <LinkButton href={buildBookmarksHref(page + 1, tags)} variant="outline" size="sm">
-          Next
-          <ChevronRight className="w-4 h-4 ml-1" />
-        </LinkButton>
-      ) : (
-        <span className="inline-flex items-center px-3 py-1.5 text-sm text-muted-foreground">
-          Next
-          <ChevronRight className="w-4 h-4 ml-1" />
-        </span>
-      )}
-    </div>
+    <UIPagination className="shrink-0 pt-2">
+      <PaginationContent className="w-full justify-between">
+        <PaginationItem>
+          {page > 1 ? (
+            <PaginationPrevious asChild>
+              <Link href={buildBookmarksHref(page - 1, tags)}>Previous</Link>
+            </PaginationPrevious>
+          ) : (
+            <PaginationPrevious className="pointer-events-none opacity-50" />
+          )}
+        </PaginationItem>
+        <PaginationItem>
+          <PaginationLink asChild isActive size="sm">
+            <Link href={buildBookmarksHref(page, tags)}>Page {page}</Link>
+          </PaginationLink>
+        </PaginationItem>
+        <PaginationItem>
+          {hasMore ? (
+            <PaginationNext asChild>
+              <Link href={buildBookmarksHref(page + 1, tags)}>Next</Link>
+            </PaginationNext>
+          ) : (
+            <PaginationNext className="pointer-events-none opacity-50" />
+          )}
+        </PaginationItem>
+      </PaginationContent>
+    </UIPagination>
   );
 }
 

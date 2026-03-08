@@ -66,7 +66,12 @@ function Composer({
   footer,
 }: ComposerProps) {
   return (
-    <Card className={cn("overflow-hidden rounded-3xl border bg-card/95 py-0 shadow-sm", className)}>
+    <Card
+      className={cn(
+        "overflow-hidden rounded-3xl border border-border/80 bg-card/95 py-0 shadow-lg",
+        className,
+      )}
+    >
       <CardContent className="space-y-3 px-4 py-4">
         {selectedBookmark ? (
           <button
@@ -89,12 +94,12 @@ function Composer({
             onCompositionEnd={onCompositionEnd}
             placeholder="Search your bookmarks..."
             rows={2}
-            className="min-h-20 flex-1 resize-none border-0 bg-transparent px-0 py-0 shadow-none focus-visible:ring-0"
+            className="min-h-24 flex-1 resize-none rounded-2xl border border-border/70 bg-muted/35 px-4 py-3 shadow-none placeholder:text-muted-foreground/85 focus-visible:bg-background focus-visible:ring-2 focus-visible:ring-ring/30"
           />
           <Button
             type="submit"
             size="icon"
-            className="shrink-0 rounded-full"
+            className="size-11 shrink-0 rounded-full shadow-sm"
             disabled={disabled}
             aria-label="Start search session"
           >
@@ -385,7 +390,7 @@ export function SearchLandingClient({
         </div>
       </div>
 
-      <div className="fixed inset-x-0 bottom-16 z-40 px-4 pb-[env(safe-area-inset-bottom)] md:hidden">
+      <div className="fixed inset-x-0 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-40 px-4 md:hidden">
         <div className="mx-auto max-w-4xl">
           <Composer
             value={messageInput}
@@ -397,7 +402,7 @@ export function SearchLandingClient({
             disabled={!messageInput.trim() && !urlInput.trim()}
             selectedBookmark={selectedBookmark}
             onClearSelectedBookmark={clearSelectedBookmark}
-            className="border bg-background/95 shadow-lg backdrop-blur"
+            className="bg-background/95 backdrop-blur"
           />
         </div>
       </div>

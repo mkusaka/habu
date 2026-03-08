@@ -17,7 +17,7 @@ const HATENA_BOOKMARK_API_URL = "https://bookmark.hatenaapis.com/rest/1/my/bookm
 const HATENA_FULLTEXT_SEARCH_API_URL = "https://b.hatena.ne.jp/my/search/json";
 const SEARCH_PAGE_SIZE = 100;
 
-export interface HatenaApiCredentials {
+interface HatenaApiCredentials {
   accessToken: string;
   accessTokenSecret: string;
   consumerKey: string;

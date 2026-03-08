@@ -31,7 +31,7 @@ export function formatWorkflowStepMeta(meta?: Partial<WorkflowStepMeta>) {
 }
 
 // Static metadata (for non-URL-dependent steps)
-export const BOOKMARK_SUGGESTION_STEP_META: Record<string, WorkflowStepMeta> = {
+const BOOKMARK_SUGGESTION_STEP_META: Record<string, WorkflowStepMeta> = {
   "moderate-user-context": {
     provider: "OpenAI",
     model: "omni-moderation-latest",
@@ -45,7 +45,7 @@ export const BOOKMARK_SUGGESTION_STEP_META: Record<string, WorkflowStepMeta> = {
 };
 
 // URL-dependent metadata
-export const BOOKMARK_SUGGESTION_STEP_META_TWITTER: Record<string, WorkflowStepMeta> = {
+const BOOKMARK_SUGGESTION_STEP_META_TWITTER: Record<string, WorkflowStepMeta> = {
   "fetch-markdown-and-moderate": {
     provider: "xAI + OpenAI",
     api: "Grok→oEmbed + omni-moderation-latest",
@@ -57,7 +57,7 @@ export const BOOKMARK_SUGGESTION_STEP_META_TWITTER: Record<string, WorkflowStepM
   },
 };
 
-export const BOOKMARK_SUGGESTION_STEP_META_DEFAULT: Record<string, WorkflowStepMeta> = {
+const BOOKMARK_SUGGESTION_STEP_META_DEFAULT: Record<string, WorkflowStepMeta> = {
   "fetch-markdown-and-moderate": {
     provider: "Cloudflare + OpenAI",
     api: "browser-rendering/markdown + omni-moderation-latest",
@@ -69,7 +69,7 @@ export const BOOKMARK_SUGGESTION_STEP_META_DEFAULT: Record<string, WorkflowStepM
   },
 };
 
-export const BOOKMARK_SUGGESTION_STEP_ORDER: Array<Pick<WorkflowStepState, "id" | "label">> = [
+const BOOKMARK_SUGGESTION_STEP_ORDER: Array<Pick<WorkflowStepState, "id" | "label">> = [
   { id: "fetch-markdown-and-moderate", label: "Fetch markdown + moderate" },
   { id: "moderate-user-context", label: "Moderate user context" },
   { id: "fetch-metadata", label: "Fetch metadata" },
@@ -81,7 +81,7 @@ export const BOOKMARK_SUGGESTION_STEP_ORDER: Array<Pick<WorkflowStepState, "id" 
 ];
 
 /** Internal steps that should be hidden from UI */
-export const INTERNAL_STEP_IDS = new Set(["merge-content", "merge-results"]);
+const INTERNAL_STEP_IDS = new Set(["merge-content", "merge-results"]);
 
 /** Get step metadata based on URL characteristics */
 function getStepMeta(stepId: string, url?: string): WorkflowStepMeta | undefined {
@@ -111,7 +111,7 @@ export function initBookmarkSuggestionSteps(url?: string): Record<string, Workfl
   );
 }
 
-export interface FilterStepsOptions {
+interface FilterStepsOptions {
   /** Hide internal steps like merge-content, merge-results */
   hideInternalSteps?: boolean;
   /** Hide moderate-user-context if no user context was provided */

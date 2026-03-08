@@ -12,7 +12,7 @@
 export const HATENA_BODY_LIMIT = 1024;
 
 /** Fixed overhead: "url=" (4 bytes) + "&comment=" (9 bytes) */
-export const BODY_OVERHEAD = 13;
+const BODY_OVERHEAD = 13;
 
 /** Calculate URL-encoded body size for a bookmark request */
 export function calculateBodySize(url: string, comment: string): number {
@@ -20,7 +20,7 @@ export function calculateBodySize(url: string, comment: string): number {
 }
 
 /** Calculate URL-encoded body size for a bookmark request with tag params */
-export function calculateBookmarkRequestBodySize(
+function calculateBookmarkRequestBodySize(
   url: string,
   comment: string,
   tags: string[] = [],
@@ -54,9 +54,4 @@ export function isBookmarkRequestWithinLimit(
   isPrivate = false,
 ): boolean {
   return calculateBookmarkRequestBodySize(url, comment, tags, isPrivate) <= HATENA_BODY_LIMIT;
-}
-
-/** Calculate remaining bytes available for comment */
-export function remainingCommentBytes(url: string, comment: string): number {
-  return maxEncodedCommentLength(url) - encodeURIComponent(comment).length;
 }

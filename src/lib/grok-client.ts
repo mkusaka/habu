@@ -1,4 +1,4 @@
-export type GrokChatMessage = {
+type GrokChatMessage = {
   role: "system" | "user" | "assistant";
   content: string;
 };
@@ -20,10 +20,6 @@ function getXaiApiKey(): string | undefined {
   const fromEnv = process.env.XAI_API_KEY;
   const fromGlobal = (globalThis as unknown as { __XAI_API_KEY__?: string }).__XAI_API_KEY__;
   return fromEnv || fromGlobal;
-}
-
-export function isGrokConfigured(): boolean {
-  return !!getXaiApiKey();
 }
 
 export async function grokChatCompletionText(params: {

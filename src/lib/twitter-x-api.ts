@@ -18,7 +18,7 @@ type XApiTweetResponse = {
   data?: XApiTweet;
 };
 
-export type XApiTweetContent = {
+type XApiTweetContent = {
   id: string;
   url: string;
   articleTitle?: string;

@@ -8,7 +8,7 @@ import { searchBookmarks, searchBookmarksSchema } from "./tools/search-bookmarks
 import { deleteBookmark, deleteBookmarkSchema } from "./tools/delete-bookmark";
 import { suggestComment, suggestCommentSchema } from "./tools/suggest-comment";
 
-export interface McpEnv {
+interface McpEnv {
   HATENA_CONSUMER_KEY: string;
   HATENA_CONSUMER_SECRET: string;
   BROWSER_RENDERING_ACCOUNT_ID?: string;

@@ -1,4 +1,4 @@
-export type TagFilterInput = string | readonly string[] | undefined;
+type TagFilterInput = string | readonly string[] | undefined;
 
 export function normalizeTagFilters(input: TagFilterInput): string[] {
   const values = Array.isArray(input) ? input : input ? [input] : [];

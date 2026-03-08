@@ -9,9 +9,9 @@ export const deleteBookmarkSchema = z.object({
   url: z.string().url().describe("The URL of the bookmark to delete"),
 });
 
-export type DeleteBookmarkInput = z.infer<typeof deleteBookmarkSchema>;
+type DeleteBookmarkInput = z.infer<typeof deleteBookmarkSchema>;
 
-export interface DeleteBookmarkResult {
+interface DeleteBookmarkResult {
   url: string;
   deleted: boolean;
 }

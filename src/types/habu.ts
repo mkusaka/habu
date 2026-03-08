@@ -1,18 +1,3 @@
-// Hatena OAuth types
-export interface HatenaTokens {
-  accessToken: string;
-  accessTokenSecret: string;
-}
-
-// Better Auth user payload extension
-export interface HabuUser {
-  id: string;
-  email: string;
-  name?: string;
-  hatenaAccessToken?: string;
-  hatenaAccessTokenSecret?: string;
-}
-
 // IndexedDB Queue types
 export type QueueStatus = "queued" | "sending" | "done" | "error";
 
@@ -140,14 +125,6 @@ export interface TagCleanupResponse {
   updatedCount?: number;
   failed?: TagCleanupFailure[];
   missingWritePrivate?: boolean;
-}
-
-// Hatena API types
-export interface HatenaBookmarkApiResponse {
-  url: string;
-  comment?: string;
-  tags?: string[];
-  created?: string;
 }
 
 export interface HatenaTag {

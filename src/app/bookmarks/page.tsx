@@ -20,10 +20,11 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { LinkButton } from "@/components/ui/link-button";
 import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
 import { RefreshButton } from "./refresh-button";
 import { RegenerateButton } from "./regenerate-button";
 import { BulkRegenerateButton } from "./bulk-regenerate-button";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { appendTagFilters, normalizeTagFilters } from "@/lib/bookmark-tag-filter";
 
 async function getHatenaStatus(): Promise<boolean> {
@@ -416,10 +417,18 @@ export default async function BookmarksPage({ searchParams }: BookmarksPageProps
           <h1 className="text-2xl font-bold tracking-tight">Bookmarks</h1>
         </div>
         <div className="flex items-center gap-1">
-          <LinkButton href="/bookmarks/tags" variant="outline" size="sm">
-            <Tags className="w-4 h-4 mr-2" />
-            Tag Cleanup
-          </LinkButton>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Link
+                href="/bookmarks/tags"
+                className={buttonVariants({ variant: "ghost", size: "icon" })}
+              >
+                <Tags className="w-5 h-5" />
+                <span className="sr-only">Tag Cleanup</span>
+              </Link>
+            </TooltipTrigger>
+            <TooltipContent>Tag Cleanup</TooltipContent>
+          </Tooltip>
           <TooltipProvider>
             <BulkRegenerateButton page={page} tags={tags} />
           </TooltipProvider>

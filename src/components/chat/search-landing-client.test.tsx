@@ -88,7 +88,7 @@ describe("SearchLandingClient", () => {
     assert.ok(screen.getByText("saved comment"));
     assert.ok(screen.getByText("AI要約"));
 
-    fireEvent.click(screen.getByRole("button", { name: /Recent Pick/i }));
+    fireEvent.click(screen.getAllByRole("button", { name: /Recent Pick/i })[0]);
 
     expect(screen.queryByText("Selected Bookmark")).toBeNull();
     assert.ok(screen.getByText("Recent Bookmarks"));

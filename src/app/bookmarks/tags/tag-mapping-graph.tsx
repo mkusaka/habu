@@ -281,7 +281,6 @@ export function TagMappingGraph({
                     {target.action !== "delete" ? (
                       <button
                         type="button"
-                        onPointerDown={(event) => event.preventDefault()}
                         onClick={(event) => {
                           event.stopPropagation();
                           void handleCopyTarget(target.label, target.action);

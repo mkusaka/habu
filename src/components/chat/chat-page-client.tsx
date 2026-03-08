@@ -4,7 +4,7 @@ import { useCallback, useMemo, useState, type ChangeEvent, type FormEvent } from
 import { useRouter } from "next/navigation";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
-import { Bookmark, ExternalLink, AlertCircle, Menu } from "lucide-react";
+import { Bookmark, ExternalLink, AlertCircle, History, Menu, Search } from "lucide-react";
 import { ChatMessages } from "./chat-messages";
 import { ChatInput } from "./chat-input";
 import { Button } from "@/components/ui/button";
@@ -202,8 +202,16 @@ export function ChatPageClient({
             <Menu className="mr-2 h-4 w-4" />
             {isSearchPanelOpen ? "Close Search Menu" : "Open Search Menu"}
           </Button>
+          <div className="flex items-center gap-2">
+            <Search className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm font-medium">Search</span>
+          </div>
           <LinkButton href="/search" variant="outline" size="sm">
             Search Home
+          </LinkButton>
+          <LinkButton href="/search/histories" variant="outline" size="sm">
+            <History className="mr-2 h-4 w-4" />
+            Histories
           </LinkButton>
           {selectedUrl && (
             <LinkButton
@@ -256,6 +264,8 @@ export function ChatPageClient({
             queryInput={queryInput}
             urlInput={urlInput}
             historyThreads={historyThreads}
+            historyTitle="Recent History"
+            historyLimit={5}
             showQueryInput={false}
             onQueryChange={setQueryInput}
             onUrlChange={setUrlInput}

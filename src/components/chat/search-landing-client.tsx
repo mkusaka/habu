@@ -2,7 +2,7 @@
 
 import { useState, type ChangeEvent, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { Bookmark, ExternalLink, Home, MessageCircle, Send, X } from "lucide-react";
+import { Bookmark, Clock3, ExternalLink, History, Home, Search, Send, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LinkButton } from "@/components/ui/link-button";
 import { Textarea } from "@/components/ui/textarea";
@@ -18,17 +18,27 @@ interface SearchLandingClientProps {
     tags: string[];
     bookmarkedAt: string;
   }[];
+  selectedBookmark?: {
+    url: string;
+    title: string;
+    comment: string;
+    tags: string[];
+    bookmarkedAt: string;
+  };
   historyThreads: ChatThreadSummary[];
 }
 
 export function SearchLandingClient({
   initialUrl,
   recentBookmarks,
+  selectedBookmark: initialSelectedBookmark,
   historyThreads,
 }: SearchLandingClientProps) {
   const router = useRouter();
   const [urlInput, setUrlInput] = useState(initialUrl ?? "");
   const [messageInput, setMessageInput] = useState("");
+  const [selectedBookmark, setSelectedBookmark] = useState(initialSelectedBookmark);
+  const recentHistory = historyThreads.slice(0, 5);
 
   const openSearchSession = (params: { query?: string; url?: string; sessionId?: string }) => {
     const normalizedQuery = params.query?.trim() || "";
@@ -44,6 +54,18 @@ export function SearchLandingClient({
     const suffix = searchParams.size > 0 ? `?${searchParams.toString()}` : "";
     router.push(`/search/${params.sessionId}${suffix}`);
   };
+
+  const suggestionCards = urlInput
+    ? [
+        "What did I already bookmark that relates to this URL?",
+        "Summarize what matters about this URL for my bookmarks.",
+        "Find similar bookmarks and common tags for this URL.",
+      ]
+    : [
+        "Show me recent AI-related bookmarks.",
+        "What are the most common tags in my bookmarks?",
+        "Find bookmarks about search UX changes.",
+      ];
 
   const handleStartSearch = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -61,20 +83,24 @@ export function SearchLandingClient({
     <div className="flex min-h-screen flex-col bg-background">
       <header className="border-b px-4 py-4 sm:px-6">
         <div className="flex items-center justify-between gap-3">
-          <div>
+          <div className="flex items-center gap-3">
+            <Search className="h-5 w-5 text-muted-foreground" />
             <h1 className="text-xl font-semibold">Search</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Start a new bookmark search session with an optional URL context.
-            </p>
           </div>
-          <LinkButton href="/" variant="ghost" size="icon">
-            <Home className="h-4 w-4" />
-          </LinkButton>
+          <div className="flex items-center gap-2">
+            <LinkButton href="/" variant="ghost" size="icon">
+              <Home className="h-4 w-4" />
+            </LinkButton>
+            <LinkButton href="/search/histories" variant="outline" size="sm">
+              <History className="mr-2 h-4 w-4" />
+              Histories
+            </LinkButton>
+          </div>
         </div>
       </header>
 
-      <main className="grid min-h-0 flex-1 gap-0 lg:grid-cols-[minmax(0,1fr)_22rem]">
-        <section className="px-4 py-6 sm:px-6">
+      <main className="grid min-h-0 flex-1 gap-0 xl:grid-cols-[minmax(0,1fr)_22rem]">
+        <section className="px-4 py-5 sm:px-6">
           <div className="mx-auto flex max-w-3xl flex-col gap-6">
             <form onSubmit={handleStartSearch} className="rounded-lg border bg-muted/20 p-4 sm:p-5">
               <div className="space-y-2">
@@ -93,7 +119,10 @@ export function SearchLandingClient({
                       type="button"
                       variant="outline"
                       size="icon"
-                      onClick={() => setUrlInput("")}
+                      onClick={() => {
+                        setUrlInput("");
+                        setSelectedBookmark(undefined);
+                      }}
                     >
                       <X className="h-4 w-4" />
                     </Button>
@@ -126,6 +155,31 @@ export function SearchLandingClient({
               </div>
             </form>
 
+            <section className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Clock3 className="h-4 w-4 text-muted-foreground" />
+                <h2 className="text-sm font-medium">Quick Starts</h2>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {suggestionCards.map((suggestion) => (
+                  <button
+                    key={suggestion}
+                    type="button"
+                    onClick={() =>
+                      openSearchSession({
+                        sessionId: crypto.randomUUID(),
+                        query: suggestion,
+                        url: urlInput || undefined,
+                      })
+                    }
+                    className="rounded-lg border p-3 text-left text-sm transition-colors hover:bg-accent"
+                  >
+                    {suggestion}
+                  </button>
+                ))}
+              </div>
+            </section>
+
             {!urlInput && (
               <section className="space-y-3">
                 <div className="flex items-center gap-2">
@@ -137,7 +191,10 @@ export function SearchLandingClient({
                     <button
                       key={bookmark.url}
                       type="button"
-                      onClick={() => setUrlInput(bookmark.url)}
+                      onClick={() => {
+                        setUrlInput(bookmark.url);
+                        setSelectedBookmark(bookmark);
+                      }}
                       className="rounded-lg border p-3 text-left transition-colors hover:bg-accent"
                     >
                       <div className="line-clamp-2 text-sm font-medium">
@@ -156,26 +213,66 @@ export function SearchLandingClient({
               </section>
             )}
 
-            <div className="rounded-lg border p-6 text-center text-sm text-muted-foreground">
-              <MessageCircle className="mx-auto mb-3 h-8 w-8" />
-              The search session will open after your first message so the conversation can keep a
-              stable session ID.
-            </div>
+            {urlInput && selectedBookmark && (
+              <section className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Bookmark className="h-4 w-4 text-muted-foreground" />
+                  <h2 className="text-sm font-medium">Selected Bookmark</h2>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUrlInput("");
+                    setSelectedBookmark(undefined);
+                  }}
+                  className="w-full rounded-lg border p-4 text-left transition-colors hover:bg-accent"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="truncate text-sm font-medium">
+                        {selectedBookmark.title || selectedBookmark.url}
+                      </div>
+                      <div className="mt-1 break-all text-xs text-muted-foreground">
+                        {selectedBookmark.url}
+                      </div>
+                    </div>
+                    <X className="mt-0.5 h-4 w-4 text-muted-foreground" />
+                  </div>
+                  {selectedBookmark.tags.length > 0 && (
+                    <div className="mt-3 flex flex-wrap gap-1">
+                      {selectedBookmark.tags.map((tag) => (
+                        <span
+                          key={tag}
+                          className="rounded bg-primary/10 px-1.5 py-0.5 text-[11px] text-primary"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {selectedBookmark.comment && (
+                    <div className="mt-3 line-clamp-3 text-sm text-muted-foreground">
+                      {selectedBookmark.comment}
+                    </div>
+                  )}
+                </button>
+              </section>
+            )}
           </div>
         </section>
 
-        <aside className="border-t bg-muted/20 lg:border-l lg:border-t-0">
+        <aside className="border-t bg-muted/20 xl:border-l xl:border-t-0">
           <div className="border-b px-4 py-3">
-            <div className="text-sm font-medium">History</div>
-            <div className="text-xs text-muted-foreground">Open a previous search session</div>
+            <div className="text-sm font-medium">Recent History</div>
+            <div className="text-xs text-muted-foreground">Up to 5 recent sessions</div>
           </div>
           <div className="space-y-1 p-2">
-            {historyThreads.length === 0 ? (
+            {recentHistory.length === 0 ? (
               <div className="rounded-md px-3 py-2 text-sm text-muted-foreground">
                 No saved conversations yet.
               </div>
             ) : (
-              historyThreads.map((thread) => (
+              recentHistory.map((thread) => (
                 <button
                   key={thread.id}
                   type="button"

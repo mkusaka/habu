@@ -12,6 +12,8 @@ interface SearchPanelProps {
   queryInput: string;
   urlInput: string;
   historyThreads: ChatThreadSummary[];
+  historyTitle?: string;
+  historyLimit?: number;
   showQueryInput?: boolean;
   submitLabel?: string;
   onQueryChange: (value: string) => void;
@@ -35,6 +37,8 @@ export function SearchPanel({
   queryInput,
   urlInput,
   historyThreads,
+  historyTitle = "Recent History",
+  historyLimit = 5,
   showQueryInput = true,
   submitLabel = "Open Search",
   onQueryChange,
@@ -42,6 +46,8 @@ export function SearchPanel({
   onStartSearch,
   onOpenSearch,
 }: SearchPanelProps) {
+  const visibleHistory = historyThreads.slice(0, historyLimit);
+
   return (
     <>
       <form onSubmit={onStartSearch} className="space-y-2 border-b p-4">
@@ -70,14 +76,14 @@ export function SearchPanel({
       </form>
 
       <div className="min-h-0 flex-1 overflow-y-auto p-2">
-        <div className="px-2 pb-2 text-xs font-medium text-muted-foreground">History</div>
+        <div className="px-2 pb-2 text-xs font-medium text-muted-foreground">{historyTitle}</div>
         <div className="space-y-1">
-          {historyThreads.length === 0 ? (
+          {visibleHistory.length === 0 ? (
             <div className="rounded-md px-3 py-2 text-sm text-muted-foreground">
               No saved conversations yet.
             </div>
           ) : (
-            historyThreads.map((thread) => (
+            visibleHistory.map((thread) => (
               <button
                 key={thread.id}
                 type="button"

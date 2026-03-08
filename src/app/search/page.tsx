@@ -4,6 +4,7 @@ import { AlertCircle } from "lucide-react";
 import { createAuth } from "@/lib/auth";
 import { SearchLandingClient } from "@/components/chat/search-landing-client";
 import { buildMcpContextForUser } from "@/lib/bookmark-user-context";
+import { buildChatPageContextForUser } from "@/lib/chat-page-context";
 import { LinkButton } from "@/components/ui/link-button";
 import { listChatThreadsForHatenaAccount } from "@/lib/chat-history";
 import { listBookmarks } from "@/mcp/tools/list-bookmarks";
@@ -63,11 +64,33 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
     HATENA_CONSUMER_SECRET: env.HATENA_CONSUMER_SECRET,
   });
   const recentBookmarks = recentBookmarksResult.success ? recentBookmarksResult.data.bookmarks : [];
+  const selectedBookmarkContext = initialUrl
+    ? await buildChatPageContextForUser({
+        userId: session.user.id,
+        url: initialUrl,
+        dbBinding: env.DB,
+        env: {
+          HATENA_CONSUMER_KEY: env.HATENA_CONSUMER_KEY,
+          HATENA_CONSUMER_SECRET: env.HATENA_CONSUMER_SECRET,
+        },
+      })
+    : null;
 
   return (
     <SearchLandingClient
       initialUrl={initialUrl}
       recentBookmarks={recentBookmarks}
+      selectedBookmark={
+        initialUrl
+          ? {
+              url: initialUrl,
+              title: selectedBookmarkContext?.title || initialUrl,
+              comment: selectedBookmarkContext?.context.existingComment || "",
+              tags: selectedBookmarkContext?.context.existingTags || [],
+              bookmarkedAt: "",
+            }
+          : undefined
+      }
       historyThreads={historyThreads}
     />
   );

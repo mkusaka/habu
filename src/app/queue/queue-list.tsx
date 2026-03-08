@@ -7,6 +7,8 @@ import { db, deleteQueueItem, clearCompletedItems, recoverErrorItem } from "@/li
 import { saveBookmark } from "@/lib/bookmark-client";
 import type { BookmarkQueue } from "@/types/habu";
 import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,6 +19,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import {
   CheckCircle2,
   Clock,
@@ -386,9 +395,17 @@ export function QueueList() {
 
   if (items.length === 0) {
     return (
-      <div className="text-center py-8 text-muted-foreground animate-in fade-in duration-200">
-        <p>No bookmarks in queue</p>
-      </div>
+      <Empty className="animate-in border-dashed fade-in duration-200">
+        <EmptyHeader>
+          <EmptyMedia variant="icon">
+            <Clock />
+          </EmptyMedia>
+          <EmptyTitle>No bookmarks in queue</EmptyTitle>
+          <EmptyDescription>
+            Saved pages waiting for sync or retry will appear here.
+          </EmptyDescription>
+        </EmptyHeader>
+      </Empty>
     );
   }
 
@@ -544,12 +561,9 @@ export function QueueList() {
                           {item.status === "done" && displayTags && displayTags.length > 0 && (
                             <div className="flex flex-wrap gap-1 mt-1">
                               {displayTags.map((tag, i) => (
-                                <span
-                                  key={i}
-                                  className="px-1.5 py-0.5 bg-primary/10 text-primary rounded text-xs"
-                                >
+                                <Badge key={i} variant="secondary">
                                   {tag}
-                                </span>
+                                </Badge>
                               ))}
                             </div>
                           )}
@@ -567,9 +581,11 @@ export function QueueList() {
                       </p>
                     )}
                     {item.lastError && (
-                      <div className="text-xs text-red-600 mt-1 p-2 bg-red-50 rounded border border-red-200">
-                        <span className="font-semibold">Error:</span> {item.lastError}
-                      </div>
+                      <Alert variant="destructive" className="mt-2 px-3 py-2 text-xs">
+                        <AlertCircle />
+                        <AlertTitle>Queue error</AlertTitle>
+                        <AlertDescription>{item.lastError}</AlertDescription>
+                      </Alert>
                     )}
                     <p className="text-xs text-muted-foreground mt-1">
                       {getStatusText(item.status, isChecking)} •{" "}

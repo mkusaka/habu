@@ -3,10 +3,10 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { queueBookmark } from "@/lib/bookmark-client";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
+import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { InputGroup, InputGroupInput, InputGroupTextarea } from "@/components/ui/input-group";
 import { toast } from "sonner";
 import { isBodyWithinLimit } from "@/lib/hatena-body-limit";
 import { WorkflowProgress } from "@/components/workflow-progress";
@@ -44,6 +44,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface SaveFormProps {
   initialUrl: string;
@@ -701,51 +702,60 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
         )}
 
         {/* Form */}
-        <div className="space-y-2">
-          <Label htmlFor="url" className="flex items-center gap-2">
-            URL
-            {isCheckingBookmark && <Loader2 className="w-3 h-3 animate-spin" />}
-          </Label>
-          <Input
-            id="url"
-            type="url"
-            value={url}
-            onChange={(e) => handleUrlChange(e.target.value)}
-            placeholder="https://example.com"
-            className={urlError ? "border-red-500 focus-visible:ring-red-500" : ""}
-          />
-          {urlError && <p className="text-sm text-red-500">{urlError}</p>}
-        </div>
+        <FieldGroup className="gap-5">
+          <Field data-invalid={urlError ? true : undefined}>
+            <FieldLabel htmlFor="url" className="items-center">
+              URL
+              {isCheckingBookmark && <Loader2 className="w-3 h-3 animate-spin" />}
+            </FieldLabel>
+            <InputGroup>
+              <InputGroupInput
+                id="url"
+                type="url"
+                value={url}
+                onChange={(e) => handleUrlChange(e.target.value)}
+                placeholder="https://example.com"
+                aria-invalid={urlError ? true : undefined}
+              />
+            </InputGroup>
+            <FieldError>{urlError}</FieldError>
+          </Field>
 
-        <div className="space-y-2">
-          <Label htmlFor="title" className="flex items-center gap-2">
-            Title
-            {isFetchingTitle && <Loader2 className="w-3 h-3 animate-spin" />}
-          </Label>
-          <Input
-            id="title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder={isFetchingTitle ? "Fetching..." : "Page title (auto-filled)"}
-            disabled={isFetchingTitle}
-          />
-        </div>
+          <Field>
+            <FieldLabel htmlFor="title" className="items-center">
+              Title
+              {isFetchingTitle && <Loader2 className="w-3 h-3 animate-spin" />}
+            </FieldLabel>
+            <InputGroup data-disabled={isFetchingTitle ? true : undefined}>
+              <InputGroupInput
+                id="title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder={isFetchingTitle ? "Fetching..." : "Page title (auto-filled)"}
+                disabled={isFetchingTitle}
+              />
+            </InputGroup>
+          </Field>
 
-        <div className="space-y-2">
-          <Label htmlFor="comment">Comment (optional)</Label>
-          <Textarea
-            id="comment"
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-            placeholder="Your comment"
-            rows={3}
-          />
-          {isCommentTooLong && (
-            <p className="text-sm text-red-500">
-              Comment is too long for this URL. Please shorten your comment.
-            </p>
-          )}
-        </div>
+          <Field data-invalid={isCommentTooLong ? true : undefined}>
+            <FieldLabel htmlFor="comment">Comment (optional)</FieldLabel>
+            <InputGroup>
+              <InputGroupTextarea
+                id="comment"
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                placeholder="Your comment"
+                rows={3}
+                aria-invalid={isCommentTooLong ? true : undefined}
+              />
+            </InputGroup>
+            <FieldError>
+              {isCommentTooLong
+                ? "Comment is too long for this URL. Please shorten your comment."
+                : undefined}
+            </FieldError>
+          </Field>
+        </FieldGroup>
 
         {/* Context Toggle */}
         <div className="space-y-2">
@@ -758,23 +768,25 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
             <span>Add context for AI generation</span>
           </button>
           {showContext && (
-            <div className="space-y-2">
-              <Label htmlFor="context" className="text-sm text-muted-foreground">
+            <Field>
+              <FieldLabel htmlFor="context">
                 Context (for pages that fail to fetch or need extra info)
-              </Label>
-              <Textarea
-                id="context"
-                value={context}
-                onChange={(e) => setContext(e.target.value)}
-                placeholder="Paste page content, add notes, or provide context for AI to use..."
-                rows={5}
-                className="text-sm"
-              />
-              <p className="text-xs text-muted-foreground">
+              </FieldLabel>
+              <InputGroup>
+                <InputGroupTextarea
+                  id="context"
+                  value={context}
+                  onChange={(e) => setContext(e.target.value)}
+                  placeholder="Paste page content, add notes, or provide context for AI to use..."
+                  rows={5}
+                  className="text-sm"
+                />
+              </InputGroup>
+              <FieldDescription className="text-xs">
                 This context will be used when generating summaries and tags. Useful for bot-blocked
                 pages or to add supplementary information.
-              </p>
-            </div>
+              </FieldDescription>
+            </Field>
           )}
         </div>
 
@@ -802,12 +814,9 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
                 {generatedResult.tags && generatedResult.tags.length > 0 && (
                   <div className="flex flex-wrap gap-1 mb-2">
                     {generatedResult.tags.map((tag, i) => (
-                      <span
-                        key={i}
-                        className="px-2 py-0.5 bg-primary/10 text-primary rounded text-xs"
-                      >
+                      <Badge key={i} variant="secondary">
                         {tag}
-                      </span>
+                      </Badge>
                     ))}
                   </div>
                 )}
@@ -958,9 +967,11 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
                           <Copy className="w-3 h-3" />
                         </button>
                       </summary>
-                      <pre className="mt-2 bg-background p-2 rounded text-xs overflow-auto whitespace-pre-wrap break-all">
-                        {generatedResult.summary}
-                      </pre>
+                      <ScrollArea className="mt-2 max-h-48 rounded bg-background">
+                        <pre className="p-2 text-xs whitespace-pre-wrap break-all">
+                          {generatedResult.summary}
+                        </pre>
+                      </ScrollArea>
                     </details>
                   )}
 
@@ -986,9 +997,9 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
                       </summary>
                       <div className="mt-2 bg-background p-2 rounded text-xs flex flex-wrap gap-1">
                         {generatedResult.tags.map((tag, i) => (
-                          <span key={i} className="px-2 py-0.5 bg-primary/10 text-primary rounded">
+                          <Badge key={i} variant="secondary">
                             {tag}
-                          </span>
+                          </Badge>
                         ))}
                       </div>
                     </details>
@@ -1014,9 +1025,11 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
                           <Copy className="w-3 h-3" />
                         </button>
                       </summary>
-                      <pre className="mt-2 bg-background p-2 rounded text-xs overflow-auto max-h-48 whitespace-pre-wrap break-all">
-                        {generatedResult.webContext}
-                      </pre>
+                      <ScrollArea className="mt-2 max-h-48 rounded bg-background">
+                        <pre className="p-2 text-xs whitespace-pre-wrap break-all">
+                          {generatedResult.webContext}
+                        </pre>
+                      </ScrollArea>
                     </details>
                   )}
 
@@ -1040,9 +1053,11 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
                           <Copy className="w-3 h-3" />
                         </button>
                       </summary>
-                      <pre className="mt-2 bg-background p-2 rounded text-xs overflow-auto whitespace-pre-wrap break-all">
-                        {generatedResult.markdown}
-                      </pre>
+                      <ScrollArea className="mt-2 max-h-64 rounded bg-background">
+                        <pre className="p-2 text-xs whitespace-pre-wrap break-all">
+                          {generatedResult.markdown}
+                        </pre>
+                      </ScrollArea>
                     </details>
                   ) : generatedResult.markdownError ? (
                     <details className="rounded border border-yellow-200/60 bg-yellow-50/60 dark:border-yellow-900/50 dark:bg-yellow-900/20 p-2">
@@ -1063,9 +1078,11 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
                           <Copy className="w-3 h-3" />
                         </button>
                       </summary>
-                      <pre className="mt-2 p-2 rounded text-xs text-yellow-800 dark:text-yellow-200 overflow-auto max-h-24 whitespace-pre-wrap break-all">
-                        {generatedResult.markdownError}
-                      </pre>
+                      <ScrollArea className="mt-2 max-h-24 rounded">
+                        <pre className="p-2 text-xs text-yellow-800 dark:text-yellow-200 whitespace-pre-wrap break-all">
+                          {generatedResult.markdownError}
+                        </pre>
+                      </ScrollArea>
                     </details>
                   ) : null}
                 </div>
@@ -1129,12 +1146,9 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
                     {existingBookmark.tags.length > 0 && (
                       <div className="flex flex-wrap gap-1 mb-2">
                         {existingBookmark.tags.map((tag, i) => (
-                          <span
-                            key={i}
-                            className="px-2 py-0.5 bg-primary/10 text-primary rounded text-xs"
-                          >
+                          <Badge key={i} variant="secondary">
                             {tag}
-                          </span>
+                          </Badge>
                         ))}
                       </div>
                     )}

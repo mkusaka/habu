@@ -3,8 +3,8 @@
 import { useSyncExternalStore } from "react";
 import { useTheme } from "next-themes";
 import { Monitor, Moon, Sun } from "lucide-react";
-import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Field, FieldContent, FieldDescription, FieldLabel } from "@/components/ui/field";
 
 function useIsClient() {
   return useSyncExternalStore(
@@ -20,8 +20,11 @@ export function ThemeToggle() {
   const selectedTheme = isClient ? (theme ?? "system") : "system";
 
   return (
-    <div className="flex items-center justify-between">
-      <Label>Theme</Label>
+    <Field orientation="horizontal">
+      <FieldContent>
+        <FieldLabel>Theme</FieldLabel>
+        <FieldDescription>Choose the default appearance for the app.</FieldDescription>
+      </FieldContent>
       <div className="flex items-center gap-2">
         <Button
           type="button"
@@ -57,6 +60,6 @@ export function ThemeToggle() {
           Dark
         </Button>
       </div>
-    </div>
+    </Field>
   );
 }

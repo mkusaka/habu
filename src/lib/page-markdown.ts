@@ -7,7 +7,7 @@ const DEFAULT_MAX_RETRIES = 2;
 
 export type PageMarkdownSource = "twitter-x-api" | "twitter-grok" | "twitter-oembed" | "cloudflare";
 
-export interface FetchPageMarkdownOptions {
+interface FetchPageMarkdownOptions {
   cfAccountId?: string;
   cfApiToken?: string;
   maxChars?: number;
@@ -15,7 +15,7 @@ export interface FetchPageMarkdownOptions {
   maxRetries?: number;
 }
 
-export interface FetchPageMarkdownResult {
+interface FetchPageMarkdownResult {
   markdown: string;
   error?: string;
   source?: PageMarkdownSource;

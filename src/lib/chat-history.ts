@@ -13,7 +13,7 @@ export interface ChatThreadSummary {
   lastMessagePreview?: string;
 }
 
-export interface ChatThreadRecord extends ChatThreadSummary {
+interface ChatThreadRecord extends ChatThreadSummary {
   messages: UIMessage[];
 }
 

@@ -1,6 +1,6 @@
 import type { UIMessage } from "ai";
 
-export interface ChatRequestMessagePayload {
+interface ChatRequestMessagePayload {
   trigger?: "submit-message" | "regenerate-message";
   message?: UIMessage;
   messageId?: string;

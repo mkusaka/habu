@@ -6,9 +6,9 @@ export const fetchPageMarkdownSchema = z.object({
   url: z.string().url().describe("The public URL of the web page to fetch as markdown"),
 });
 
-export type FetchPageMarkdownInput = z.infer<typeof fetchPageMarkdownSchema>;
+type FetchPageMarkdownInput = z.infer<typeof fetchPageMarkdownSchema>;
 
-export interface FetchPageMarkdownResult {
+interface FetchPageMarkdownResult {
   url: string;
   markdown: string;
   source?: PageMarkdownSource;

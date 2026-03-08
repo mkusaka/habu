@@ -14,9 +14,9 @@ export const searchBookmarksSchema = z.object({
   offset: z.number().min(0).default(0).describe("Offset for pagination"),
 });
 
-export type SearchBookmarksInput = z.infer<typeof searchBookmarksSchema>;
+type SearchBookmarksInput = z.infer<typeof searchBookmarksSchema>;
 
-export interface SearchBookmarkItem {
+interface SearchBookmarkItem {
   url: string;
   title: string;
   comment: string;
@@ -27,7 +27,7 @@ export interface SearchBookmarkItem {
   bookmarkCount?: number;
 }
 
-export interface SearchBookmarksResult {
+interface SearchBookmarksResult {
   query: string;
   total: number;
   bookmarks: SearchBookmarkItem[];

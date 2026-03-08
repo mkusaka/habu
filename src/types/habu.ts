@@ -124,7 +124,6 @@ export interface TagCleanupResponse {
   preview?: TagCleanupBookmark[];
   updatedCount?: number;
   failed?: TagCleanupFailure[];
-  missingWritePrivate?: boolean;
 }
 
 export interface HatenaTag {

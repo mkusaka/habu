@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LinkButton } from "@/components/ui/link-button";
+import { Badge } from "@/components/ui/badge";
 import { RefreshButton } from "./refresh-button";
 import { RegenerateButton } from "./regenerate-button";
 import { BulkRegenerateButton } from "./bulk-regenerate-button";
@@ -436,13 +437,9 @@ export default async function BookmarksPage({ searchParams }: BookmarksPageProps
                 Filtering by {tags.length > 1 ? "tags" : "tag"}
               </span>
               {tags.map((tag) => (
-                <Link
-                  key={tag}
-                  href={buildBookmarksHref(1, removeTagFilter(tags, tag))}
-                  className="rounded bg-primary px-2 py-0.5 text-xs text-primary-foreground"
-                >
-                  {tag} ×
-                </Link>
+                <Badge key={tag} asChild variant="secondary" className="hover:bg-secondary/90">
+                  <Link href={buildBookmarksHref(1, removeTagFilter(tags, tag))}>{tag} ×</Link>
+                </Badge>
               ))}
             </div>
             <LinkButton href="/bookmarks" variant="outline" size="sm">

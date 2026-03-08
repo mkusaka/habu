@@ -313,8 +313,6 @@ export function SearchLandingClient({
             </section>
           ) : null}
 
-          {recentBookmarksSection}
-
           <div className="grid gap-6 md:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
             <section className="space-y-3">
               <SectionHeading icon={Clock3} title="Quick Starts" />
@@ -323,7 +321,7 @@ export function SearchLandingClient({
                   <button
                     key={suggestion}
                     type="button"
-                    className="w-full text-left"
+                    className="min-w-0 w-full text-left"
                     onClick={() =>
                       openSearchSession({
                         sessionId: crypto.randomUUID(),
@@ -332,8 +330,10 @@ export function SearchLandingClient({
                       })
                     }
                   >
-                    <Card className="h-full gap-0 py-0 transition-colors hover:bg-accent">
-                      <CardContent className="px-4 py-4 text-sm">{suggestion}</CardContent>
+                    <Card className="h-full min-w-0 gap-0 overflow-hidden py-0 transition-colors hover:bg-accent">
+                      <CardContent className="min-w-0 break-words px-4 py-4 text-sm">
+                        {suggestion}
+                      </CardContent>
                     </Card>
                   </button>
                 ))}
@@ -359,14 +359,14 @@ export function SearchLandingClient({
                           sessionId: thread.id,
                         })
                       }
-                      className="w-full text-left"
+                      className="min-w-0 w-full text-left"
                     >
-                      <Card className="gap-0 py-0 transition-colors hover:bg-accent">
-                        <CardContent className="space-y-1 px-4 py-3">
-                          <div className="truncate text-sm font-medium">
+                      <Card className="min-w-0 gap-0 overflow-hidden py-0 transition-colors hover:bg-accent">
+                        <CardContent className="min-w-0 space-y-1 px-4 py-3">
+                          <div className="min-w-0 truncate text-sm font-medium">
                             {thread.title || thread.query || thread.url || "Untitled Search"}
                           </div>
-                          <div className="truncate text-xs text-muted-foreground">
+                          <div className="min-w-0 truncate text-xs text-muted-foreground">
                             {thread.lastMessagePreview ||
                               thread.query ||
                               thread.url ||
@@ -380,6 +380,8 @@ export function SearchLandingClient({
               </div>
             </section>
           </div>
+
+          {recentBookmarksSection}
         </div>
       </div>
 

@@ -158,10 +158,10 @@ export function TagMappingGraph({
   };
 
   return (
-    <div className="overflow-x-auto rounded-lg border">
+    <div className="overflow-x-auto rounded-lg border md:overflow-x-visible">
       <div
         ref={containerRef}
-        className="relative w-max min-w-full bg-muted/20 p-3 md:p-4 xl:w-[860px] xl:min-w-[860px]"
+        className="relative w-max min-w-full bg-muted/20 p-3 md:mx-auto md:w-full md:min-w-0 md:max-w-[860px] md:p-4"
       >
         <svg className="pointer-events-none absolute inset-0 h-full w-full">
           {edges.map((edge) => (

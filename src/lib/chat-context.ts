@@ -105,19 +105,3 @@ ${markdownSection}
 
 ${bookmarkSection}`.trim();
 }
-
-export function extractTagsFromComment(comment: string): string[] {
-  const tags: string[] = [];
-  const tagRegex = /^\[([^\]]+)\]/;
-  let remaining = comment;
-  let match;
-  while ((match = tagRegex.exec(remaining)) !== null) {
-    tags.push(match[1]);
-    remaining = remaining.slice(match[0].length);
-  }
-  return tags;
-}
-
-export function extractCommentText(comment: string): string {
-  return comment.replace(/^(\[[^\]]+\])+/, "").trim();
-}

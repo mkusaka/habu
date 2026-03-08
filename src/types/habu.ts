@@ -89,6 +89,59 @@ export interface SuggestResponse {
   exceedsLimit?: boolean;
 }
 
+export interface TagCleanupBookmark {
+  url: string;
+  title: string;
+  commentText: string;
+  currentTags: string[];
+  nextTags: string[];
+  isPrivate: boolean;
+  bookmarkedAt?: string;
+  matchedSourceTags?: string[];
+}
+
+export type TagMappingAction = "update" | "delete" | "no_change";
+
+export interface TagMappingCandidate {
+  sourceTag: string;
+  action: TagMappingAction;
+  targetTag?: string;
+  reason?: string;
+  sourceCount?: number;
+  targetCount?: number;
+  suggested?: boolean;
+}
+
+export interface TagCleanupRequest {
+  mode: "preview" | "apply";
+  mappings: TagMappingCandidate[];
+}
+
+export interface TagCleanupCandidatesResponse {
+  success: boolean;
+  error?: string;
+  candidates?: TagMappingCandidate[];
+  tagCount?: number;
+  hatenaId?: string;
+}
+
+export interface TagCleanupFailure {
+  url: string;
+  title: string;
+  error: string;
+}
+
+export interface TagCleanupResponse {
+  success: boolean;
+  error?: string;
+  mappings?: TagMappingCandidate[];
+  totalMatched?: number;
+  preview?: TagCleanupBookmark[];
+  updatedCount?: number;
+  failed?: TagCleanupFailure[];
+  missingWritePrivate?: boolean;
+}
+
 // Hatena API types
 export interface HatenaBookmarkApiResponse {
   url: string;

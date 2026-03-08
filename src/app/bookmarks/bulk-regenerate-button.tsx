@@ -11,14 +11,14 @@ import { cleanUrl } from "@/lib/url-cleaner";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { BookmarksResponse } from "@/app/api/habu/bookmarks/route";
-
-const PAGE_SIZE = 20;
+import { appendTagFilters } from "@/lib/bookmark-tag-filter";
 
 interface BulkRegenerateButtonProps {
   page: number;
+  tags: string[];
 }
 
-export function BulkRegenerateButton({ page }: BulkRegenerateButtonProps) {
+export function BulkRegenerateButton({ page, tags }: BulkRegenerateButtonProps) {
   const router = useRouter();
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [bookmarkUrls, setBookmarkUrls] = useState<string[]>([]);
@@ -27,8 +27,9 @@ export function BulkRegenerateButton({ page }: BulkRegenerateButtonProps) {
   useEffect(() => {
     const fetchUrls = async () => {
       try {
-        const offset = (page - 1) * PAGE_SIZE;
-        const response = await fetch(`/api/habu/bookmarks?limit=${PAGE_SIZE}&offset=${offset}`);
+        const params = new URLSearchParams({ page: String(page) });
+        appendTagFilters(params, tags);
+        const response = await fetch(`/api/habu/bookmarks?${params.toString()}`);
         if (response.ok) {
           const data = (await response.json()) as BookmarksResponse;
           if (data.success && data.bookmarks) {
@@ -41,7 +42,7 @@ export function BulkRegenerateButton({ page }: BulkRegenerateButtonProps) {
       }
     };
     fetchUrls();
-  }, [page]);
+  }, [page, tags]);
 
   // Watch IndexedDB for queue status of all URLs on this page
   const queueItems = useLiveQuery(
@@ -61,8 +62,9 @@ export function BulkRegenerateButton({ page }: BulkRegenerateButtonProps) {
 
     try {
       // Fetch bookmarks for this page
-      const offset = (page - 1) * PAGE_SIZE;
-      const response = await fetch(`/api/habu/bookmarks?limit=${PAGE_SIZE}&offset=${offset}`);
+      const params = new URLSearchParams({ page: String(page) });
+      appendTagFilters(params, tags);
+      const response = await fetch(`/api/habu/bookmarks?${params.toString()}`);
 
       if (!response.ok) {
         toast.error("Failed to fetch bookmarks");

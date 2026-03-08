@@ -13,6 +13,7 @@ import { LinkButton } from "@/components/ui/link-button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BookmarkEditForm } from "./bookmark-edit-form";
 import { fetchPageMeta, isMetaExtractionResult } from "@/lib/page-meta";
+import { appendTagFilters, normalizeTagFilters } from "@/lib/bookmark-tag-filter";
 
 export const dynamic = "force-dynamic";
 
@@ -38,6 +39,20 @@ interface FetchResult {
   bookmark?: HatenaBookmarkGetResponse;
   title?: string;
   metadata?: PageMetadata;
+}
+
+function buildBookmarksHref(page: number, tags: readonly string[]) {
+  const params = new URLSearchParams();
+  if (page > 1) {
+    params.set("page", String(page));
+  }
+  appendTagFilters(params, tags);
+
+  if (params.size === 0) {
+    return "/bookmarks";
+  }
+
+  return `/bookmarks?${params.toString()}`;
 }
 
 async function fetchBookmarkData(bookmarkUrl: string): Promise<FetchResult> {
@@ -183,8 +198,17 @@ function BookmarkDetailLoading() {
   );
 }
 
-async function BookmarkDetailContent({ bookmarkUrl }: { bookmarkUrl: string }) {
+async function BookmarkDetailContent({
+  bookmarkUrl,
+  page,
+  tags,
+}: {
+  bookmarkUrl: string;
+  page: number;
+  tags: string[];
+}) {
   const result = await fetchBookmarkData(bookmarkUrl);
+  const backHref = buildBookmarksHref(page, tags);
 
   if (!result.success) {
     return (
@@ -193,7 +217,7 @@ async function BookmarkDetailContent({ bookmarkUrl }: { bookmarkUrl: string }) {
           <AlertCircle className="w-4 h-4 flex-shrink-0" />
           <span>{result.error}</span>
         </div>
-        <LinkButton href="/bookmarks" variant="outline" className="w-full">
+        <LinkButton href={backHref} variant="outline" className="w-full">
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to Bookmarks
         </LinkButton>
@@ -253,7 +277,7 @@ async function BookmarkDetailContent({ bookmarkUrl }: { bookmarkUrl: string }) {
 
       {/* Navigation */}
       <div className="pt-2">
-        <LinkButton href="/bookmarks" variant="outline" className="w-full" size="sm">
+        <LinkButton href={backHref} variant="outline" className="w-full" size="sm">
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to Bookmarks
         </LinkButton>
@@ -263,12 +287,14 @@ async function BookmarkDetailContent({ bookmarkUrl }: { bookmarkUrl: string }) {
 }
 
 interface BookmarkDetailPageProps {
-  searchParams: Promise<{ url?: string }>;
+  searchParams: Promise<{ url?: string; page?: string; tag?: string | string[] }>;
 }
 
 export default async function BookmarkDetailPage({ searchParams }: BookmarkDetailPageProps) {
   const params = await searchParams;
   const bookmarkUrl = params.url || "";
+  const page = Math.max(1, parseInt(params.page || "1", 10));
+  const tags = normalizeTagFilters(params.tag);
 
   return (
     <div className="w-full py-8">
@@ -281,8 +307,11 @@ export default async function BookmarkDetailPage({ searchParams }: BookmarkDetai
           <Home className="w-5 h-5" />
         </LinkButton>
       </header>
-      <Suspense key={bookmarkUrl} fallback={<BookmarkDetailLoading />}>
-        <BookmarkDetailContent bookmarkUrl={bookmarkUrl} />
+      <Suspense
+        key={`${bookmarkUrl}:${page}:${tags.join("||")}`}
+        fallback={<BookmarkDetailLoading />}
+      >
+        <BookmarkDetailContent bookmarkUrl={bookmarkUrl} page={page} tags={tags} />
       </Suspense>
     </div>
   );

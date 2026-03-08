@@ -62,16 +62,13 @@ describe("TagCleanupManager", () => {
     } as Response);
 
     render(<TagCleanupManager />);
-    fireEvent.click(screen.getByRole("button", { name: "Generate candidates" }));
+    fireEvent.click(screen.getByRole("button", { name: "Generate suggestions" }));
 
     await screen.findByTitle("Highlight article");
 
     assert.match(screen.getByText(/Tags:/).textContent ?? "", /Tags:\s*12/);
-    assert.match(
-      screen.getByText(/Suggested changes:/).textContent ?? "",
-      /Suggested changes:\s*1/,
-    );
-    assert.deepEqual(toastSuccess.mock.calls, [["Candidates generated"]]);
+    assert.match(screen.getByText(/Suggestions:/).textContent ?? "", /Suggestions:\s*1/);
+    assert.deepEqual(toastSuccess.mock.calls, [["Suggestions generated"]]);
   });
 
   it("renders an error message when candidate generation fails", async () => {
@@ -84,13 +81,13 @@ describe("TagCleanupManager", () => {
     } as Response);
 
     render(<TagCleanupManager />);
-    fireEvent.click(screen.getByRole("button", { name: "Generate candidates" }));
+    fireEvent.click(screen.getByRole("button", { name: "Generate suggestions" }));
 
     await waitFor(() => {
       assert.ok(screen.getByText("boom"));
     });
     assert.deepEqual(toastError.mock.calls, [
-      ["Candidate generation failed", { description: "boom" }],
+      ["Suggestion generation failed", { description: "boom" }],
     ]);
   });
 });

@@ -28,16 +28,16 @@ export function TagCleanupManager() {
       const data = (await response.json()) as TagCleanupCandidatesResponse;
 
       if (!response.ok || !data.success) {
-        throw new Error(data.error || "Failed to generate candidates");
+        throw new Error(data.error || "Failed to generate suggestions");
       }
 
       setCandidates(data.candidates ?? []);
       setTagCount(data.tagCount ?? 0);
       setHatenaId(data.hatenaId ?? "");
-      toast.success("Candidates generated");
+      toast.success("Suggestions generated");
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "Unknown error");
-      toast.error("Candidate generation failed", {
+      toast.error("Suggestion generation failed", {
         description: error instanceof Error ? error.message : "Unknown error",
       });
     } finally {
@@ -80,7 +80,7 @@ export function TagCleanupManager() {
             ) : (
               <>
                 <Sparkles className="w-4 h-4 mr-2" />
-                Generate candidates
+                Generate suggestions
               </>
             )}
           </Button>
@@ -94,7 +94,7 @@ export function TagCleanupManager() {
               Tags: <strong>{tagCount}</strong>
             </span>
             <span className="min-w-0">
-              Suggested changes: <strong>{candidates.length}</strong>
+              Suggestions: <strong>{candidates.length}</strong>
             </span>
           </div>
         </div>
@@ -104,7 +104,7 @@ export function TagCleanupManager() {
         <TagMappingGraph rows={graphRows} hatenaId={hatenaId} />
       ) : (
         <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
-          No candidate edges yet. Generate candidates to visualize the mapping graph.
+          No suggestions yet. Generate suggestions to visualize the mapping graph.
         </div>
       )}
     </div>

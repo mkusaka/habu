@@ -197,14 +197,14 @@ export function SearchLandingClient({
   };
 
   const recentBookmarksSection = !urlInput ? (
-    <section className="space-y-3">
+    <section className="min-w-0 space-y-3">
       <SectionHeading icon={Bookmark} title="Recent Bookmarks" />
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid min-w-0 gap-3 sm:grid-cols-2">
         {recentBookmarks.map((bookmark) => (
           <button
             key={bookmark.url}
             type="button"
-            className="w-full text-left"
+            className="min-w-0 w-full text-left"
             onClick={() =>
               openSearchSession({
                 sessionId: crypto.randomUUID(),
@@ -265,7 +265,7 @@ export function SearchLandingClient({
         </>
       }
     >
-      <div className="mx-auto flex max-w-4xl flex-col gap-6">
+      <div className="mx-auto flex w-full min-w-0 max-w-4xl flex-col gap-6">
         <div className="hidden min-h-[42vh] items-center justify-center md:flex">
           <div className="w-full max-w-2xl">
             <Composer
@@ -282,9 +282,9 @@ export function SearchLandingClient({
           </div>
         </div>
 
-        <div className="space-y-6 pb-32 md:pb-0">
+        <div className="min-w-0 space-y-6 pb-32 md:pb-0">
           {selectedBookmark ? (
-            <section className="space-y-3">
+            <section className="min-w-0 space-y-3">
               <SectionHeading icon={Bookmark} title="Selected Bookmark" />
               <button type="button" onClick={clearSelectedBookmark} className="w-full text-left">
                 <Card className="w-full gap-0 py-0 transition-colors hover:bg-accent">
@@ -320,10 +320,10 @@ export function SearchLandingClient({
             </section>
           ) : null}
 
-          <div className="grid gap-6 md:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
-            <section className="space-y-3">
+          <div className="grid min-w-0 items-start gap-6 md:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
+            <section className="min-w-0 space-y-3">
               <SectionHeading icon={Clock3} title="Quick Starts" />
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid min-w-0 gap-3 sm:grid-cols-2">
                 {suggestionCards.map((suggestion) => (
                   <button
                     key={suggestion}
@@ -347,9 +347,9 @@ export function SearchLandingClient({
               </div>
             </section>
 
-            <section className="space-y-3">
+            <section className="min-w-0 space-y-3">
               <SectionHeading icon={History} title="Recent History" />
-              <div className="space-y-2">
+              <div className="min-w-0 space-y-2">
                 {recentHistory.length === 0 ? (
                   <Card className="gap-0 py-0">
                     <CardContent className="px-4 py-3 text-sm text-muted-foreground">

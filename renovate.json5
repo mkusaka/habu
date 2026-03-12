@@ -6,21 +6,21 @@
   ],
   "packageRules": [
     {
-      "description": "Group minor and patch updates for npm production dependencies",
+      "description": "Group pin, minor, and patch updates for npm production dependencies",
       "groupName": "dependencies (non-major)",
       "matchManagers": ["npm"],
       "matchDepTypes": ["dependencies"],
-      "matchUpdateTypes": ["minor", "patch"],
+      "matchUpdateTypes": ["pin", "minor", "patch"],
       "automerge": true,
       "automergeType": "pr",
       "minimumReleaseAge": "7 days"
     },
     {
-      "description": "Group minor and patch updates for npm dev dependencies",
+      "description": "Group pin, minor, and patch updates for npm dev dependencies",
       "groupName": "devDependencies (non-major)",
       "matchManagers": ["npm"],
       "matchDepTypes": ["devDependencies"],
-      "matchUpdateTypes": ["minor", "patch"],
+      "matchUpdateTypes": ["pin", "minor", "patch"],
       "automerge": true,
       "automergeType": "pr",
       "minimumReleaseAge": "7 days"

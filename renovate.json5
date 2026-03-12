@@ -6,16 +6,33 @@
   ],
   "packageRules": [
     {
-      "description": "Group minor and patch updates for production dependencies",
+      "description": "Group minor and patch updates for npm production dependencies",
       "groupName": "dependencies (non-major)",
+      "matchManagers": ["npm"],
       "matchDepTypes": ["dependencies"],
-      "matchUpdateTypes": ["minor", "patch"]
+      "matchUpdateTypes": ["minor", "patch"],
+      "automerge": true,
+      "automergeType": "pr",
+      "minimumReleaseAge": "7 days"
     },
     {
-      "description": "Group minor and patch updates for dev dependencies",
+      "description": "Group minor and patch updates for npm dev dependencies",
       "groupName": "devDependencies (non-major)",
+      "matchManagers": ["npm"],
       "matchDepTypes": ["devDependencies"],
-      "matchUpdateTypes": ["minor", "patch"]
+      "matchUpdateTypes": ["minor", "patch"],
+      "automerge": true,
+      "automergeType": "pr",
+      "minimumReleaseAge": "7 days"
+    },
+    {
+      "description": "Group minor and patch GitHub Actions updates",
+      "groupName": "github-actions (non-major)",
+      "matchManagers": ["github-actions"],
+      "matchUpdateTypes": ["minor", "patch", "digest", "pinDigest"],
+      "automerge": true,
+      "automergeType": "pr",
+      "minimumReleaseAge": "7 days"
     }
   ]
 }

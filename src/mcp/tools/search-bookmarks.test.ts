@@ -1,7 +1,8 @@
 import { fetchMock } from "cloudflare:test";
-import { afterEach, beforeAll, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { searchBookmarks } from "./search-bookmarks";
 import type { McpContext } from "../types";
+import * as hatenaOauth from "../../lib/hatena-oauth";
 
 beforeAll(() => {
   fetchMock.activate();
@@ -34,6 +35,30 @@ describe("searchBookmarks", () => {
       success: false,
       error: "Permission denied: bookmark:read scope required",
     });
+  });
+
+  it("encodes spaces as %20 (not +) in query to avoid OAuth signature mismatch", async () => {
+    const spy = vi.spyOn(hatenaOauth, "createSignedRequest").mockReturnValue({
+      Authorization: "OAuth mock",
+    });
+
+    fetchMock
+      .get("https://b.hatena.ne.jp")
+      .intercept({ path: /\/my\/search\/json\?/, method: "GET" })
+      .reply(200, JSON.stringify({ total: 0, bookmarks: [] }), {
+        headers: { "content-type": "application/json; charset=utf-8" },
+      });
+
+    await searchBookmarks({ query: "codex rate limit", limit: 10, offset: 0 }, baseContext, {
+      HATENA_CONSUMER_KEY: "key",
+      HATENA_CONSUMER_SECRET: "secret",
+    });
+
+    const calledUrl = spy.mock.calls[0][0];
+    expect(calledUrl).toContain("q=codex%20rate%20limit");
+    expect(calledUrl).not.toContain("q=codex+rate+limit");
+
+    spy.mockRestore();
   });
 
   it("maps Hatena search results into bookmark items", async () => {

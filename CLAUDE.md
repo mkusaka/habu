@@ -116,7 +116,7 @@ wrangler secret put MASTRA_CLOUD_ACCESS_TOKEN
 When `/api/habu/bookmark` is called without a comment:
 1. Cloudflare Browser Rendering fetches page content as Markdown
 2. Hatena API fetches user's existing tags
-3. OpenAI gpt-5-mini generates summary (Japanese, max 100 chars) and tags (page language, max 10)
+3. OpenAI gpt-5.4-nano generates summary (Japanese, max 100 chars) and tags (page language, max 10)
 4. Formatted as `[tag1][tag2]summary` and sent to Hatena
 
 Requires environment variables: `BROWSER_RENDERING_ACCOUNT_ID`, `BROWSER_RENDERING_API_TOKEN`, `OPENAI_API_KEY`, `MASTRA_CLOUD_ACCESS_TOKEN`

@@ -153,7 +153,7 @@ function ChatConversation({
         </div>
       )}
 
-      <div className="min-h-0 flex-1 pb-40 md:pb-32">
+      <div className="min-h-0 flex-1 pb-40 md:pb-0">
         <ChatMessages
           messages={messages}
           isLoading={isLoading}
@@ -166,8 +166,8 @@ function ChatConversation({
         />
       </div>
 
-      <div className="fixed inset-x-0 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-40 px-4 md:bottom-6">
-        <div className="mx-auto max-w-4xl">
+      <div className="fixed inset-x-0 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-40 px-4 md:static md:bottom-auto md:mt-3 md:px-0 md:z-auto">
+        <div className="mx-auto max-w-4xl md:max-w-full md:mx-0">
           <ChatInput
             input={input}
             onChange={handleInputChange}

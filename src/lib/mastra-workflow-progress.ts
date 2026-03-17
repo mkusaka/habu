@@ -39,8 +39,8 @@ const BOOKMARK_SUGGESTION_STEP_META: Record<string, WorkflowStepMeta> = {
   },
   "fetch-metadata": { provider: "Habu", api: "HTMLRewriter (local)" },
   "merge-content": { provider: "Habu", api: "merge" },
-  "generate-summary": { provider: "OpenAI", model: "gpt-5-mini", api: "generate + judge" },
-  "generate-tags": { provider: "OpenAI", model: "gpt-5-mini", api: "generate + judge" },
+  "generate-summary": { provider: "OpenAI", model: "gpt-5.4-nano", api: "generate + judge" },
+  "generate-tags": { provider: "OpenAI", model: "gpt-5.4-nano", api: "generate + judge" },
   "merge-results": { provider: "Habu", api: "merge" },
 };
 
@@ -64,7 +64,7 @@ const BOOKMARK_SUGGESTION_STEP_META_DEFAULT: Record<string, WorkflowStepMeta> = 
   },
   "web-search": {
     provider: "OpenAI",
-    model: "gpt-5-mini",
+    model: "gpt-5.4-nano",
     api: "web_search",
   },
 };

@@ -88,12 +88,7 @@ export async function searchBookmarks(
   }
 
   const { accessToken, accessTokenSecret } = context.hatenaToken;
-  const params = new URLSearchParams({
-    q: input.query,
-    limit: String(input.limit),
-    of: String(input.offset),
-  });
-  const apiUrl = `${HATENA_SEARCH_API_URL}?${params.toString()}`;
+  const apiUrl = `${HATENA_SEARCH_API_URL}?q=${encodeURIComponent(input.query)}&limit=${input.limit}&of=${input.offset}`;
   const authHeaders = createSignedRequest(
     apiUrl,
     "GET",

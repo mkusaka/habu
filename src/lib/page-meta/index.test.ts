@@ -1,4 +1,4 @@
-import { fetchMock } from "cloudflare:test";
+import { fetchMock } from "../../test-utils/fetch-mock";
 import { describe, it, expect, beforeAll, afterEach } from "vitest";
 import { fetchPageMeta, isMetaExtractionResult } from "./index";
 

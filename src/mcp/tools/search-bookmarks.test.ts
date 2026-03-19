@@ -1,4 +1,4 @@
-import { fetchMock } from "cloudflare:test";
+import { fetchMock } from "../../test-utils/fetch-mock";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { searchBookmarks } from "./search-bookmarks";
 import type { McpContext } from "../types";

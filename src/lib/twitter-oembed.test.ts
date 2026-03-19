@@ -1,4 +1,4 @@
-import { fetchMock } from "cloudflare:test";
+import { fetchMock } from "../test-utils/fetch-mock";
 import { beforeAll, afterEach, describe, expect, it } from "vitest";
 import { fetchTwitterOEmbed, formatTwitterMarkdown, isTwitterStatusUrl } from "./twitter-oembed";
 

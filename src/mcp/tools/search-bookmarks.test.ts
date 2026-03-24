@@ -45,7 +45,7 @@ describe("searchBookmarks", () => {
     fetchMock
       .get("https://b.hatena.ne.jp")
       .intercept({ path: /\/my\/search\/json\?/, method: "GET" })
-      .reply(200, JSON.stringify({ total: 0, bookmarks: [] }), {
+      .reply(200, JSON.stringify({ meta: { total: 0 }, bookmarks: [] }), {
         headers: { "content-type": "application/json; charset=utf-8" },
       });
 
@@ -68,16 +68,18 @@ describe("searchBookmarks", () => {
       .reply(
         200,
         JSON.stringify({
-          total: 1,
+          meta: { total: 1 },
           bookmarks: [
             {
-              title: "Agentic Search",
-              entry_url: "https://example.com/agentic-search",
+              entry: {
+                title: "Agentic Search",
+                url: "https://example.com/agentic-search",
+                snippet: "overview of agentic search",
+                count: 42,
+              },
               comment: "[ai][search]Great overview",
-              snippet: "overview of agentic search",
               timestamp: 1762502400,
-              count: 42,
-              private: 0,
+              is_private: 0,
             },
           ],
         }),

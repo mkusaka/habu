@@ -33,19 +33,27 @@ interface SearchBookmarksResult {
   bookmarks: SearchBookmarkItem[];
 }
 
+// Hatena Bookmark fulltext search API response format
+// @see https://developer.hatena.ne.jp/ja/documents/bookmark/apis/fulltext_search
 interface HatenaSearchBookmarkItem {
-  title: string;
-  entry_url: string;
-  comment: string;
-  snippet?: string;
+  entry?: {
+    title?: string;
+    url?: string;
+    count?: number;
+    eid?: number;
+    snippet?: string;
+  };
   timestamp?: number;
-  count?: number;
-  private?: boolean | number;
+  comment: string;
+  /** 1 if private, absent or 0 otherwise */
+  is_private?: number;
 }
 
 interface HatenaSearchApiResponse {
+  meta?: {
+    total?: number;
+  };
   bookmarks?: HatenaSearchBookmarkItem[];
-  total?: number;
 }
 
 function extractTags(comment: string): string[] {
@@ -116,21 +124,21 @@ export async function searchBookmarks(
 
   const data = (await response.json()) as HatenaSearchApiResponse;
   const bookmarks = (data.bookmarks ?? []).map((item) => ({
-    url: item.entry_url,
-    title: item.title,
+    url: item.entry?.url ?? "",
+    title: item.entry?.title ?? item.entry?.url ?? "",
     comment: extractCommentText(item.comment),
     tags: extractTags(item.comment),
-    snippet: item.snippet,
+    snippet: item.entry?.snippet,
     bookmarkedAt: formatBookmarkedAt(item.timestamp),
-    isPrivate: Boolean(item.private),
-    bookmarkCount: item.count,
+    isPrivate: item.is_private === 1,
+    bookmarkCount: item.entry?.count,
   }));
 
   return {
     success: true,
     data: {
       query: input.query,
-      total: data.total ?? bookmarks.length,
+      total: data.meta?.total ?? bookmarks.length,
       bookmarks,
     },
   };

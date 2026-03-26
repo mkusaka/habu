@@ -37,7 +37,7 @@
 		"@mastra/core": "^1.2.0",
 		"@mastra/observability": "^1.2.0",
 		"@modelcontextprotocol/sdk": "^1.25.2",
-		"@opennextjs/cloudflare": "^1.16.0",
+		"@opennextjs/cloudflare": "^1.17.3",
 		"@radix-ui/react-alert-dialog": "^1.1.15",
 		"@radix-ui/react-dialog": "^1.1.15",
 		"@radix-ui/react-label": "^2.1.8",

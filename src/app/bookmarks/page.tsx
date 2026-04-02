@@ -270,25 +270,25 @@ async function BookmarkList({ page, tags }: { page: number; tags: string[] }) {
           {bookmarks.map((bookmark, index) => (
             <div
               key={`${bookmark.url}-${index}`}
-              className="relative w-full text-left p-3 rounded-md border hover:bg-muted/50 transition-colors"
+              className="relative isolate w-full rounded-md border p-3 text-left transition-colors hover:bg-muted/50"
             >
               <Link
                 href={buildBookmarkDetailHref(bookmark.url, page, tags)}
-                className="absolute inset-0"
+                className="absolute inset-0 z-0"
                 aria-label={`Edit bookmark: ${bookmark.title || bookmark.url}`}
               />
               {/* Header: Title + Action buttons */}
-              <div className="flex items-center gap-2">
+              <div className="relative z-10 flex items-center gap-2">
                 <h3 className="font-medium text-sm truncate flex-1 min-w-0">
                   {bookmark.title || bookmark.url}
                 </h3>
-                <div className="relative z-10 flex items-center gap-1 flex-shrink-0">
+                <div className="flex flex-shrink-0 items-center gap-1">
                   <RegenerateButton url={bookmark.url} title={bookmark.title} />
                   <a
                     href={bookmark.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="p-1 text-muted-foreground hover:text-foreground cursor-pointer"
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-md text-foreground/80 transition-colors hover:bg-accent hover:text-accent-foreground"
                     title="Open page"
                   >
                     <ExternalLink className="w-4 h-4" />
@@ -297,7 +297,7 @@ async function BookmarkList({ page, tags }: { page: number; tags: string[] }) {
                     href={`https://b.hatena.ne.jp/entry/${bookmark.url.startsWith("https://") ? "s/" + bookmark.url.slice(8) : bookmark.url}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="p-1 text-muted-foreground hover:text-foreground cursor-pointer"
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-md text-foreground/80 transition-colors hover:bg-accent hover:text-accent-foreground"
                     title="View on Hatena Bookmark"
                   >
                     <Bookmark className="w-4 h-4" />
@@ -305,9 +305,9 @@ async function BookmarkList({ page, tags }: { page: number; tags: string[] }) {
                 </div>
               </div>
               {/* Body: Tags, Comment, Date */}
-              <div className="mt-1">
+              <div className="relative z-10 mt-1">
                 {bookmark.tags.length > 0 && (
-                  <div className="relative z-10 flex flex-wrap gap-1 mt-1">
+                  <div className="mt-1 flex flex-wrap gap-1">
                     {bookmark.tags.map((tag, i) => (
                       <Badge key={i} asChild variant={tags.includes(tag) ? "default" : "secondary"}>
                         <Link href={buildBookmarksHref(1, addTagFilter(tags, tag))}>{tag}</Link>

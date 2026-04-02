@@ -57,7 +57,7 @@ export function RegenerateButton({ url, title }: RegenerateButtonProps) {
           size="icon"
           onClick={handleRegenerate}
           disabled={isLoading}
-          className="cursor-pointer"
+          className="cursor-pointer text-foreground/80 hover:text-accent-foreground"
         >
           {isLoading ? (
             <Loader2 className="w-4 h-4 animate-spin" />

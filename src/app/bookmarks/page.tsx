@@ -12,7 +12,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { LinkButton } from "@/components/ui/link-button";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Pagination as UIPagination,
   PaginationContent,
@@ -196,7 +195,7 @@ function extractComment(comment: string) {
 function BookmarkListLoading({ page, tags }: { page: number; tags: string[] }) {
   return (
     <div className="flex flex-col flex-1 min-h-0">
-      <ScrollArea className="h-full">
+      <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
         <div className="space-y-2">
           {Array.from({ length: 20 }).map((_, i) => (
             <div key={i} className="w-full p-3 rounded-md border">
@@ -222,7 +221,7 @@ function BookmarkListLoading({ page, tags }: { page: number; tags: string[] }) {
             </div>
           ))}
         </div>
-      </ScrollArea>
+      </div>
       {/* Pagination (footer) - show during loading to keep layout stable */}
       <Pagination page={page} hasMore={true} tags={tags} />
     </div>
@@ -265,7 +264,7 @@ async function BookmarkList({ page, tags }: { page: number; tags: string[] }) {
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
-      <ScrollArea className="h-full">
+      <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
         <div className="space-y-2">
           {bookmarks.map((bookmark, index) => (
             <div
@@ -327,7 +326,7 @@ async function BookmarkList({ page, tags }: { page: number; tags: string[] }) {
             </div>
           ))}
         </div>
-      </ScrollArea>
+      </div>
 
       {/* Pagination (footer) */}
       <Pagination page={page} hasMore={hasMore} tags={tags} />

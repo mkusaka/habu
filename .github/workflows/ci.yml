@@ -21,7 +21,11 @@ jobs:
           cache: "pnpm"
 
       - name: Install dependencies
-        run: corepack pnpm install --frozen-lockfile
+        run: |
+          corepack pnpm --version
+          corepack pnpm config get git-branch-lockfile || true
+          corepack pnpm config get merge-git-branch-lockfiles || true
+          corepack pnpm install --frozen-lockfile --loglevel debug
 
       - name: Run oxlint
         run: pnpm lint

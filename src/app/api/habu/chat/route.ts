@@ -155,7 +155,7 @@ export async function POST(request: NextRequest) {
       }),
       search_bookmarks: tool({
         description:
-          "Search your Hatena bookmarks by keyword across title, URL, comment text, and tags. Use this first when the user asks about previously saved bookmarks.",
+          "Search your Hatena bookmarks by keyword across title, URL, comment text, and tags. Hatena search recall is imperfect, so use multiple related keyword passes and aggregate the results when the user asks about previously saved bookmarks.",
         inputSchema: searchBookmarksSchema,
         execute: async (input) => toToolOutput(await searchBookmarks(input, mcpContext, toolEnv)),
       }),

@@ -1,7 +1,9 @@
 import { NextRequest } from "next/server";
 import {
-  streamText,
   convertToModelMessages,
+  createUIMessageStream,
+  createUIMessageStreamResponse,
+  streamText,
   tool,
   stepCountIs,
   type ToolSet,
@@ -19,6 +21,7 @@ import {
   type ChatContext,
   type PageMetadata,
 } from "@/lib/chat-context";
+import { buildChatToolSummary } from "@/lib/chat-tool-summary";
 import { fetchPageMarkdownSchema, fetchPageMarkdownTool } from "@/mcp/tools/fetch-page-markdown";
 import {
   filterBookmarksByTags,
@@ -195,17 +198,7 @@ export async function POST(request: NextRequest) {
           ]
         : [];
 
-    const result = streamText({
-      model: openai("gpt-5.4"),
-      system: systemPrompt,
-      messages: await convertToModelMessages([...contextMessages, ...requestMessages]),
-      tools,
-      maxOutputTokens: 3072,
-      stopWhen: stepCountIs(8),
-    });
-
-    // Use toUIMessageStreamResponse to include tool call information in the stream
-    return result.toUIMessageStreamResponse({
+    const stream = createUIMessageStream<UIMessage>({
       originalMessages: requestMessages,
       onFinish: async ({ messages: finalMessages, isAborted }) => {
         if (isAborted) {
@@ -223,7 +216,40 @@ export async function POST(request: NextRequest) {
           dbBinding: env.DB,
         });
       },
+      execute: async ({ writer }) => {
+        const result = streamText({
+          model: openai("gpt-5.4"),
+          system: systemPrompt,
+          messages: await convertToModelMessages([...contextMessages, ...requestMessages]),
+          tools,
+          maxOutputTokens: 3072,
+          stopWhen: stepCountIs(8),
+          experimental_onToolCallFinish: ({ toolCall, success, output, error, durationMs }) => {
+            writer.write({
+              type: "data-tool-summary",
+              id: toolCall.toolCallId,
+              data: buildChatToolSummary({
+                toolCallId: toolCall.toolCallId,
+                toolName: toolCall.toolName,
+                input: toolCall.input,
+                output: success ? output : undefined,
+                error: success ? undefined : error,
+                durationMs,
+              }),
+            });
+          },
+        });
+
+        writer.merge(
+          result.toUIMessageStream({
+            sendReasoning: false,
+            sendSources: true,
+          }),
+        );
+      },
     });
+
+    return createUIMessageStreamResponse({ stream });
   } catch (error) {
     console.error("Chat API error:", error);
     return new Response(

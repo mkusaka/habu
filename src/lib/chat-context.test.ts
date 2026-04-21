@@ -9,5 +9,7 @@ describe("buildChatSystemPrompt", () => {
     expect(prompt).toContain("multiple related keyword passes");
     expect(prompt).toContain("synonyms, abbreviations, English/Japanese variants");
     expect(prompt).toContain("broad multi-pass bookmark search");
+    expect(prompt).toContain("format them as Markdown links");
+    expect(prompt).toContain("Do not wrap URLs in backticks");
   });
 });

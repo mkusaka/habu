@@ -273,15 +273,15 @@ async function BookmarkList({ page, tags }: { page: number; tags: string[] }) {
             >
               <Link
                 href={buildBookmarkDetailHref(bookmark.url, page, tags)}
-                className="absolute inset-0 z-0"
+                className="absolute inset-0"
                 aria-label={`Edit bookmark: ${bookmark.title || bookmark.url}`}
               />
               {/* Header: Title + Action buttons */}
-              <div className="relative z-10 flex items-center gap-2">
+              <div className="flex items-center gap-2">
                 <h3 className="font-medium text-sm truncate flex-1 min-w-0">
                   {bookmark.title || bookmark.url}
                 </h3>
-                <div className="flex flex-shrink-0 items-center gap-1">
+                <div className="relative z-10 flex flex-shrink-0 items-center gap-1">
                   <RegenerateButton url={bookmark.url} title={bookmark.title} />
                   <a
                     href={bookmark.url}
@@ -304,11 +304,16 @@ async function BookmarkList({ page, tags }: { page: number; tags: string[] }) {
                 </div>
               </div>
               {/* Body: Tags, Comment, Date */}
-              <div className="relative z-10 mt-1">
+              <div className="mt-1">
                 {bookmark.tags.length > 0 && (
                   <div className="mt-1 flex flex-wrap gap-1">
                     {bookmark.tags.map((tag, i) => (
-                      <Badge key={i} asChild variant={tags.includes(tag) ? "default" : "secondary"}>
+                      <Badge
+                        key={i}
+                        asChild
+                        variant={tags.includes(tag) ? "default" : "secondary"}
+                        className="relative z-10"
+                      >
                         <Link href={buildBookmarksHref(1, addTagFilter(tags, tag))}>{tag}</Link>
                       </Badge>
                     ))}

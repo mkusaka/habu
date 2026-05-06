@@ -34,7 +34,7 @@ export async function grokChatCompletionText(params: {
 
   const fromEnvModel = process.env.XAI_MODEL;
   const fromGlobalModel = (globalThis as unknown as { __XAI_MODEL__?: string }).__XAI_MODEL__;
-  const model = params.model || fromEnvModel || fromGlobalModel || "grok-4-1-fast-reasoning";
+  const model = params.model || fromEnvModel || fromGlobalModel || "grok-4.3";
 
   const controller = new AbortController();
   const timeoutMs = params.timeoutMs ?? 20000;

@@ -211,7 +211,7 @@ export async function POST(request: NextRequest) {
     if (streamMode) {
       const encoder = new TextEncoder();
 
-      const grokModel = () => process.env.XAI_MODEL || "grok-4-1-fast-reasoning";
+      const grokModel = () => process.env.XAI_MODEL || "grok-4.3";
 
       const computeStepMeta = (args: {
         stepId: string;

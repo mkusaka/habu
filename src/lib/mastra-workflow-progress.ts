@@ -52,7 +52,7 @@ const BOOKMARK_SUGGESTION_STEP_META_TWITTER: Record<string, WorkflowStepMeta> = 
   },
   "web-search": {
     provider: "xAI",
-    model: "grok-3-fast-latest",
+    model: "grok-4.3",
     api: "chat/completions",
   },
 };

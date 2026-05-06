@@ -7,7 +7,7 @@ beforeAll(() => {
   fetchMock.disableNetConnect();
   (globalThis as unknown as { __XAI_API_KEY__?: string }).__XAI_API_KEY__ = "test-xai-key";
   (globalThis as unknown as { __XAI_BASE_URL__?: string }).__XAI_BASE_URL__ = "https://api.x.ai/v1";
-  (globalThis as unknown as { __XAI_MODEL__?: string }).__XAI_MODEL__ = "grok-2-latest";
+  (globalThis as unknown as { __XAI_MODEL__?: string }).__XAI_MODEL__ = "grok-4.3";
 });
 
 afterEach(() => {

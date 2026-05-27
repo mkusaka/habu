@@ -17,12 +17,12 @@ export function hasScope(context: McpContext, scope: McpScope): boolean {
 }
 
 // Tool result types
-export interface ToolSuccess<T> {
+interface ToolSuccess<T> {
   success: true;
   data: T;
 }
 
-export interface ToolError {
+interface ToolError {
   success: false;
   error: string;
 }

@@ -1,5 +1,5 @@
 // IndexedDB Queue types
-export type QueueStatus = "queued" | "sending" | "done" | "error";
+type QueueStatus = "queued" | "sending" | "done" | "error";
 
 export interface BookmarkQueue {
   id?: number;

@@ -69,7 +69,7 @@ export function ChatInput({
             className="size-11 shrink-0 rounded-full"
             title="Stop generating"
           >
-            <Square className="w-4 h-4" />
+            <Square className="size-4" />
           </Button>
         ) : (
           <Button
@@ -78,11 +78,7 @@ export function ChatInput({
             disabled={disabled || !input.trim()}
             className="size-11 shrink-0 rounded-full"
           >
-            {isLoading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Send className="w-4 h-4" />
-            )}
+            {isLoading ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
           </Button>
         )}
       </form>

@@ -120,7 +120,7 @@ function useDebounce<T>(value: T, delay: number): T {
 }
 
 export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }: SaveFormProps) {
-  const router = useRouter();
+  const { push, replace } = useRouter();
   const [url, setUrl] = useState(initialUrl);
   const [title, setTitle] = useState(initialTitle);
   const [comment, setComment] = useState(initialComment);
@@ -132,7 +132,7 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
   const [isSaving, setIsSaving] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [workflowRunId, setWorkflowRunId] = useState<string | null>(null);
-  const [workflowSteps, setWorkflowSteps] = useState<Record<string, WorkflowStepState>>(
+  const [workflowSteps, setWorkflowSteps] = useState<Record<string, WorkflowStepState>>(() =>
     initBookmarkSuggestionSteps(),
   );
   const [generatedResult, setGeneratedResult] = useState<{
@@ -204,9 +204,9 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
 
     // Only update if different from current URL
     if (window.location.search !== (search ? `?${search}` : "")) {
-      router.replace(newPath, { scroll: false });
+      replace(newPath, { scroll: false });
     }
-  }, [debouncedUrl, debouncedTitle, debouncedComment, router]);
+  }, [debouncedUrl, debouncedTitle, debouncedComment, replace]);
 
   // Track online status
   useEffect(() => {
@@ -219,7 +219,7 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
           description: "Connect to Hatena Bookmark in Settings to sync your bookmarks.",
           action: {
             label: "Settings",
-            onClick: () => router.push("/settings"),
+            onClick: () => push("/settings"),
           },
         });
       }
@@ -239,7 +239,7 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
     };
-  }, [hasHatena, router]);
+  }, [hasHatena, push]);
 
   // Fetch title when URL changes (debounced)
   const fetchTitle = useCallback(
@@ -620,7 +620,7 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
     window.close();
 
     // If window.close() didn't work, redirect to saved page
-    router.replace("/saved");
+    replace("/saved");
   };
 
   const handleSave = () => {
@@ -653,7 +653,7 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
       window.close();
 
       // If window.close() didn't work, redirect to saved page
-      router.replace("/saved");
+      replace("/saved");
     }
     // Only run once on mount
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -663,15 +663,15 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
     <div className="w-full py-8">
       <header className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-3">
-          <Bookmark className="w-6 h-6" />
+          <Bookmark className="size-6" />
           <h1 className="text-2xl font-bold tracking-tight">habu</h1>
         </div>
         <div className="flex items-center gap-2">
           <LinkButton href="/search" variant="ghost" size="icon">
-            <Search className="w-5 h-5" />
+            <Search className="size-5" />
           </LinkButton>
           <LinkButton href="/settings" variant="ghost" size="icon">
-            <Settings className="w-5 h-5" />
+            <Settings className="size-5" />
           </LinkButton>
         </div>
       </header>
@@ -679,7 +679,7 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
         {/* Status messages */}
         {!isOnline && (
           <div className="flex items-center gap-2 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-md text-sm">
-            <WifiOff className="w-4 h-4 text-yellow-600" />
+            <WifiOff className="size-4 text-yellow-600" />
             <span className="text-yellow-800 dark:text-yellow-200">
               Offline - bookmarks will sync when online
             </span>
@@ -688,12 +688,9 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
 
         {isOnline && !hasHatena && (
           <div className="flex items-center gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-md text-sm">
-            <AlertCircle className="w-4 h-4 text-blue-600" />
+            <AlertCircle className="size-4 text-blue-600" />
             <span className="text-blue-800 dark:text-blue-200">
-              <button
-                onClick={() => router.push("/settings")}
-                className="underline hover:no-underline"
-              >
+              <button onClick={() => push("/settings")} className="underline hover:no-underline">
                 Connect to Hatena
               </button>{" "}
               to sync bookmarks
@@ -706,7 +703,7 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
           <Field data-invalid={urlError ? true : undefined}>
             <FieldLabel htmlFor="url" className="items-center">
               URL
-              {isCheckingBookmark && <Loader2 className="w-3 h-3 animate-spin" />}
+              {isCheckingBookmark && <Loader2 className="size-3 animate-spin" />}
             </FieldLabel>
             <InputGroup>
               <InputGroupInput
@@ -724,7 +721,7 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
           <Field>
             <FieldLabel htmlFor="title" className="items-center">
               Title
-              {isFetchingTitle && <Loader2 className="w-3 h-3 animate-spin" />}
+              {isFetchingTitle && <Loader2 className="size-3 animate-spin" />}
             </FieldLabel>
             <InputGroup data-disabled={isFetchingTitle ? true : undefined}>
               <InputGroupInput
@@ -764,7 +761,7 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
             onClick={() => setShowContext(!showContext)}
             className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
           >
-            {showContext ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            {showContext ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
             <span>Add context for AI generation</span>
           </button>
           {showContext && (
@@ -808,7 +805,7 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
               {/* AI Generated Summary */}
               <div>
                 <div className="font-medium flex items-center gap-2 mb-2">
-                  <Sparkles className="w-4 h-4 text-primary" />
+                  <Sparkles className="size-4 text-primary" />
                   Generated Preview
                 </div>
                 {generatedResult.tags && generatedResult.tags.length > 0 && (
@@ -872,7 +869,7 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
             <div className="p-3 bg-muted rounded-md text-sm">
               <details className="mt-1 group">
                 <summary className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground cursor-pointer list-none">
-                  <ChevronDown className="w-3 h-3 transition-transform group-open:rotate-180" />
+                  <ChevronDown className="size-3 transition-transform group-open:rotate-180" />
                   <span>Raw content (debug)</span>
                 </summary>
 
@@ -882,7 +879,7 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
                     <details className="rounded border border-border/50 bg-background/40 p-2">
                       <summary className="flex items-center justify-between text-xs font-medium cursor-pointer list-none">
                         <div className="flex items-center gap-1">
-                          <Info className="w-3 h-3" />
+                          <Info className="size-3" />
                           Metadata
                         </div>
                         <button
@@ -897,7 +894,7 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
                           }}
                           className="text-muted-foreground hover:text-foreground"
                         >
-                          <Copy className="w-3 h-3" />
+                          <Copy className="size-3" />
                         </button>
                       </summary>
                       <div className="mt-2 bg-background p-2 rounded text-xs space-y-1">
@@ -952,7 +949,7 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
                     <details className="rounded border border-border/50 bg-background/40 p-2">
                       <summary className="flex items-center justify-between text-xs font-medium cursor-pointer list-none">
                         <div className="flex items-center gap-1">
-                          <Info className="w-3 h-3" />
+                          <Info className="size-3" />
                           Generated summary ({generatedResult.summary.length} chars)
                         </div>
                         <button
@@ -964,7 +961,7 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
                           }}
                           className="text-muted-foreground hover:text-foreground"
                         >
-                          <Copy className="w-3 h-3" />
+                          <Copy className="size-3" />
                         </button>
                       </summary>
                       <ScrollArea className="mt-2 max-h-48 rounded bg-background">
@@ -980,7 +977,7 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
                     <details className="rounded border border-border/50 bg-background/40 p-2">
                       <summary className="flex items-center justify-between text-xs font-medium cursor-pointer list-none">
                         <div className="flex items-center gap-1">
-                          <Info className="w-3 h-3" />
+                          <Info className="size-3" />
                           Generated tags ({generatedResult.tags.length} tags)
                         </div>
                         <button
@@ -992,7 +989,7 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
                           }}
                           className="text-muted-foreground hover:text-foreground"
                         >
-                          <Copy className="w-3 h-3" />
+                          <Copy className="size-3" />
                         </button>
                       </summary>
                       <div className="mt-2 bg-background p-2 rounded text-xs flex flex-wrap gap-1">
@@ -1010,7 +1007,7 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
                     <details className="rounded border border-border/50 bg-background/40 p-2">
                       <summary className="flex items-center justify-between text-xs font-medium cursor-pointer list-none">
                         <div className="flex items-center gap-1">
-                          <Info className="w-3 h-3" />
+                          <Info className="size-3" />
                           Web Search Context
                         </div>
                         <button
@@ -1022,7 +1019,7 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
                           }}
                           className="text-muted-foreground hover:text-foreground"
                         >
-                          <Copy className="w-3 h-3" />
+                          <Copy className="size-3" />
                         </button>
                       </summary>
                       <ScrollArea className="mt-2 max-h-48 rounded bg-background">
@@ -1038,7 +1035,7 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
                     <details className="rounded border border-border/50 bg-background/40 p-2">
                       <summary className="flex items-center justify-between text-xs font-medium cursor-pointer list-none">
                         <div className="flex items-center gap-1">
-                          <FileText className="w-3 h-3" />
+                          <FileText className="size-3" />
                           Markdown ({generatedResult.markdown.length.toLocaleString()} chars)
                         </div>
                         <button
@@ -1050,7 +1047,7 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
                           }}
                           className="text-muted-foreground hover:text-foreground"
                         >
-                          <Copy className="w-3 h-3" />
+                          <Copy className="size-3" />
                         </button>
                       </summary>
                       <ScrollArea className="mt-2 max-h-64 rounded bg-background">
@@ -1063,7 +1060,7 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
                     <details className="rounded border border-yellow-200/60 bg-yellow-50/60 dark:border-yellow-900/50 dark:bg-yellow-900/20 p-2">
                       <summary className="flex items-center justify-between text-xs font-medium cursor-pointer list-none text-yellow-700 dark:text-yellow-200">
                         <div className="flex items-center gap-1">
-                          <AlertCircle className="w-3 h-3" />
+                          <AlertCircle className="size-3" />
                           Markdown fetch error
                         </div>
                         <button
@@ -1075,7 +1072,7 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
                           }}
                           className="text-yellow-600 hover:text-yellow-900 dark:text-yellow-200 dark:hover:text-yellow-100"
                         >
-                          <Copy className="w-3 h-3" />
+                          <Copy className="size-3" />
                         </button>
                       </summary>
                       <ScrollArea className="mt-2 max-h-24 rounded">
@@ -1101,12 +1098,12 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
           >
             {isGenerating ? (
               <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                <Loader2 className="size-4 mr-2 animate-spin" />
                 Generating...
               </>
             ) : (
               <>
-                <Sparkles className="w-4 h-4 mr-2" />
+                <Sparkles className="size-4 mr-2" />
                 Generate
               </>
             )}
@@ -1120,7 +1117,7 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
           >
             {isSaving ? (
               <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                <Loader2 className="size-4 mr-2 animate-spin" />
                 Saving...
               </>
             ) : (
@@ -1135,7 +1132,7 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
-              <Pencil className="w-5 h-5" />
+              <Pencil className="size-5" />
               Bookmark already exists
             </AlertDialogTitle>
             <AlertDialogDescription asChild>
@@ -1168,7 +1165,7 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
             <AlertDialogAction
               onClick={() => {
                 // Use the input URL directly, as API response may not include url field
-                router.push(`/bookmarks/detail?url=${encodeURIComponent(url)}`);
+                push(`/bookmarks/detail?url=${encodeURIComponent(url)}`);
               }}
             >
               Edit existing

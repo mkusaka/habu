@@ -132,9 +132,9 @@ function BookmarkDetailLoading() {
         <Skeleton className="h-3.5 w-8" /> {/* "URL" label: text-sm leading-none */}
         <div className="flex items-center gap-2 p-2 bg-muted rounded-md">
           <Skeleton className="h-5 flex-1" /> {/* URL text: text-sm */}
-          <Skeleton className="h-4 w-4" /> {/* Copy icon */}
-          <Skeleton className="h-4 w-4" /> {/* ExternalLink icon */}
-          <Skeleton className="h-4 w-4" /> {/* Bookmark icon */}
+          <Skeleton className="size-4" /> {/* Copy icon */}
+          <Skeleton className="size-4" /> {/* ExternalLink icon */}
+          <Skeleton className="size-4" /> {/* Bookmark icon */}
         </div>
       </div>
       {/* Title Display skeleton */}
@@ -162,7 +162,7 @@ function BookmarkDetailLoading() {
       </div>
       {/* Context toggle skeleton */}
       <div className="flex items-center gap-2">
-        <Skeleton className="h-4 w-4" /> {/* Chevron icon */}
+        <Skeleton className="size-4" /> {/* Chevron icon */}
         <Skeleton className="h-3.5 w-44" /> {/* "Add context...": text-sm */}
       </div>
       {/* Bookmarked at skeleton */}
@@ -205,7 +205,7 @@ async function BookmarkDetailContent({
           <AlertDescription>{result.error}</AlertDescription>
         </Alert>
         <LinkButton href={backHref} variant="outline" className="w-full">
-          <ArrowLeft className="w-4 h-4 mr-2" />
+          <ArrowLeft className="size-4 mr-2" />
           Back to Bookmarks
         </LinkButton>
       </div>
@@ -233,7 +233,7 @@ async function BookmarkDetailContent({
             className="text-muted-foreground hover:text-foreground"
             title="Open page"
           >
-            <ExternalLink className="w-4 h-4" />
+            <ExternalLink className="size-4" />
           </a>
           <a
             href={`https://b.hatena.ne.jp/entry/${bookmarkUrl.startsWith("https://") ? "s/" + bookmarkUrl.slice(8) : bookmarkUrl}`}
@@ -242,7 +242,7 @@ async function BookmarkDetailContent({
             className="text-muted-foreground hover:text-foreground"
             title="View on Hatena Bookmark"
           >
-            <Bookmark className="w-4 h-4" />
+            <Bookmark className="size-4" />
           </a>
         </div>
       </Field>
@@ -265,7 +265,7 @@ async function BookmarkDetailContent({
       {/* Navigation */}
       <div className="pt-2">
         <LinkButton href={backHref} variant="outline" className="w-full" size="sm">
-          <ArrowLeft className="w-4 h-4 mr-2" />
+          <ArrowLeft className="size-4 mr-2" />
           Back to Bookmarks
         </LinkButton>
       </div>
@@ -287,11 +287,11 @@ export default async function BookmarkDetailPage({ searchParams }: BookmarkDetai
     <div className="w-full py-8">
       <header className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-3">
-          <Bookmark className="w-6 h-6" />
+          <Bookmark className="size-6" />
           <h1 className="text-2xl font-bold tracking-tight">Edit Bookmark</h1>
         </div>
         <LinkButton href="/" variant="ghost" size="icon" aria-label="Go Home">
-          <Home className="w-5 h-5" />
+          <Home className="size-5" />
         </LinkButton>
       </header>
       <Suspense

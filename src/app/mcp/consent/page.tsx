@@ -84,7 +84,7 @@ export default async function ConsentPage({ searchParams }: ConsentPageProps) {
       <Card className="max-w-md mx-auto mt-8">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-destructive">
-            <AlertTriangle className="w-5 h-5" />
+            <AlertTriangle className="size-5" />
             Invalid Request
           </CardTitle>
         </CardHeader>
@@ -124,7 +124,7 @@ export default async function ConsentPage({ searchParams }: ConsentPageProps) {
     <Card className="max-w-md mx-auto mt-8">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <ShieldCheck className="w-5 h-5 text-primary" />
+          <ShieldCheck className="size-5 text-primary" />
           Authorization Request
         </CardTitle>
         <CardDescription>
@@ -150,7 +150,7 @@ export default async function ConsentPage({ searchParams }: ConsentPageProps) {
               const Icon = info.icon;
               return (
                 <li key={scopeName} className="flex items-start gap-3">
-                  <Icon className="w-5 h-5 text-muted-foreground mt-0.5" />
+                  <Icon className="size-5 text-muted-foreground mt-0.5" />
                   <div>
                     <p className="text-sm font-medium">{info.label}</p>
                     <p className="text-xs text-muted-foreground">{info.description}</p>

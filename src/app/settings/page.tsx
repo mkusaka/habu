@@ -51,11 +51,11 @@ async function SettingsContent({ searchParams }: SettingsContentProps) {
       <ToastHandler error={params.error} success={params.success} />
       <header className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-3">
-          <Settings className="w-6 h-6" />
+          <Settings className="size-6" />
           <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
         </div>
         <LinkButton variant="ghost" size="icon" href="/">
-          <Home className="w-5 h-5" />
+          <Home className="size-5" />
         </LinkButton>
       </header>
       <div className="space-y-8">
@@ -65,12 +65,12 @@ async function SettingsContent({ searchParams }: SettingsContentProps) {
           <div className="flex items-center gap-2 mb-3">
             {hasHatena ? (
               <>
-                <CheckCircle2 className="w-5 h-5 text-green-500" />
+                <CheckCircle2 className="size-5 text-green-500" />
                 <span className="text-sm">Connected</span>
               </>
             ) : (
               <>
-                <AlertCircle className="w-5 h-5 text-yellow-500" />
+                <AlertCircle className="size-5 text-yellow-500" />
                 <span className="text-sm">Not connected</span>
               </>
             )}
@@ -81,7 +81,7 @@ async function SettingsContent({ searchParams }: SettingsContentProps) {
                 Connect your Hatena account to save bookmarks.
               </p>
               <OAuthButton url="/api/habu/oauth/start" size="sm">
-                <ExternalLink className="w-4 h-4 mr-2" />
+                <ExternalLink className="size-4 mr-2" />
                 Connect Hatena
               </OAuthButton>
             </>
@@ -93,7 +93,7 @@ async function SettingsContent({ searchParams }: SettingsContentProps) {
               </p>
               <div className="flex gap-2">
                 <OAuthButton url="/api/habu/oauth/start" variant="outline" size="sm">
-                  <ExternalLink className="w-4 h-4 mr-2" />
+                  <ExternalLink className="size-4 mr-2" />
                   Reconnect
                 </OAuthButton>
                 <ActionButton action={disconnectHatena} variant="destructive" size="sm">
@@ -136,11 +136,11 @@ function SettingsLoading() {
     <div className="w-full py-8">
       <header className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-3">
-          <Settings className="w-6 h-6" />
+          <Settings className="size-6" />
           <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
         </div>
         <LinkButton variant="ghost" size="icon" href="/">
-          <Home className="w-5 h-5" />
+          <Home className="size-5" />
         </LinkButton>
       </header>
       <div className="space-y-8">
@@ -148,7 +148,7 @@ function SettingsLoading() {
         <div>
           <h3 className="text-sm font-medium mb-2">Hatena Bookmark</h3>
           <div className="flex items-center gap-2 mb-3">
-            <Skeleton className="h-5 w-5 rounded-full" />
+            <Skeleton className="size-5 rounded-full" />
             <Skeleton className="h-4 w-24" />
           </div>
           <p className="text-sm text-muted-foreground mb-3">
@@ -191,7 +191,7 @@ function SettingsLoading() {
             {/* Notifications - icon + label */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Skeleton className="w-4 h-4 rounded" />
+                <Skeleton className="size-4 rounded" />
                 <Skeleton className="h-4 w-32" />
               </div>
               <Skeleton className="h-5 w-9 rounded-full" />

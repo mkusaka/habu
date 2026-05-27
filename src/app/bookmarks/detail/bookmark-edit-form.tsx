@@ -74,7 +74,7 @@ export function BookmarkEditForm({
   initialComment,
   bookmarkedAt,
 }: BookmarkEditFormProps) {
-  const router = useRouter();
+  const { push } = useRouter();
   const [comment, setComment] = useState(initialComment);
   const [context, setContext] = useState("");
   const [showContext, setShowContext] = useState(false);
@@ -83,7 +83,7 @@ export function BookmarkEditForm({
   const [isDeleting, setIsDeleting] = useState(false);
   const [generatedResult, setGeneratedResult] = useState<GeneratedResult | null>(null);
   const [workflowRunId, setWorkflowRunId] = useState<string | null>(null);
-  const [workflowSteps, setWorkflowSteps] = useState<Record<string, WorkflowStepState>>(
+  const [workflowSteps, setWorkflowSteps] = useState<Record<string, WorkflowStepState>>(() =>
     initBookmarkSuggestionSteps(),
   );
 
@@ -384,7 +384,7 @@ export function BookmarkEditForm({
       }
 
       toast.success("Bookmark deleted!");
-      router.push("/bookmarks");
+      push("/bookmarks");
     } catch (error) {
       toast.error("Delete failed", {
         description: error instanceof Error ? error.message : "Unknown error",
@@ -460,7 +460,7 @@ export function BookmarkEditForm({
           onClick={() => setShowContext(!showContext)}
           className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
         >
-          {showContext ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          {showContext ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
           <span>Add context for AI generation</span>
         </button>
         {showContext && (
@@ -499,7 +499,7 @@ export function BookmarkEditForm({
           <div className="p-3 bg-muted rounded-md space-y-3 text-sm">
             <div>
               <div className="font-medium flex items-center gap-2 mb-2">
-                <Sparkles className="w-4 h-4 text-primary" />
+                <Sparkles className="size-4 text-primary" />
                 Generated Preview
               </div>
               {generatedResult.tags && generatedResult.tags.length > 0 && (
@@ -555,7 +555,7 @@ export function BookmarkEditForm({
           <div className="p-3 bg-muted rounded-md text-sm">
             <details className="mt-1 group">
               <summary className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground cursor-pointer list-none">
-                <ChevronDown className="w-3 h-3 transition-transform group-open:rotate-180" />
+                <ChevronDown className="size-3 transition-transform group-open:rotate-180" />
                 <span>Raw content (debug)</span>
               </summary>
 
@@ -565,7 +565,7 @@ export function BookmarkEditForm({
                   <details className="rounded border border-border/50 bg-background/40 p-2">
                     <summary className="flex items-center justify-between text-xs font-medium cursor-pointer list-none">
                       <div className="flex items-center gap-1">
-                        <Info className="w-3 h-3" />
+                        <Info className="size-3" />
                         Metadata
                       </div>
                       <button
@@ -577,7 +577,7 @@ export function BookmarkEditForm({
                         }}
                         className="text-muted-foreground hover:text-foreground"
                       >
-                        <Copy className="w-3 h-3" />
+                        <Copy className="size-3" />
                       </button>
                     </summary>
                     <div className="mt-2 bg-background p-2 rounded text-xs space-y-1">
@@ -632,7 +632,7 @@ export function BookmarkEditForm({
                   <details className="rounded border border-border/50 bg-background/40 p-2">
                     <summary className="flex items-center justify-between text-xs font-medium cursor-pointer list-none">
                       <div className="flex items-center gap-1">
-                        <Info className="w-3 h-3" />
+                        <Info className="size-3" />
                         Generated summary ({generatedResult.summary.length} chars)
                       </div>
                       <button
@@ -644,7 +644,7 @@ export function BookmarkEditForm({
                         }}
                         className="text-muted-foreground hover:text-foreground"
                       >
-                        <Copy className="w-3 h-3" />
+                        <Copy className="size-3" />
                       </button>
                     </summary>
                     <ScrollArea className="mt-2 max-h-48 rounded bg-background">
@@ -660,7 +660,7 @@ export function BookmarkEditForm({
                   <details className="rounded border border-border/50 bg-background/40 p-2">
                     <summary className="flex items-center justify-between text-xs font-medium cursor-pointer list-none">
                       <div className="flex items-center gap-1">
-                        <Info className="w-3 h-3" />
+                        <Info className="size-3" />
                         Generated tags ({generatedResult.tags.length} tags)
                       </div>
                       <button
@@ -672,7 +672,7 @@ export function BookmarkEditForm({
                         }}
                         className="text-muted-foreground hover:text-foreground"
                       >
-                        <Copy className="w-3 h-3" />
+                        <Copy className="size-3" />
                       </button>
                     </summary>
                     <div className="mt-2 bg-background p-2 rounded text-xs flex flex-wrap gap-1">
@@ -690,7 +690,7 @@ export function BookmarkEditForm({
                   <details className="rounded border border-border/50 bg-background/40 p-2">
                     <summary className="flex items-center justify-between text-xs font-medium cursor-pointer list-none">
                       <div className="flex items-center gap-1">
-                        <Info className="w-3 h-3" />
+                        <Info className="size-3" />
                         Web Search Context
                       </div>
                       <button
@@ -702,7 +702,7 @@ export function BookmarkEditForm({
                         }}
                         className="text-muted-foreground hover:text-foreground"
                       >
-                        <Copy className="w-3 h-3" />
+                        <Copy className="size-3" />
                       </button>
                     </summary>
                     <ScrollArea className="mt-2 max-h-48 rounded bg-background">
@@ -718,7 +718,7 @@ export function BookmarkEditForm({
                   <details className="rounded border border-border/50 bg-background/40 p-2">
                     <summary className="flex items-center justify-between text-xs font-medium cursor-pointer list-none">
                       <div className="flex items-center gap-1">
-                        <FileText className="w-3 h-3" />
+                        <FileText className="size-3" />
                         Markdown ({generatedResult.markdown.length.toLocaleString()} chars)
                       </div>
                       <button
@@ -730,7 +730,7 @@ export function BookmarkEditForm({
                         }}
                         className="text-muted-foreground hover:text-foreground"
                       >
-                        <Copy className="w-3 h-3" />
+                        <Copy className="size-3" />
                       </button>
                     </summary>
                     <ScrollArea className="mt-2 max-h-64 rounded bg-background">
@@ -743,7 +743,7 @@ export function BookmarkEditForm({
                   <details className="rounded border border-yellow-200/60 bg-yellow-50/60 dark:border-yellow-900/50 dark:bg-yellow-900/20 p-2">
                     <summary className="flex items-center justify-between text-xs font-medium cursor-pointer list-none text-yellow-700 dark:text-yellow-200">
                       <div className="flex items-center gap-1">
-                        <AlertCircle className="w-3 h-3" />
+                        <AlertCircle className="size-3" />
                         Markdown fetch error
                       </div>
                       <button
@@ -755,7 +755,7 @@ export function BookmarkEditForm({
                         }}
                         className="text-yellow-600 hover:text-yellow-900 dark:text-yellow-200 dark:hover:text-yellow-100"
                       >
-                        <Copy className="w-3 h-3" />
+                        <Copy className="size-3" />
                       </button>
                     </summary>
                     <ScrollArea className="mt-2 max-h-24 rounded">
@@ -781,12 +781,12 @@ export function BookmarkEditForm({
         >
           {isGenerating ? (
             <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              <Loader2 className="size-4 mr-2 animate-spin" />
               Generating...
             </>
           ) : (
             <>
-              <Sparkles className="w-4 h-4 mr-2" />
+              <Sparkles className="size-4 mr-2" />
               Generate
             </>
           )}
@@ -800,7 +800,7 @@ export function BookmarkEditForm({
         >
           {isUpdating ? (
             <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              <Loader2 className="size-4 mr-2 animate-spin" />
               Updating...
             </>
           ) : (
@@ -816,7 +816,7 @@ export function BookmarkEditForm({
         className="w-full"
         size="lg"
       >
-        <MessageCircle className="w-4 h-4 mr-2" />
+        <MessageCircle className="size-4 mr-2" />
         Open Search Page
       </LinkButton>
 
@@ -826,12 +826,12 @@ export function BookmarkEditForm({
           <Button variant="destructive" size="lg" className="w-full" disabled={isDeleting}>
             {isDeleting ? (
               <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                <Loader2 className="size-4 mr-2 animate-spin" />
                 Deleting...
               </>
             ) : (
               <>
-                <Trash2 className="w-4 h-4 mr-2" />
+                <Trash2 className="size-4 mr-2" />
                 Delete Bookmark
               </>
             )}

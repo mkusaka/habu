@@ -93,7 +93,7 @@ export function SearchPanel({
           </Field>
         </FieldGroup>
         <Button type="submit" className="w-full">
-          <Plus className="mr-2 h-4 w-4" />
+          <Plus className="mr-2 size-4" />
           {submitLabel}
         </Button>
       </form>
@@ -103,7 +103,7 @@ export function SearchPanel({
           <div className="px-1 pb-2 text-xs font-medium text-muted-foreground">{historyTitle}</div>
           {visibleHistory.length === 0 ? (
             <Card className="gap-0 py-0">
-              <CardContent className="px-3 py-3">
+              <CardContent className="p-3">
                 <Empty className="gap-4 border-none p-4 md:p-4">
                   <EmptyHeader className="gap-1.5">
                     <EmptyMedia variant="icon">

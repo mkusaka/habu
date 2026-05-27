@@ -163,7 +163,7 @@ export function TagMappingGraph({
         ref={containerRef}
         className="relative w-max min-w-full bg-muted/20 p-3 md:mx-auto md:w-full md:min-w-0 md:max-w-[860px] md:p-4"
       >
-        <svg className="pointer-events-none absolute inset-0 h-full w-full">
+        <svg className="pointer-events-none absolute inset-0 size-full">
           {edges.map((edge) => (
             <path
               key={`${edge.sourceTag}-${edge.targetKey}`}

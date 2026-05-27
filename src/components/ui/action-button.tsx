@@ -11,14 +11,14 @@ interface ActionButtonProps extends Omit<ComponentProps<typeof Button>, "onClick
 export function ActionButton({ action, children, disabled, ...props }: ActionButtonProps) {
   const [isPending, startTransition] = useTransition();
 
-  const handleClick = () => {
+  const runAction = () => {
     startTransition(async () => {
       await action();
     });
   };
 
   return (
-    <Button onClick={handleClick} disabled={disabled || isPending} {...props}>
+    <Button onClick={runAction} disabled={disabled || isPending} {...props}>
       {children}
     </Button>
   );

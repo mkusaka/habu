@@ -34,7 +34,7 @@ export function ThemeToggle() {
           onClick={() => setTheme("system")}
           disabled={!isClient}
         >
-          <Monitor className="w-4 h-4" />
+          <Monitor className="size-4" />
           System
         </Button>
         <Button
@@ -45,7 +45,7 @@ export function ThemeToggle() {
           onClick={() => setTheme("light")}
           disabled={!isClient}
         >
-          <Sun className="w-4 h-4" />
+          <Sun className="size-4" />
           Light
         </Button>
         <Button
@@ -56,7 +56,7 @@ export function ThemeToggle() {
           onClick={() => setTheme("dark")}
           disabled={!isClient}
         >
-          <Moon className="w-4 h-4" />
+          <Moon className="size-4" />
           Dark
         </Button>
       </div>

@@ -19,7 +19,7 @@ interface BulkRegenerateButtonProps {
 }
 
 export function BulkRegenerateButton({ page, tags }: BulkRegenerateButtonProps) {
-  const router = useRouter();
+  const { refresh } = useRouter();
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [bookmarkUrls, setBookmarkUrls] = useState<string[]>([]);
 
@@ -92,7 +92,7 @@ export function BulkRegenerateButton({ page, tags }: BulkRegenerateButtonProps) 
         toast.warning(`Queued ${successCount}, failed ${failCount}`);
       }
 
-      router.refresh();
+      refresh();
     } catch (error) {
       console.error("Bulk regenerate failed:", error);
       toast.error("Bulk regeneration failed");
@@ -106,9 +106,9 @@ export function BulkRegenerateButton({ page, tags }: BulkRegenerateButtonProps) 
       <TooltipTrigger asChild>
         <Button variant="ghost" size="icon" onClick={handleBulkRegenerate} disabled={isLoading}>
           {isLoading ? (
-            <Loader2 className="w-5 h-5 animate-spin" />
+            <Loader2 className="size-5 animate-spin" />
           ) : (
-            <Sparkles className="w-5 h-5" />
+            <Sparkles className="size-5" />
           )}
         </Button>
       </TooltipTrigger>

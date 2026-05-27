@@ -24,7 +24,7 @@ function formatUpdatedAt(timestamp: Date): string {
 }
 
 export function SearchHistoriesClient({ historyThreads }: SearchHistoriesClientProps) {
-  const router = useRouter();
+  const { push } = useRouter();
 
   return (
     <SearchPageShell
@@ -38,11 +38,11 @@ export function SearchHistoriesClient({ historyThreads }: SearchHistoriesClientP
       actions={
         <>
           <Link href="/search" className={cn(buttonVariants({ variant: "ghost", size: "icon" }))}>
-            <Search className="h-4 w-4" />
+            <Search className="size-4" />
             <span className="sr-only">Search</span>
           </Link>
           <Link href="/" className={cn(buttonVariants({ variant: "ghost", size: "icon" }))}>
-            <Home className="h-4 w-4" />
+            <Home className="size-4" />
             <span className="sr-only">Home</span>
           </Link>
         </>
@@ -52,7 +52,7 @@ export function SearchHistoriesClient({ historyThreads }: SearchHistoriesClientP
         <Card className="border-dashed">
           <CardContent className="flex flex-col items-center gap-4 py-10 text-center">
             <div className="rounded-full bg-muted p-3">
-              <MessageSquare className="h-5 w-5 text-muted-foreground" />
+              <MessageSquare className="size-5 text-muted-foreground" />
             </div>
             <div className="space-y-1">
               <p className="text-sm font-medium">No saved conversations yet.</p>
@@ -72,10 +72,10 @@ export function SearchHistoriesClient({ historyThreads }: SearchHistoriesClientP
               key={thread.id}
               type="button"
               className="w-full text-left"
-              onClick={() => router.push(`/search/${thread.id}`)}
+              onClick={() => push(`/search/${thread.id}`)}
             >
               <Card className="h-full gap-0 overflow-hidden py-0 transition-colors hover:bg-accent">
-                <CardHeader className="gap-1 px-4 py-4">
+                <CardHeader className="gap-1 p-4">
                   <CardTitle className="line-clamp-1 text-base">
                     {thread.title || thread.query || thread.url || "Untitled Search"}
                   </CardTitle>

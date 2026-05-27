@@ -48,11 +48,7 @@ export function SyncButton() {
           onClick={handleSync}
           disabled={syncing || swAvailable === false}
         >
-          {syncing ? (
-            <Loader2 className="w-5 h-5 animate-spin" />
-          ) : (
-            <RefreshCw className="w-5 h-5" />
-          )}
+          {syncing ? <Loader2 className="size-5 animate-spin" /> : <RefreshCw className="size-5" />}
         </Button>
       </TooltipTrigger>
       <TooltipContent>

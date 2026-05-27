@@ -9,12 +9,12 @@ interface OAuthButtonProps extends Omit<ComponentProps<typeof Button>, "onClick"
 }
 
 export function OAuthButton({ url, children, ...props }: OAuthButtonProps) {
-  const handleClick = () => {
+  const startOAuth = () => {
     window.location.href = url;
   };
 
   return (
-    <Button onClick={handleClick} {...props}>
+    <Button onClick={startOAuth} {...props}>
       {children}
     </Button>
   );

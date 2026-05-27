@@ -70,7 +70,7 @@ export function TagCleanupManager() {
       <div className="rounded-lg border p-4">
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex items-center gap-2">
-            <WandSparkles className="w-4 h-4 text-muted-foreground" />
+            <WandSparkles className="size-4 text-muted-foreground" />
             <h2 className="font-medium">Cleanup Suggestions</h2>
           </div>
           <Button
@@ -82,12 +82,12 @@ export function TagCleanupManager() {
           >
             {isGeneratingCandidates ? (
               <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                <Loader2 className="size-4 mr-2 animate-spin" />
                 Generating...
               </>
             ) : (
               <>
-                <Sparkles className="w-4 h-4 mr-2" />
+                <Sparkles className="size-4 mr-2" />
                 Generate suggestions
               </>
             )}

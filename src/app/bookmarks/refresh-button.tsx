@@ -7,12 +7,12 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { RefreshCw } from "lucide-react";
 
 export function RefreshButton() {
-  const router = useRouter();
+  const { refresh } = useRouter();
   const [isPending, startTransition] = useTransition();
 
   const handleRefresh = () => {
     startTransition(() => {
-      router.refresh();
+      refresh();
     });
   };
 
@@ -26,7 +26,7 @@ export function RefreshButton() {
           disabled={isPending}
           aria-label="Refresh"
         >
-          <RefreshCw className={`w-4 h-4 ${isPending ? "animate-spin" : ""}`} />
+          <RefreshCw className={`size-4 ${isPending ? "animate-spin" : ""}`} />
         </Button>
       </TooltipTrigger>
       <TooltipContent>Refresh</TooltipContent>

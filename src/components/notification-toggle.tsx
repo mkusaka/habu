@@ -42,7 +42,7 @@ export function NotificationToggle() {
       <Field orientation="horizontal">
         <FieldContent>
           <div className="flex items-center gap-2">
-            <Skeleton className="w-4 h-4 rounded" />
+            <Skeleton className="size-4 rounded" />
             <Skeleton className="h-3.5 w-28" />
           </div>
         </FieldContent>
@@ -64,9 +64,9 @@ export function NotificationToggle() {
       <FieldContent>
         <FieldLabel htmlFor="notification-toggle" className="items-center">
           {isEnabled ? (
-            <Bell className="w-4 h-4 text-muted-foreground" />
+            <Bell className="size-4 text-muted-foreground" />
           ) : (
-            <BellOff className="w-4 h-4 text-muted-foreground" />
+            <BellOff className="size-4 text-muted-foreground" />
           )}
           Error notifications
         </FieldLabel>

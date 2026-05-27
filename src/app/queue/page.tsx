@@ -8,16 +8,16 @@ export default async function QueuePage() {
   const hasHatena = await getHatenaConnectionStatus();
 
   return (
-    <div className="h-full w-full py-8">
+    <div className="size-full py-8">
       <header className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-3">
-          <ListTodo className="w-6 h-6" />
+          <ListTodo className="size-6" />
           <h1 className="text-2xl font-bold tracking-tight">Queue</h1>
         </div>
         <div className="flex items-center gap-1">
           <SyncButton />
           <LinkButton href="/" variant="ghost" size="icon">
-            <Home className="w-5 h-5" />
+            <Home className="size-5" />
           </LinkButton>
         </div>
       </header>
@@ -28,7 +28,7 @@ export default async function QueuePage() {
         {/* Connect to Hatena (only when not connected) */}
         {!hasHatena && (
           <LinkButton href="/settings" variant="outline" size="sm" className="w-full">
-            <Settings className="w-4 h-4 mr-2" />
+            <Settings className="size-4 mr-2" />
             Connect to Hatena Bookmark
           </LinkButton>
         )}

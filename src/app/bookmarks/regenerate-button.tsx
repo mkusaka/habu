@@ -16,7 +16,7 @@ interface RegenerateButtonProps {
 }
 
 export function RegenerateButton({ url, title }: RegenerateButtonProps) {
-  const router = useRouter();
+  const { refresh } = useRouter();
   const cleanedUrl = cleanUrl(url);
 
   // Watch IndexedDB for this URL's queue status (use cleaned URL to match SW's storage)
@@ -39,7 +39,7 @@ export function RegenerateButton({ url, title }: RegenerateButtonProps) {
       if (result.success) {
         toast.success(result.queued ? "Queued for regeneration" : "Regenerated!");
         // Refresh the page to show updated data
-        router.refresh();
+        refresh();
       } else {
         toast.error(result.error || "Regenerate failed");
       }
@@ -60,9 +60,9 @@ export function RegenerateButton({ url, title }: RegenerateButtonProps) {
           className="cursor-pointer text-foreground/80 hover:text-accent-foreground"
         >
           {isLoading ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
+            <Loader2 className="size-4 animate-spin" />
           ) : (
-            <Sparkles className="w-4 h-4" />
+            <Sparkles className="size-4" />
           )}
         </Button>
       </TooltipTrigger>

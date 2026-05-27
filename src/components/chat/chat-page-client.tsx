@@ -40,7 +40,7 @@ function ChatConversation({
   initialMessages: UIMessage[];
   initialPrompt?: string;
 }) {
-  const router = useRouter();
+  const { refresh } = useRouter();
   const [input, setInput] = useState("");
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editingText, setEditingText] = useState("");
@@ -85,7 +85,7 @@ function ChatConversation({
     messages: initialMessages,
     transport,
     onFinish: () => {
-      router.refresh();
+      refresh();
     },
   });
 
@@ -195,7 +195,7 @@ export function ChatPageClient({
   title,
   error,
 }: ChatPageClientProps) {
-  const router = useRouter();
+  const { push } = useRouter();
   const [isSearchPanelOpen, setIsSearchPanelOpen] = useState(
     () => !selectedUrl && !initialQuery && initialMessages.length === 0,
   );
@@ -214,7 +214,7 @@ export function ChatPageClient({
     if (normalizedUrl) searchParams.set("url", normalizedUrl);
     setIsSearchPanelOpen(false);
     const suffix = searchParams.size > 0 ? `?${searchParams.toString()}` : "";
-    router.push(`/search/${params.sessionId}${suffix}`);
+    push(`/search/${params.sessionId}${suffix}`);
   };
 
   const handleStartSearch = (e: FormEvent<HTMLFormElement>) => {
@@ -228,7 +228,7 @@ export function ChatPageClient({
 
   const description = error ? (
     <div className="inline-flex items-center gap-2 rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-      <AlertCircle className="h-4 w-4" />
+      <AlertCircle className="size-4" />
       <span>{error}</span>
     </div>
   ) : selectedUrl ? (
@@ -256,7 +256,7 @@ export function ChatPageClient({
                 onClick={() => setIsSearchPanelOpen((open) => !open)}
                 aria-label={isSearchPanelOpen ? "Hide search options" : "Show search options"}
               >
-                <Menu className="h-4 w-4" />
+                <Menu className="size-4" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>
@@ -269,7 +269,7 @@ export function ChatPageClient({
                 href="/search/histories"
                 className={cn(buttonVariants({ variant: "ghost", size: "icon" }))}
               >
-                <History className="h-4 w-4" />
+                <History className="size-4" />
                 <span className="sr-only">Histories</span>
               </Link>
             </TooltipTrigger>
@@ -282,7 +282,7 @@ export function ChatPageClient({
                   href={`/bookmarks/detail?url=${encodeURIComponent(selectedUrl)}`}
                   className={cn(buttonVariants({ variant: "ghost", size: "icon" }))}
                 >
-                  <Bookmark className="h-4 w-4" />
+                  <Bookmark className="size-4" />
                   <span className="sr-only">Open Bookmark Detail</span>
                 </Link>
               </TooltipTrigger>
@@ -299,7 +299,7 @@ export function ChatPageClient({
                   className={cn(buttonVariants({ variant: "ghost", size: "icon" }))}
                   aria-label="Open Page"
                 >
-                  <ExternalLink className="h-4 w-4" />
+                  <ExternalLink className="size-4" />
                   <span className="sr-only">Open Page</span>
                 </a>
               </TooltipTrigger>

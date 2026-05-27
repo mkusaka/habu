@@ -34,7 +34,7 @@ export function SideNav() {
             isActive(href) ? "text-foreground" : "text-muted-foreground",
           )}
         >
-          <Icon className="w-5 h-5" />
+          <Icon className="size-5" />
           <span>{label}</span>
         </Link>
       ))}
@@ -64,7 +64,7 @@ export function BottomNav() {
               isActive(href) ? "text-foreground" : "text-muted-foreground hover:text-foreground",
             )}
           >
-            <Icon className="w-5 h-5" />
+            <Icon className="size-5" />
             <span>{label}</span>
           </Link>
         ))}

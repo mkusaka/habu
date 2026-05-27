@@ -20,12 +20,12 @@ export function WorkflowProgress({
     <div className="p-3 bg-muted rounded-md space-y-2 text-sm">
       <div className="flex items-center justify-between gap-2">
         <div className="font-medium flex items-center gap-2">
-          <FileText className="w-4 h-4" />
+          <FileText className="size-4" />
           Workflow progress
         </div>
         {isRunning && (
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Loader2 className="w-3 h-3 animate-spin" />
+            <Loader2 className="size-3 animate-spin" />
             <span>{runningLabel ?? "running"}</span>
           </div>
         )}
@@ -37,13 +37,13 @@ export function WorkflowProgress({
         {steps.map((step) => {
           const icon =
             step.status === "success" ? (
-              <CheckCircle2 className="w-4 h-4 text-green-600" />
+              <CheckCircle2 className="size-4 text-green-600" />
             ) : step.status === "failed" ? (
-              <XCircle className="w-4 h-4 text-red-600" />
+              <XCircle className="size-4 text-red-600" />
             ) : step.status === "running" || step.status === "waiting" ? (
-              <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+              <Loader2 className="size-4 animate-spin text-muted-foreground" />
             ) : (
-              <Circle className="w-4 h-4 text-muted-foreground" />
+              <Circle className="size-4 text-muted-foreground" />
             );
 
           return (

@@ -203,9 +203,9 @@ function BookmarkListLoading({ page, tags }: { page: number; tags: string[] }) {
               <div className="flex items-center gap-2">
                 <Skeleton className="h-4 flex-1" />
                 <div className="flex items-center gap-1 flex-shrink-0">
-                  <Skeleton className="h-6 w-6 rounded" />
-                  <Skeleton className="h-6 w-6 rounded" />
-                  <Skeleton className="h-6 w-6 rounded" />
+                  <Skeleton className="size-6 rounded" />
+                  <Skeleton className="size-6 rounded" />
+                  <Skeleton className="size-6 rounded" />
                 </div>
               </div>
               {/* Body skeleton */}
@@ -287,19 +287,19 @@ async function BookmarkList({ page, tags }: { page: number; tags: string[] }) {
                     href={bookmark.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-md text-foreground/80 transition-colors hover:bg-accent hover:text-accent-foreground"
+                    className="inline-flex size-9 items-center justify-center rounded-md text-foreground/80 transition-colors hover:bg-accent hover:text-accent-foreground"
                     title="Open page"
                   >
-                    <ExternalLink className="w-4 h-4" />
+                    <ExternalLink className="size-4" />
                   </a>
                   <a
                     href={`https://b.hatena.ne.jp/entry/${bookmark.url.startsWith("https://") ? "s/" + bookmark.url.slice(8) : bookmark.url}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-md text-foreground/80 transition-colors hover:bg-accent hover:text-accent-foreground"
+                    className="inline-flex size-9 items-center justify-center rounded-md text-foreground/80 transition-colors hover:bg-accent hover:text-accent-foreground"
                     title="View on Hatena Bookmark"
                   >
-                    <Bookmark className="w-4 h-4" />
+                    <Bookmark className="size-4" />
                   </a>
                 </div>
               </div>
@@ -402,10 +402,10 @@ export default async function BookmarksPage({ searchParams }: BookmarksPageProps
   const hasHatena = await getHatenaConnectionStatus();
 
   return (
-    <div className="h-full w-full py-8">
+    <div className="size-full py-8">
       <header className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-3">
-          <Bookmark className="w-6 h-6" />
+          <Bookmark className="size-6" />
           <h1 className="text-2xl font-bold tracking-tight">Bookmarks</h1>
         </div>
         <div className="flex items-center gap-1">
@@ -415,7 +415,7 @@ export default async function BookmarksPage({ searchParams }: BookmarksPageProps
                 href="/bookmarks/tags"
                 className={buttonVariants({ variant: "ghost", size: "icon" })}
               >
-                <Tags className="w-5 h-5" />
+                <Tags className="size-5" />
                 <span className="sr-only">Tag Cleanup</span>
               </Link>
             </TooltipTrigger>
@@ -427,7 +427,7 @@ export default async function BookmarksPage({ searchParams }: BookmarksPageProps
           <Tooltip>
             <TooltipTrigger asChild>
               <Link href="/search" className={buttonVariants({ variant: "ghost", size: "icon" })}>
-                <Search className="w-5 h-5" />
+                <Search className="size-5" />
                 <span className="sr-only">Search</span>
               </Link>
             </TooltipTrigger>
@@ -435,7 +435,7 @@ export default async function BookmarksPage({ searchParams }: BookmarksPageProps
           </Tooltip>
           <RefreshButton />
           <LinkButton href="/" variant="ghost" size="icon">
-            <Home className="w-5 h-5" />
+            <Home className="size-5" />
           </LinkButton>
         </div>
       </header>
@@ -460,7 +460,7 @@ export default async function BookmarksPage({ searchParams }: BookmarksPageProps
         {/* Connect to Hatena (only when not connected) */}
         {!hasHatena && (
           <LinkButton href="/settings" variant="outline" size="sm" className="w-full shrink-0">
-            <Settings className="w-4 h-4 mr-2" />
+            <Settings className="size-4 mr-2" />
             Connect to Hatena Bookmark
           </LinkButton>
         )}

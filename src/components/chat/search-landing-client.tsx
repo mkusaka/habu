@@ -72,7 +72,7 @@ function Composer({
         className,
       )}
     >
-      <CardContent className="space-y-3 px-4 py-4">
+      <CardContent className="space-y-3 p-4">
         {selectedBookmark ? (
           <Badge asChild variant="secondary" className="max-w-full px-3 py-1">
             <button
@@ -80,9 +80,9 @@ function Composer({
               onClick={onClearSelectedBookmark}
               className="inline-flex items-center gap-2 transition-colors hover:bg-accent"
             >
-              <Bookmark className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+              <Bookmark className="size-3.5 shrink-0 text-muted-foreground" />
               <span className="truncate">{selectedBookmark.title || selectedBookmark.url}</span>
-              <X className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+              <X className="size-3.5 shrink-0 text-muted-foreground" />
             </button>
           </Badge>
         ) : null}
@@ -105,7 +105,7 @@ function Composer({
             disabled={disabled}
             aria-label="Start search session"
           >
-            <Send className="h-4 w-4" />
+            <Send className="size-4" />
           </Button>
         </form>
 
@@ -118,7 +118,7 @@ function Composer({
 function SectionHeading({ icon: Icon, title }: { icon: typeof Clock3; title: string }) {
   return (
     <div className="flex items-center gap-2">
-      <Icon className="h-4 w-4 text-muted-foreground" />
+      <Icon className="size-4 text-muted-foreground" />
       <h2 className="text-sm font-medium">{title}</h2>
     </div>
   );
@@ -130,7 +130,7 @@ export function SearchLandingClient({
   selectedBookmark: initialSelectedBookmark,
   historyThreads,
 }: SearchLandingClientProps) {
-  const router = useRouter();
+  const { push } = useRouter();
   const [urlInput, setUrlInput] = useState(initialUrl ?? "");
   const [messageInput, setMessageInput] = useState("");
   const [selectedBookmark, setSelectedBookmark] = useState(initialSelectedBookmark);
@@ -149,7 +149,7 @@ export function SearchLandingClient({
     if (normalizedQuery) searchParams.set("q", normalizedQuery);
     if (normalizedUrl) searchParams.set("url", normalizedUrl);
     const suffix = searchParams.size > 0 ? `?${searchParams.toString()}` : "";
-    router.push(`/search/${params.sessionId}${suffix}`);
+    push(`/search/${params.sessionId}${suffix}`);
   };
 
   const suggestionCards = urlInput
@@ -213,7 +213,7 @@ export function SearchLandingClient({
             }
           >
             <Card className="h-full overflow-hidden gap-0 py-0 transition-colors hover:bg-accent">
-              <CardHeader className="min-w-0 gap-1 px-4 py-4">
+              <CardHeader className="min-w-0 gap-1 p-4">
                 <CardTitle className="line-clamp-2 text-sm leading-5">
                   {bookmark.title || bookmark.url}
                 </CardTitle>
@@ -223,7 +223,7 @@ export function SearchLandingClient({
               </CardHeader>
               <CardContent className="px-4 pb-4 pt-0">
                 <div className="flex items-start gap-2 text-xs text-muted-foreground">
-                  <ExternalLink className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                  <ExternalLink className="mt-0.5 size-3.5 shrink-0" />
                   <span className="min-w-0 break-all">{bookmark.url}</span>
                 </div>
               </CardContent>
@@ -247,7 +247,7 @@ export function SearchLandingClient({
                 href="/search/histories"
                 className={cn(buttonVariants({ variant: "ghost", size: "icon" }))}
               >
-                <History className="h-4 w-4" />
+                <History className="size-4" />
                 <span className="sr-only">Histories</span>
               </Link>
             </TooltipTrigger>
@@ -256,7 +256,7 @@ export function SearchLandingClient({
           <Tooltip>
             <TooltipTrigger asChild>
               <Link href="/" className={cn(buttonVariants({ variant: "ghost", size: "icon" }))}>
-                <Home className="h-4 w-4" />
+                <Home className="size-4" />
                 <span className="sr-only">Home</span>
               </Link>
             </TooltipTrigger>
@@ -288,7 +288,7 @@ export function SearchLandingClient({
               <SectionHeading icon={Bookmark} title="Selected Bookmark" />
               <button type="button" onClick={clearSelectedBookmark} className="w-full text-left">
                 <Card className="w-full gap-0 py-0 transition-colors hover:bg-accent">
-                  <CardContent className="px-4 py-4 text-left">
+                  <CardContent className="p-4 text-left">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <div className="truncate text-sm font-medium">
@@ -298,7 +298,7 @@ export function SearchLandingClient({
                           {selectedBookmark.url}
                         </div>
                       </div>
-                      <X className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                      <X className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
                     </div>
                     {selectedBookmark.tags.length > 0 ? (
                       <div className="mt-3 flex flex-wrap gap-1">
@@ -338,7 +338,7 @@ export function SearchLandingClient({
                     }
                   >
                     <Card className="h-full min-w-0 gap-0 overflow-hidden py-0 transition-colors hover:bg-accent">
-                      <CardContent className="min-w-0 break-words px-4 py-4 text-sm">
+                      <CardContent className="min-w-0 break-words p-4 text-sm">
                         {suggestion}
                       </CardContent>
                     </Card>

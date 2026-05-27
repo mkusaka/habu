@@ -31,7 +31,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
     return (
       <div className="mx-auto flex w-full max-w-xl flex-col items-center justify-center gap-4 py-16 text-center">
         <div className="inline-flex items-center gap-2 rounded-md border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-          <AlertCircle className="h-4 w-4" />
+          <AlertCircle className="size-4" />
           <span>You need to sign in to use page search.</span>
         </div>
         <LinkButton href="/" variant="outline">
@@ -46,7 +46,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
     return (
       <div className="mx-auto flex w-full max-w-xl flex-col items-center justify-center gap-4 py-16 text-center">
         <div className="inline-flex items-center gap-2 rounded-md border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-          <AlertCircle className="h-4 w-4" />
+          <AlertCircle className="size-4" />
           <span>Connect your Hatena account to use bookmark search.</span>
         </div>
         <LinkButton href="/settings" variant="outline">

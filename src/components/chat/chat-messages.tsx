@@ -502,7 +502,7 @@ function ChatMessage({
                 e.preventDefault();
                 onSaveEdit?.(message.id);
               }}
-              className="w-full max-w-full rounded-2xl border border-border/80 bg-card px-3 py-3 shadow-sm"
+              className="w-full max-w-full rounded-2xl border border-border/80 bg-card p-3 shadow-sm"
             >
               <Textarea
                 value={editingText ?? textContent}

@@ -227,7 +227,7 @@ export function CopyAllUrlsButton() {
 
   return (
     <Button variant="outline" onClick={handleCopyAllUrls}>
-      <Copy className="w-4 h-4 mr-2" />
+      <Copy className="size-4 mr-2" />
       Copy All URLs
     </Button>
   );
@@ -339,17 +339,17 @@ export function QueueList() {
 
   const getStatusIcon = (status: BookmarkQueue["status"], isChecking: boolean) => {
     if (isChecking) {
-      return <Loader2 className="w-5 h-5 text-yellow-500 animate-spin" />;
+      return <Loader2 className="size-5 text-yellow-500 animate-spin" />;
     }
     switch (status) {
       case "done":
-        return <CheckCircle2 className="w-5 h-5 text-green-500" />;
+        return <CheckCircle2 className="size-5 text-green-500" />;
       case "sending":
-        return <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />;
+        return <Loader2 className="size-5 text-blue-500 animate-spin" />;
       case "error":
-        return <AlertCircle className="w-5 h-5 text-red-500" />;
+        return <AlertCircle className="size-5 text-red-500" />;
       default:
-        return <Clock className="w-5 h-5 text-gray-500" />;
+        return <Clock className="size-5 text-gray-500" />;
     }
   };
 
@@ -375,12 +375,12 @@ export function QueueList() {
         <div className="w-full p-3 rounded-md border">
           {/* Header skeleton */}
           <div className="flex items-center gap-3">
-            <Skeleton className="w-5 h-5 rounded-full flex-shrink-0" />
+            <Skeleton className="size-5 rounded-full flex-shrink-0" />
             <Skeleton className="h-4 flex-1" />
             <div className="flex items-center gap-1 flex-shrink-0">
-              <Skeleton className="h-8 w-8 rounded" />
-              <Skeleton className="h-8 w-8 rounded" />
-              <Skeleton className="h-8 w-8 rounded" />
+              <Skeleton className="size-8 rounded" />
+              <Skeleton className="size-8 rounded" />
+              <Skeleton className="size-8 rounded" />
             </div>
           </div>
           {/* Body skeleton */}
@@ -456,9 +456,9 @@ export function QueueList() {
                               href={item.url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="inline-flex items-center justify-center h-9 w-9 rounded-md hover:bg-accent hover:text-accent-foreground"
+                              className="inline-flex items-center justify-center size-9 rounded-md hover:bg-accent hover:text-accent-foreground"
                             >
-                              <ExternalLink className="w-4 h-4" />
+                              <ExternalLink className="size-4" />
                             </a>
                           </TooltipTrigger>
                           <TooltipContent>Open URL</TooltipContent>
@@ -472,7 +472,7 @@ export function QueueList() {
                             onClick={() => handleCopyUrl(item.url)}
                             className="cursor-pointer"
                           >
-                            <Copy className="w-4 h-4" />
+                            <Copy className="size-4" />
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent>Copy URL</TooltipContent>
@@ -487,7 +487,7 @@ export function QueueList() {
                               onClick={() => handleRetry(item.id!)}
                               className="cursor-pointer"
                             >
-                              <RefreshCw className="w-4 h-4" />
+                              <RefreshCw className="size-4" />
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent>Retry</TooltipContent>
@@ -502,7 +502,7 @@ export function QueueList() {
                               onClick={() => handleRegenerate(item.id!)}
                               className="cursor-pointer"
                             >
-                              <Sparkles className="w-4 h-4" />
+                              <Sparkles className="size-4" />
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent>Regenerate</TooltipContent>
@@ -518,7 +518,7 @@ export function QueueList() {
                               onClick={() => handleRegenerate(item.id!)}
                               className="cursor-pointer"
                             >
-                              <Sparkles className="w-4 h-4" />
+                              <Sparkles className="size-4" />
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent>Regenerate</TooltipContent>
@@ -535,7 +535,7 @@ export function QueueList() {
                               }
                               className="cursor-pointer"
                             >
-                              <Trash2 className="w-4 h-4" />
+                              <Trash2 className="size-4" />
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent>Delete</TooltipContent>

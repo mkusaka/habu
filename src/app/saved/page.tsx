@@ -8,7 +8,7 @@ export default async function SavedPage() {
   return (
     <div className="w-full py-8 text-center">
       <div className="flex justify-center mb-6">
-        <CheckCircle2 className="w-16 h-16 text-green-500" />
+        <CheckCircle2 className="size-16 text-green-500" />
       </div>
       <h1 className="text-2xl font-bold tracking-tight mb-2">Bookmark Saved!</h1>
       <p className="text-sm text-muted-foreground mb-8">
@@ -21,7 +21,7 @@ export default async function SavedPage() {
         </LinkButton>
         {!hasHatena && (
           <LinkButton href="/settings" variant="ghost" size="sm">
-            <Settings className="w-4 h-4 mr-2" />
+            <Settings className="size-4 mr-2" />
             Connect to Hatena
           </LinkButton>
         )}

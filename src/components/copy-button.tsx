@@ -26,7 +26,7 @@ export function CopyButton({ text, label, className }: CopyButtonProps) {
       className={className ?? "text-muted-foreground hover:text-foreground"}
       title={`Copy ${label}`}
     >
-      <Copy className="w-4 h-4" />
+      <Copy className="size-4" />
     </button>
   );
 }

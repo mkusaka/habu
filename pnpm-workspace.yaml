@@ -1,0 +1,7 @@
+allowBuilds:
+  "@prisma/engines": false
+  esbuild: false
+  lefthook: true
+  prisma: false
+  sharp: false
+  workerd: false

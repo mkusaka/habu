@@ -1,4 +1,4 @@
-export interface BookmarkResultItem {
+interface BookmarkResultItem {
   url: string;
   title?: string;
   comment?: string;

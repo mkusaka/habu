@@ -2,7 +2,7 @@
 	"name": "next",
 	"version": "0.1.0",
 	"private": true,
-	"packageManager": "pnpm@11.2.2",
+	"packageManager": "pnpm@11.5.1",
 	"scripts": {
 		"dev": "next dev --webpack",
 		"build": "next build --webpack",

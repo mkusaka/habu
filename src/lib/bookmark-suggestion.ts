@@ -1,4 +1,3 @@
-import { createWorkflow, createStep } from "@mastra/core/workflows";
 import { z } from "zod";
 import OpenAI from "openai";
 import { generateText, generateObject, NoObjectGeneratedError } from "ai";
@@ -315,6 +314,39 @@ const WorkflowOutputSchema = z.object({
   canonicalUrl: z.string().optional(),
 });
 
+export type BookmarkSuggestionInput = z.infer<typeof WorkflowInputSchema>;
+export type BookmarkSuggestionOutput = z.infer<typeof WorkflowOutputSchema>;
+
+type BookmarkSuggestionStepId =
+  | "fetch-markdown-and-moderate"
+  | "moderate-user-context"
+  | "fetch-metadata"
+  | "web-search"
+  | "merge-content"
+  | "generate-summary"
+  | "generate-tags"
+  | "merge-results";
+
+type BookmarkSuggestionEvent =
+  | { type: "run-created"; payload: { runId: string } }
+  | {
+      type: "step-start";
+      payload: { id: BookmarkSuggestionStepId; startedAt: number };
+    }
+  | {
+      type: "step-result";
+      payload: {
+        id: BookmarkSuggestionStepId;
+        status: "success" | "failed";
+        startedAt: number;
+        endedAt: number;
+        output?: unknown;
+        error?: string;
+      };
+    };
+
+type BookmarkSuggestionEventHandler = (event: BookmarkSuggestionEvent) => void;
+
 // Metadata schema
 const MetadataSchema = z.object({
   title: z.string().optional(),
@@ -366,249 +398,189 @@ const UserContextOutputSchema = z.object({
   didModerate: z.boolean(),
 });
 
+type Metadata = z.infer<typeof MetadataSchema>;
+type MarkdownOutput = z.infer<typeof MarkdownOutputSchema>;
+type MetadataOutput = z.infer<typeof MetadataOutputSchema>;
+type UserContextOutput = z.infer<typeof UserContextOutputSchema>;
+type WebSearchResult = z.infer<typeof WebSearchResultSchema>;
+type ContentData = z.infer<typeof ContentDataSchema>;
+type SummaryOutput = z.infer<typeof SummaryOutputSchema>;
+type TagsOutput = z.infer<typeof TagsOutputSchema>;
+
 // Step 1c: Web search for additional context (reference only)
-const webSearchStep = createStep({
-  id: "web-search",
-  inputSchema: WorkflowInputSchema,
-  outputSchema: WebSearchResultSchema,
-  execute: async ({ inputData }) => {
-    const { url } = inputData;
+async function fetchWebContext(inputData: BookmarkSuggestionInput): Promise<WebSearchResult> {
+  const { url } = inputData;
 
-    try {
-      if (isTwitterStatusUrl(url)) {
-        const webContext = await fetchGrokWebContext(url);
-        return webContext
-          ? { webContext, webContextSource: "grok" as const }
-          : { webContext: undefined };
-      }
-
-      // Use OpenAI web search to get additional context about the URL
-      const { text } = await generateText({
-        model: openai("gpt-5.4-nano"),
-        prompt: `Briefly describe what this URL is about and provide any relevant context (author, publication date, key topics). Keep it under 200 words. URL: ${url}`,
-        tools: {
-          web_search: openai.tools.webSearch({}),
-        },
-        toolChoice: "required",
-      });
-
-      return { webContext: text.slice(0, 1000), webContextSource: "openai-web_search" as const };
-    } catch (error) {
-      console.warn("Web context fetch failed, continuing without web context:", error);
-      return { webContext: undefined };
+  try {
+    if (isTwitterStatusUrl(url)) {
+      const webContext = await fetchGrokWebContext(url);
+      return webContext
+        ? { webContext, webContextSource: "grok" as const }
+        : { webContext: undefined };
     }
-  },
-});
+
+    // Use OpenAI web search to get additional context about the URL
+    const { text } = await generateText({
+      model: openai("gpt-5.4-nano"),
+      prompt: `Briefly describe what this URL is about and provide any relevant context (author, publication date, key topics). Keep it under 200 words. URL: ${url}`,
+      tools: {
+        web_search: openai.tools.webSearch({}),
+      },
+      toolChoice: "required",
+    });
+
+    return { webContext: text.slice(0, 1000), webContextSource: "openai-web_search" as const };
+  } catch (error) {
+    console.warn("Web context fetch failed, continuing without web context:", error);
+    return { webContext: undefined };
+  }
+}
 
 // Step 1a: Fetch markdown and run moderation
-const fetchMarkdownAndModerateStep = createStep({
-  id: "fetch-markdown-and-moderate",
-  inputSchema: WorkflowInputSchema,
-  outputSchema: MarkdownOutputSchema,
-  execute: async ({ inputData }) => {
-    const { url } = inputData;
-    const cfAccountId = process.env.BROWSER_RENDERING_ACCOUNT_ID;
-    const cfApiToken = process.env.BROWSER_RENDERING_API_TOKEN;
+async function fetchMarkdownAndModerate(
+  inputData: BookmarkSuggestionInput,
+): Promise<MarkdownOutput> {
+  const { url } = inputData;
+  const cfAccountId = process.env.BROWSER_RENDERING_ACCOUNT_ID;
+  const cfApiToken = process.env.BROWSER_RENDERING_API_TOKEN;
 
-    let markdown = "";
-    let markdownSource:
-      | "twitter-x-api"
-      | "twitter-grok"
-      | "twitter-oembed"
-      | "cloudflare"
-      | "none"
-      | undefined = undefined;
+  let markdown = "";
+  let markdownSource:
+    | "twitter-x-api"
+    | "twitter-grok"
+    | "twitter-oembed"
+    | "cloudflare"
+    | "none"
+    | undefined = undefined;
 
-    // X/Twitter status pages often return an interstitial error page when rendered headlessly.
-    // Prefer oEmbed as a reliable, login-free content source for tweet text.
-    if (isTwitterStatusUrl(url)) {
-      try {
-        const twitter = await fetchTwitterMarkdown(url);
-        if (twitter?.markdown) {
-          markdown = twitter.markdown.slice(0, MAX_MARKDOWN_CHARS);
-          if (twitter.source === "x-api") markdownSource = "twitter-x-api";
-          else if (twitter.source === "grok") markdownSource = "twitter-grok";
-          else markdownSource = "twitter-oembed";
-        }
-      } catch (error) {
-        console.warn("Failed to fetch Twitter content, falling back to rendering:", error);
+  // X/Twitter status pages often return an interstitial error page when rendered headlessly.
+  // Prefer oEmbed as a reliable, login-free content source for tweet text.
+  if (isTwitterStatusUrl(url)) {
+    try {
+      const twitter = await fetchTwitterMarkdown(url);
+      if (twitter?.markdown) {
+        markdown = twitter.markdown.slice(0, MAX_MARKDOWN_CHARS);
+        if (twitter.source === "x-api") markdownSource = "twitter-x-api";
+        else if (twitter.source === "grok") markdownSource = "twitter-grok";
+        else markdownSource = "twitter-oembed";
       }
+    } catch (error) {
+      console.warn("Failed to fetch Twitter content, falling back to rendering:", error);
     }
+  }
 
-    // Try to fetch markdown from Cloudflare Browser Rendering
-    // PDFs and some other content types may fail - that's ok, we'll use metadata only
-    if (!markdown && cfAccountId && cfApiToken) {
-      try {
-        const response = await fetch(
-          `https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/browser-rendering/markdown`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${cfApiToken}`,
-            },
-            body: JSON.stringify({ url }),
+  // Try to fetch markdown from Cloudflare Browser Rendering
+  // PDFs and some other content types may fail - that's ok, we'll use metadata only
+  if (!markdown && cfAccountId && cfApiToken) {
+    try {
+      const response = await fetch(
+        `https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/browser-rendering/markdown`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${cfApiToken}`,
           },
-        );
+          body: JSON.stringify({ url }),
+        },
+      );
 
-        if (response.ok) {
-          const data = (await response.json()) as {
-            success: boolean;
-            result?: string;
-            errors?: unknown[];
-          };
-          if (data.success && data.result) {
-            markdown = data.result.slice(0, MAX_MARKDOWN_CHARS);
-            markdownSource = "cloudflare";
-          }
+      if (response.ok) {
+        const data = (await response.json()) as {
+          success: boolean;
+          result?: string;
+          errors?: unknown[];
+        };
+        if (data.success && data.result) {
+          markdown = data.result.slice(0, MAX_MARKDOWN_CHARS);
+          markdownSource = "cloudflare";
         }
-      } catch (error) {
-        console.warn("Failed to fetch markdown, will use metadata only:", error);
       }
+    } catch (error) {
+      console.warn("Failed to fetch markdown, will use metadata only:", error);
     }
+  }
 
-    // Detect known X/Twitter interstitial error page content and replace with oEmbed text.
-    if (
-      markdown &&
-      isTwitterStatusUrl(url) &&
-      (markdown.includes("Something went wrong") ||
-        (markdown.includes("Try again") && markdown.includes("x.com")) ||
-        markdown.includes("Some privacy related extensions may cause issues on x.com"))
-    ) {
-      try {
-        const twitter = await fetchTwitterMarkdown(url);
-        if (twitter?.markdown) {
-          markdown = twitter.markdown.slice(0, MAX_MARKDOWN_CHARS);
-        } else {
-          markdown = "";
-        }
-      } catch (error) {
-        console.warn("Failed to replace Twitter interstitial markdown:", error);
+  // Detect known X/Twitter interstitial error page content and replace with oEmbed text.
+  if (
+    markdown &&
+    isTwitterStatusUrl(url) &&
+    (markdown.includes("Something went wrong") ||
+      (markdown.includes("Try again") && markdown.includes("x.com")) ||
+      markdown.includes("Some privacy related extensions may cause issues on x.com"))
+  ) {
+    try {
+      const twitter = await fetchTwitterMarkdown(url);
+      if (twitter?.markdown) {
+        markdown = twitter.markdown.slice(0, MAX_MARKDOWN_CHARS);
+      } else {
         markdown = "";
       }
+    } catch (error) {
+      console.warn("Failed to replace Twitter interstitial markdown:", error);
+      markdown = "";
     }
+  }
 
-    // Run moderation on the markdown content if we have any
-    let didModerate = false;
-    if (markdown) {
-      const moderationInput = markdown.slice(0, 5000);
-      const moderation = await getOpenAIClient().moderations.create({
-        model: "omni-moderation-latest",
-        input: moderationInput,
-      });
-      didModerate = true;
+  // Run moderation on the markdown content if we have any
+  let didModerate = false;
+  if (markdown) {
+    const moderationInput = markdown.slice(0, 5000);
+    const moderation = await getOpenAIClient().moderations.create({
+      model: "omni-moderation-latest",
+      input: moderationInput,
+    });
+    didModerate = true;
 
-      if (moderation.results[0].flagged) {
-        throw new Error("Content flagged by moderation");
-      }
+    if (moderation.results[0].flagged) {
+      throw new Error("Content flagged by moderation");
     }
+  }
 
-    const finalMarkdownSource:
-      | "twitter-x-api"
-      | "twitter-grok"
-      | "twitter-oembed"
-      | "cloudflare"
-      | "none"
-      | undefined = markdownSource ?? (markdown ? undefined : "none");
+  const finalMarkdownSource:
+    | "twitter-x-api"
+    | "twitter-grok"
+    | "twitter-oembed"
+    | "cloudflare"
+    | "none"
+    | undefined = markdownSource ?? (markdown ? undefined : "none");
 
-    return {
-      url,
-      existingTags: inputData.existingTags,
-      markdown,
-      markdownSource: finalMarkdownSource,
-      didModerate,
-    };
-  },
-});
+  return {
+    url,
+    existingTags: inputData.existingTags,
+    markdown,
+    markdownSource: finalMarkdownSource,
+    didModerate,
+  };
+}
 
 // Step 1b: Moderate user context
-const moderateUserContextStep = createStep({
-  id: "moderate-user-context",
-  inputSchema: WorkflowInputSchema,
-  outputSchema: UserContextOutputSchema,
-  execute: async ({ inputData }) => {
-    const { userContext } = inputData;
+async function moderateUserContext(inputData: BookmarkSuggestionInput): Promise<UserContextOutput> {
+  const { userContext } = inputData;
 
-    if (userContext) {
-      const moderation = await getOpenAIClient().moderations.create({
-        model: "omni-moderation-latest",
-        input: userContext.slice(0, 5000),
-      });
+  if (userContext) {
+    const moderation = await getOpenAIClient().moderations.create({
+      model: "omni-moderation-latest",
+      input: userContext.slice(0, 5000),
+    });
 
-      if (moderation.results[0].flagged) {
-        throw new Error("User context flagged by moderation");
-      }
+    if (moderation.results[0].flagged) {
+      throw new Error("User context flagged by moderation");
     }
+  }
 
-    return { userContext, didModerate: !!userContext };
-  },
-});
+  return { userContext, didModerate: !!userContext };
+}
 
 // Step 1c: Fetch metadata using local HTMLRewriter (with YouTube oEmbed fallback)
-const fetchMetadataStep = createStep({
-  id: "fetch-metadata",
-  inputSchema: WorkflowInputSchema,
-  outputSchema: MetadataOutputSchema,
-  execute: async ({ inputData }) => {
-    const { url } = inputData;
+async function fetchMetadata(inputData: BookmarkSuggestionInput): Promise<MetadataOutput> {
+  const { url } = inputData;
 
-    try {
-      const result = await fetchPageMeta(url);
+  try {
+    const result = await fetchPageMeta(url);
 
-      if (!isMetaExtractionResult(result)) {
-        // Non-HTML response, try YouTube oEmbed if applicable
-        if (isYouTubeUrl(url)) {
-          const oembed = await fetchYouTubeOEmbed(url);
-          if (oembed) {
-            return {
-              metadata: {
-                title: oembed.title,
-                author: oembed.author_name,
-                siteName: "YouTube",
-                ogType: "video",
-              },
-            };
-          }
-        }
-        return { metadata: {} };
-      }
-
-      // Check if metadata is empty/generic for YouTube
-      const hasValidTitle = result.title && !result.title.match(/^-?\s*YouTube$/);
-      const hasValidOg = result.og && Object.keys(result.og).length > 0 && result.og.title;
-
-      // If YouTube URL and metadata is empty/generic, fallback to oEmbed
-      if (isYouTubeUrl(url) && !hasValidTitle && !hasValidOg) {
-        const oembed = await fetchYouTubeOEmbed(url);
-        if (oembed) {
-          return {
-            metadata: {
-              title: oembed.title,
-              author: oembed.author_name,
-              siteName: "YouTube",
-              ogType: "video",
-            },
-          };
-        }
-      }
-
-      // Resolve canonical URL (prefer canonical, validate against original)
-      const canonicalUrl = resolveCanonicalUrl(url, result.canonical);
-
-      return {
-        metadata: {
-          title: result.title || result.og?.title || result.twitter?.title,
-          description: result.og?.description || result.twitter?.description || result.description,
-          lang: result.lang,
-          ogType: result.og?.type,
-          siteName: result.og?.site_name,
-          keywords: result.keywords,
-          author: result.author,
-          canonicalUrl: canonicalUrl !== url ? canonicalUrl : undefined,
-        },
-      };
-    } catch {
-      // On error, try YouTube oEmbed as last resort
+    if (!isMetaExtractionResult(result)) {
+      // Non-HTML response, try YouTube oEmbed if applicable
       if (isYouTubeUrl(url)) {
         const oembed = await fetchYouTubeOEmbed(url);
         if (oembed) {
@@ -624,31 +596,77 @@ const fetchMetadataStep = createStep({
       }
       return { metadata: {} };
     }
-  },
-});
+
+    // Check if metadata is empty/generic for YouTube
+    const hasValidTitle = result.title && !result.title.match(/^-?\s*YouTube$/);
+    const hasValidOg = result.og && Object.keys(result.og).length > 0 && result.og.title;
+
+    // If YouTube URL and metadata is empty/generic, fallback to oEmbed
+    if (isYouTubeUrl(url) && !hasValidTitle && !hasValidOg) {
+      const oembed = await fetchYouTubeOEmbed(url);
+      if (oembed) {
+        return {
+          metadata: {
+            title: oembed.title,
+            author: oembed.author_name,
+            siteName: "YouTube",
+            ogType: "video",
+          },
+        };
+      }
+    }
+
+    // Resolve canonical URL (prefer canonical, validate against original)
+    const canonicalUrl = resolveCanonicalUrl(url, result.canonical);
+
+    return {
+      metadata: {
+        title: result.title || result.og?.title || result.twitter?.title,
+        description: result.og?.description || result.twitter?.description || result.description,
+        lang: result.lang,
+        ogType: result.og?.type,
+        siteName: result.og?.site_name,
+        keywords: result.keywords,
+        author: result.author,
+        canonicalUrl: canonicalUrl !== url ? canonicalUrl : undefined,
+      },
+    };
+  } catch {
+    // On error, try YouTube oEmbed as last resort
+    if (isYouTubeUrl(url)) {
+      const oembed = await fetchYouTubeOEmbed(url);
+      if (oembed) {
+        return {
+          metadata: {
+            title: oembed.title,
+            author: oembed.author_name,
+            siteName: "YouTube",
+            ogType: "video",
+          },
+        };
+      }
+    }
+    return { metadata: {} };
+  }
+}
 
 // Step 1e: Merge markdown, metadata, user context, and web search results
-const mergeContentStep = createStep({
-  id: "merge-content",
-  inputSchema: z.object({
-    "fetch-markdown-and-moderate": MarkdownOutputSchema,
-    "moderate-user-context": UserContextOutputSchema,
-    "fetch-metadata": MetadataOutputSchema,
-    "web-search": WebSearchResultSchema,
-  }),
-  outputSchema: ContentDataSchema,
-  execute: async ({ inputData }) => {
-    return {
-      url: inputData["fetch-markdown-and-moderate"].url,
-      existingTags: inputData["fetch-markdown-and-moderate"].existingTags,
-      markdown: inputData["fetch-markdown-and-moderate"].markdown,
-      metadata: inputData["fetch-metadata"].metadata,
-      webContext: inputData["web-search"].webContext,
-      userContext: inputData["moderate-user-context"].userContext,
-      canonicalUrl: inputData["fetch-metadata"].metadata.canonicalUrl,
-    };
-  },
-});
+function mergeContent(inputData: {
+  "fetch-markdown-and-moderate": MarkdownOutput;
+  "moderate-user-context": UserContextOutput;
+  "fetch-metadata": MetadataOutput;
+  "web-search": WebSearchResult;
+}): ContentData {
+  return {
+    url: inputData["fetch-markdown-and-moderate"].url,
+    existingTags: inputData["fetch-markdown-and-moderate"].existingTags,
+    markdown: inputData["fetch-markdown-and-moderate"].markdown,
+    metadata: inputData["fetch-metadata"].metadata,
+    webContext: inputData["web-search"].webContext,
+    userContext: inputData["moderate-user-context"].userContext,
+    canonicalUrl: inputData["fetch-metadata"].metadata.canonicalUrl,
+  };
+}
 
 // Schema for AI generation (only summary - webContext/canonicalUrl are passed through, not generated)
 const SummaryGenerationSchema = z.object({
@@ -688,7 +706,7 @@ async function runSummaryGenerationWithJudge(
   params: {
     url: string;
     markdown: string;
-    metadata: z.infer<typeof MetadataSchema>;
+    metadata: Metadata;
     webContext?: string;
     userContext?: string;
   },
@@ -796,42 +814,37 @@ ${markdown}
 }
 
 // Step 3a: Generate summary with parallel racing (first to pass judge wins)
-const generateSummaryStep = createStep({
-  id: "generate-summary",
-  inputSchema: ContentDataSchema,
-  outputSchema: SummaryOutputSchema,
-  execute: async ({ inputData }) => {
-    const { url, markdown, metadata, webContext, userContext, canonicalUrl } = inputData;
-    const abortController = new AbortController();
+async function generateSummary(inputData: ContentData): Promise<SummaryOutput> {
+  const { url, markdown, metadata, webContext, userContext, canonicalUrl } = inputData;
+  const abortController = new AbortController();
 
-    // Create race promises for parallel runners
-    const runners = Array.from({ length: PARALLEL_GENERATION_COUNT }, (_, i) =>
-      runSummaryGenerationWithJudge(
-        i + 1,
-        { url, markdown, metadata, webContext, userContext },
-        abortController.signal,
-      ),
-    );
+  // Create race promises for parallel runners
+  const runners = Array.from({ length: PARALLEL_GENERATION_COUNT }, (_, i) =>
+    runSummaryGenerationWithJudge(
+      i + 1,
+      { url, markdown, metadata, webContext, userContext },
+      abortController.signal,
+    ),
+  );
 
-    try {
-      // Race: first runner to pass judge wins
-      const result = await Promise.any(runners);
-      abortController.abort(); // Cancel other runners
-      return { ...result, canonicalUrl };
-    } catch (error) {
-      // If all runners failed (AggregateError), return the first error's result or rethrow
-      if (error instanceof AggregateError) {
-        const errorMessages = error.errors.map(
-          (e, i) => `Runner ${i + 1}: ${e instanceof Error ? e.message : String(e)}`,
-        );
-        console.warn("[Summary] All parallel runners failed:", errorMessages.join(" | "));
-        // Return empty summary as fallback (workflow can handle this)
-        return { summary: "", webContext, canonicalUrl };
-      }
-      throw error;
+  try {
+    // Race: first runner to pass judge wins
+    const result = await Promise.any(runners);
+    abortController.abort(); // Cancel other runners
+    return { ...result, canonicalUrl };
+  } catch (error) {
+    // If all runners failed (AggregateError), return the first error's result or rethrow
+    if (error instanceof AggregateError) {
+      const errorMessages = error.errors.map(
+        (e, i) => `Runner ${i + 1}: ${e instanceof Error ? e.message : String(e)}`,
+      );
+      console.warn("[Summary] All parallel runners failed:", errorMessages.join(" | "));
+      // Return empty summary as fallback (caller can handle this)
+      return { summary: "", webContext, canonicalUrl };
     }
-  },
-});
+    throw error;
+  }
+}
 
 function sanitizeGeneratedTags(tags: string[]): string[] {
   const cleaned = tags
@@ -858,7 +871,7 @@ async function runTagsGenerationWithJudge(
     url: string;
     existingTags: string[];
     markdown: string;
-    metadata: z.infer<typeof MetadataSchema>;
+    metadata: Metadata;
     userContext?: string;
   },
   signal: AbortSignal,
@@ -999,65 +1012,166 @@ ${markdown.slice(0, 10000)}
 }
 
 // Step 3b: Generate tags with parallel racing (first to pass judge wins)
-const generateTagsStep = createStep({
-  id: "generate-tags",
-  inputSchema: ContentDataSchema,
-  outputSchema: TagsOutputSchema,
-  execute: async ({ inputData }) => {
-    const { url, existingTags, markdown, metadata, userContext } = inputData;
-    const abortController = new AbortController();
+async function generateTags(inputData: ContentData): Promise<TagsOutput> {
+  const { url, existingTags, markdown, metadata, userContext } = inputData;
+  const abortController = new AbortController();
 
-    try {
-      // Tags are often rejected more than summaries; parallelize candidates per attempt instead.
-      return await runTagsGenerationWithJudge(
-        1,
-        { url, existingTags, markdown, metadata, userContext },
-        abortController.signal,
-      );
-    } catch (error) {
-      // If all candidates failed (AggregateError), return fallback
-      if (error instanceof AggregateError) {
-        console.warn("[Tags] All parallel candidates failed, using fallback");
-        return { tags: ["AI要約"] };
-      }
-      throw error;
-    } finally {
-      abortController.abort();
+  try {
+    // Tags are often rejected more than summaries; parallelize candidates per attempt instead.
+    return await runTagsGenerationWithJudge(
+      1,
+      { url, existingTags, markdown, metadata, userContext },
+      abortController.signal,
+    );
+  } catch (error) {
+    // If all candidates failed (AggregateError), return fallback
+    if (error instanceof AggregateError) {
+      console.warn("[Tags] All parallel candidates failed, using fallback");
+      return { tags: ["AI要約"] };
     }
-  },
-});
+    throw error;
+  } finally {
+    abortController.abort();
+  }
+}
 
 // Step 4: Merge parallel results
-const mergeResultsStep = createStep({
-  id: "merge-results",
-  inputSchema: z.object({
-    "generate-summary": SummaryOutputSchema,
-    "generate-tags": TagsOutputSchema,
-  }),
-  outputSchema: WorkflowOutputSchema,
-  execute: async ({ inputData }) => {
-    return {
-      summary: inputData["generate-summary"].summary,
-      tags: inputData["generate-tags"].tags,
-      webContext: inputData["generate-summary"].webContext,
-      canonicalUrl: inputData["generate-summary"].canonicalUrl,
-    };
-  },
-});
+function mergeResults(inputData: {
+  "generate-summary": SummaryOutput;
+  "generate-tags": TagsOutput;
+}): BookmarkSuggestionOutput {
+  return {
+    summary: inputData["generate-summary"].summary,
+    tags: inputData["generate-tags"].tags,
+    webContext: inputData["generate-summary"].webContext,
+    canonicalUrl: inputData["generate-summary"].canonicalUrl,
+  };
+}
 
-// Compose the workflow with parallel fetching and generation
-export const bookmarkSuggestionWorkflow = createWorkflow({
-  id: "bookmark-suggestion",
-  inputSchema: WorkflowInputSchema,
-  outputSchema: WorkflowOutputSchema,
-})
-  .parallel([
-    fetchMarkdownAndModerateStep,
-    moderateUserContextStep,
-    fetchMetadataStep,
-    webSearchStep,
-  ])
-  .then(mergeContentStep)
-  .parallel([generateSummaryStep, generateTagsStep])
-  .then(mergeResultsStep)
-  .commit();
+function createRunId() {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID();
+  }
+  return `run-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+async function runStep<T>(
+  id: BookmarkSuggestionStepId,
+  execute: () => Promise<T> | T,
+  emit?: BookmarkSuggestionEventHandler,
+  eventOutput?: (output: T) => unknown,
+): Promise<T> {
+  const startedAt = Date.now();
+  emit?.({ type: "step-start", payload: { id, startedAt } });
+
+  try {
+    const output = await execute();
+    emit?.({
+      type: "step-result",
+      payload: {
+        id,
+        status: "success",
+        startedAt,
+        endedAt: Date.now(),
+        output: eventOutput ? eventOutput(output) : output,
+      },
+    });
+    return output;
+  } catch (error) {
+    emit?.({
+      type: "step-result",
+      payload: {
+        id,
+        status: "failed",
+        startedAt,
+        endedAt: Date.now(),
+        error: error instanceof Error ? error.message : String(error),
+      },
+    });
+    throw error;
+  }
+}
+
+async function allOrThrow<T extends readonly unknown[]>(promises: {
+  [K in keyof T]: Promise<T[K]>;
+}): Promise<T> {
+  const settled = await Promise.allSettled(promises);
+  const rejected = settled.find(
+    (result): result is PromiseRejectedResult => result.status === "rejected",
+  );
+  if (rejected) {
+    throw rejected.reason;
+  }
+  return settled.map((result) => (result as PromiseFulfilledResult<unknown>).value) as unknown as T;
+}
+
+export async function generateBookmarkSuggestion(
+  input: BookmarkSuggestionInput,
+  options?: { onEvent?: BookmarkSuggestionEventHandler },
+): Promise<BookmarkSuggestionOutput> {
+  const inputData = WorkflowInputSchema.parse(input);
+  const emit = options?.onEvent;
+  emit?.({ type: "run-created", payload: { runId: createRunId() } });
+
+  const [markdownOutput, userContextOutput, metadataOutput, webSearchOutput] = await allOrThrow<
+    [MarkdownOutput, UserContextOutput, MetadataOutput, WebSearchResult]
+  >([
+    runStep(
+      "fetch-markdown-and-moderate",
+      () => fetchMarkdownAndModerate(inputData),
+      emit,
+      ({ markdownSource, didModerate }) => ({ markdownSource, didModerate }),
+    ),
+    runStep(
+      "moderate-user-context",
+      () => moderateUserContext(inputData),
+      emit,
+      ({ didModerate }) => ({ didModerate }),
+    ),
+    runStep(
+      "fetch-metadata",
+      () => fetchMetadata(inputData),
+      emit,
+      () => undefined,
+    ),
+    runStep(
+      "web-search",
+      () => fetchWebContext(inputData),
+      emit,
+      ({ webContextSource }) => ({
+        webContextSource,
+      }),
+    ),
+  ]);
+
+  const contentData = await runStep(
+    "merge-content",
+    () =>
+      mergeContent({
+        "fetch-markdown-and-moderate": markdownOutput,
+        "moderate-user-context": userContextOutput,
+        "fetch-metadata": metadataOutput,
+        "web-search": webSearchOutput,
+      }),
+    emit,
+    () => undefined,
+  );
+
+  const [summaryOutput, tagsOutput] = await allOrThrow<[SummaryOutput, TagsOutput]>([
+    runStep("generate-summary", () => generateSummary(contentData), emit),
+    runStep("generate-tags", () => generateTags(contentData), emit),
+  ]);
+
+  const output = await runStep(
+    "merge-results",
+    () =>
+      mergeResults({
+        "generate-summary": summaryOutput,
+        "generate-tags": tagsOutput,
+      }),
+    emit,
+    () => undefined,
+  );
+
+  return WorkflowOutputSchema.parse(output);
+}

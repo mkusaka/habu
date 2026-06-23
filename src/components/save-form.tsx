@@ -17,7 +17,7 @@ import {
   readSseStream,
   type WorkflowStepState,
   type WorkflowStepStatus,
-} from "@/lib/mastra-workflow-progress";
+} from "@/lib/bookmark-suggestion-progress";
 import {
   Bookmark,
   Loader2,

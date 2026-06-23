@@ -1,8 +1,8 @@
 "use client";
 
 import { CheckCircle2, Circle, FileText, Loader2, XCircle } from "lucide-react";
-import type { WorkflowStepState } from "@/lib/mastra-workflow-progress";
-import { formatElapsedMs, getRunningStepLabels } from "@/lib/mastra-workflow-progress";
+import type { WorkflowStepState } from "@/lib/bookmark-suggestion-progress";
+import { formatElapsedMs, getRunningStepLabels } from "@/lib/bookmark-suggestion-progress";
 
 export function WorkflowProgress({
   isRunning,

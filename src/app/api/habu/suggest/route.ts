@@ -11,11 +11,10 @@ import type {
   SuggestResponse,
   PageMetadata,
 } from "@/types/habu";
-import { mastra } from "@/mastra";
-import { RequestContext } from "@mastra/core/di";
+import { generateBookmarkSuggestion } from "@/lib/bookmark-suggestion";
 import { fetchPageMeta, isMetaExtractionResult } from "@/lib/page-meta";
 import { fetchPageMarkdown } from "@/lib/page-markdown";
-import type { WorkflowStepMeta } from "@/lib/mastra-workflow-progress";
+import type { WorkflowStepMeta } from "@/lib/bookmark-suggestion-progress";
 import { calculateBodySize, HATENA_BODY_LIMIT } from "@/lib/hatena-body-limit";
 import { isTwitterStatusUrl } from "@/lib/twitter-oembed";
 import { validateSameOrigin } from "@/lib/same-origin";
@@ -366,49 +365,28 @@ export async function POST(request: NextRequest) {
               count: existingTags.length,
             });
 
-            // Run the bookmark suggestion workflow
-            const workflow = mastra.getWorkflow("bookmark-suggestion");
-            const run = await workflow.createRun();
-
-            // RequestContext: トレーシング用のメタデータを設定
-            const requestContext = new RequestContext();
-            requestContext.set("userId", session.user.id);
-            requestContext.set("hatenaId", user.hatenaId || "");
-            requestContext.set("url", url);
-            requestContext.set("gitSha", process.env.NEXT_PUBLIC_GIT_SHA || "");
-
-            send("workflow", { type: "run-created", payload: { runId: run.runId } });
-
-            const { stream, getWorkflowState } = run.streamLegacy({
-              inputData: { url, existingTags, userContext },
-              requestContext,
-            });
-
-            const reader = stream.getReader();
-            try {
-              while (true) {
-                const { value, done } = await reader.read();
-                if (done) break;
-                if (value && typeof value === "object") {
-                  const v = value as { type?: string; payload?: unknown };
-                  const payload = v.payload as Record<string, unknown> | undefined;
+            const { summary, tags, webContext } = await generateBookmarkSuggestion(
+              { url, existingTags, userContext },
+              {
+                onEvent: (value) => {
+                  const payload = value.payload as Record<string, unknown> | undefined;
                   const stepId =
                     typeof payload?.id === "string" ? (payload.id as string) : undefined;
                   const meta = stepId
                     ? computeStepMeta({
                         stepId,
-                        eventType: v.type ?? "",
+                        eventType: value.type,
                         payload: payload ?? {},
                         url,
                       })
                     : undefined;
-                  if (meta && payload) {
-                    send("workflow", { ...v, payload: { ...payload, meta } });
-                  } else {
-                    send("workflow", value);
-                  }
 
-                  if (v.type === "step-result" && payload) {
+                  send(
+                    "workflow",
+                    meta && payload ? { ...value, payload: { ...payload, meta } } : value,
+                  );
+
+                  if (value.type === "step-result" && payload) {
                     const output = payload.output as Record<string, unknown> | undefined;
                     if (stepId === "generate-summary" && output?.summary) {
                       send("preflight", {
@@ -423,24 +401,9 @@ export async function POST(request: NextRequest) {
                       });
                     }
                   }
-                } else {
-                  send("workflow", value);
-                }
-              }
-            } finally {
-              reader.releaseLock();
-            }
-
-            const workflowState = await getWorkflowState();
-            if (workflowState.status !== "success" || !workflowState.result) {
-              throw new Error("Workflow failed");
-            }
-
-            const { summary, tags, webContext } = workflowState.result as {
-              summary: string;
-              tags: string[];
-              webContext?: string;
-            };
+                },
+              },
+            );
 
             const tagPart = tags.map((t) => `[${t}]`).join("");
             const formattedComment = `${tagPart}${summary}`;
@@ -494,29 +457,13 @@ export async function POST(request: NextRequest) {
     const markdown = markdownResult.markdown;
     const markdownError = markdownResult.error;
 
-    const workflow = mastra.getWorkflow("bookmark-suggestion");
-    const run = await workflow.createRun();
-
-    const requestContext = new RequestContext();
-    requestContext.set("userId", session.user.id);
-    requestContext.set("hatenaId", user.hatenaId || "");
-    requestContext.set("url", url);
-    requestContext.set("gitSha", process.env.NEXT_PUBLIC_GIT_SHA || "");
-
-    const result = await run.start({
-      inputData: {
-        url,
-        existingTags,
-        userContext,
-      },
-      requestContext,
+    const result = await generateBookmarkSuggestion({
+      url,
+      existingTags,
+      userContext,
     });
 
-    if (result.status !== "success" || !result.result) {
-      throw new Error("Workflow failed");
-    }
-
-    const { summary, tags, webContext } = result.result;
+    const { summary, tags, webContext } = result;
 
     // Format comment with tags
     const tagPart = tags.map((t: string) => `[${t}]`).join("");

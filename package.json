@@ -30,7 +30,6 @@
     "@better-auth/oauth-provider": "1.6.12",
     "@cloudflare/workers-types": "^4.20260127.0",
     "@mastra/core": "^1.2.0",
-    "@mastra/observability": "^1.2.0",
     "@modelcontextprotocol/sdk": "^1.25.2",
     "@opennextjs/cloudflare": "^1.17.3",
     "@radix-ui/react-alert-dialog": "^1.1.15",

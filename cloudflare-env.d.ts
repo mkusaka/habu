@@ -13,7 +13,6 @@ declare namespace Cloudflare {
 		BROWSER_RENDERING_ACCOUNT_ID: string;
 		BROWSER_RENDERING_API_TOKEN: string;
 		OPENAI_API_KEY: string;
-		MASTRA_CLOUD_ACCESS_TOKEN: string;
 		DB: D1Database;
 		ASSETS: Fetcher;
 	}
@@ -23,7 +22,7 @@ type StringifyValues<EnvType extends Record<string, unknown>> = {
 	[Binding in keyof EnvType]: EnvType[Binding] extends string ? EnvType[Binding] : string;
 };
 declare namespace NodeJS {
-	interface ProcessEnv extends StringifyValues<Pick<Cloudflare.Env, "NEXTJS_ENV" | "BETTER_AUTH_SECRET" | "HATENA_CONSUMER_KEY" | "HATENA_CONSUMER_SECRET" | "BROWSER_RENDERING_ACCOUNT_ID" | "BROWSER_RENDERING_API_TOKEN" | "OPENAI_API_KEY" | "MASTRA_CLOUD_ACCESS_TOKEN">> {}
+	interface ProcessEnv extends StringifyValues<Pick<Cloudflare.Env, "NEXTJS_ENV" | "BETTER_AUTH_SECRET" | "HATENA_CONSUMER_KEY" | "HATENA_CONSUMER_SECRET" | "BROWSER_RENDERING_ACCOUNT_ID" | "BROWSER_RENDERING_API_TOKEN" | "OPENAI_API_KEY">> {}
 }
 
 // Begin runtime types

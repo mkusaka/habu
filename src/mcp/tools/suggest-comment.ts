@@ -1,9 +1,8 @@
 import { z } from "zod";
 import { createSignedRequest } from "@/lib/hatena-oauth";
+import { generateBookmarkSuggestion } from "@/lib/bookmark-suggestion";
 import type { McpContext, ToolResult } from "../types";
 import { hasScope } from "../types";
-import { mastra } from "@/mastra";
-import { RequestContext } from "@mastra/core/di";
 
 const HATENA_TAGS_API_URL = "https://bookmark.hatenaapis.com/rest/1/my/tags";
 
@@ -87,29 +86,13 @@ export async function suggestComment(
       env.HATENA_CONSUMER_SECRET,
     );
 
-    // Run the bookmark suggestion workflow
-    const workflow = mastra.getWorkflow("bookmark-suggestion");
-    const run = await workflow.createRun();
-
-    // Create RequestContext with metadata for tracing
-    const requestContext = new RequestContext();
-    requestContext.set("userId", context.userId);
-    requestContext.set("url", input.url);
-
-    const result = await run.start({
-      inputData: {
-        url: input.url,
-        existingTags,
-        userContext: input.userContext,
-      },
-      requestContext,
+    const result = await generateBookmarkSuggestion({
+      url: input.url,
+      existingTags,
+      userContext: input.userContext,
     });
 
-    if (result.status !== "success" || !result.result) {
-      throw new Error("Workflow failed");
-    }
-
-    const { summary, tags, canonicalUrl } = result.result;
+    const { summary, tags, canonicalUrl } = result;
 
     // Validate results
     if (!summary || summary.length < 10) {

@@ -43,7 +43,7 @@ import {
   readSseStream,
   type WorkflowStepState,
   type WorkflowStepStatus,
-} from "@/lib/mastra-workflow-progress";
+} from "@/lib/bookmark-suggestion-progress";
 
 interface GeneratedResult {
   summary?: string;

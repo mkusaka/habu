@@ -6,8 +6,7 @@ import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { createAuth } from "@/lib/auth";
 import type { BookmarkRequest, BookmarkResponse, HatenaTagsResponse } from "@/types/habu";
-import { mastra } from "@/mastra";
-import { RequestContext } from "@mastra/core/di";
+import { generateBookmarkSuggestion } from "@/lib/bookmark-suggestion";
 import { isBodyWithinLimit, maxEncodedCommentLength } from "@/lib/hatena-body-limit";
 import { validateSameOrigin } from "@/lib/same-origin";
 
@@ -322,7 +321,7 @@ export async function POST(request: NextRequest) {
     // Determine comment to use
     let finalComment = comment;
 
-    // If no comment provided and AI generation is not skipped, generate AI suggestions using Mastra workflow
+    // If no comment provided and AI generation is not skipped, generate AI suggestions.
     if (!comment && !skipAiGeneration) {
       try {
         // Fetch user's existing Hatena tags
@@ -333,29 +332,13 @@ export async function POST(request: NextRequest) {
           consumerSecret,
         );
 
-        const workflow = mastra.getWorkflow("bookmark-suggestion");
-        const run = await workflow.createRun();
-
-        const requestContext = new RequestContext();
-        requestContext.set("userId", session.user.id);
-        requestContext.set("hatenaId", user.hatenaId || "");
-        requestContext.set("url", url);
-        requestContext.set("gitSha", process.env.NEXT_PUBLIC_GIT_SHA || "");
-
-        const result = await run.start({
-          inputData: {
-            url,
-            existingTags,
-            userContext,
-          },
-          requestContext,
+        const result = await generateBookmarkSuggestion({
+          url,
+          existingTags,
+          userContext,
         });
 
-        if (result.status !== "success" || !result.result) {
-          throw new Error("Workflow failed");
-        }
-
-        const { summary, tags, canonicalUrl } = result.result;
+        const { summary, tags, canonicalUrl } = result;
 
         // Fail if summary generation failed (empty or too short)
         if (!summary || summary.length < 10) {

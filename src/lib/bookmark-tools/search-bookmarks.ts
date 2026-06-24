@@ -1,7 +1,6 @@
 import { z } from "zod";
-import { createSignedRequest } from "../../lib/hatena-oauth";
-import type { McpContext, ToolResult } from "../types";
-import { hasScope } from "../types";
+import { createSignedRequest } from "@/lib/hatena-oauth";
+import type { BookmarkUserContext, ToolResult } from "./types";
 
 const HATENA_SEARCH_API_URL = "https://b.hatena.ne.jp/my/search/json";
 
@@ -84,13 +83,9 @@ function formatBookmarkedAt(timestamp?: number): string {
 
 export async function searchBookmarks(
   input: SearchBookmarksInput,
-  context: McpContext,
+  context: BookmarkUserContext,
   env: { HATENA_CONSUMER_KEY: string; HATENA_CONSUMER_SECRET: string },
 ): Promise<ToolResult<SearchBookmarksResult>> {
-  if (!hasScope(context, "bookmark:read")) {
-    return { success: false, error: "Permission denied: bookmark:read scope required" };
-  }
-
   if (!context.hatenaToken) {
     return { success: false, error: "Hatena not connected" };
   }

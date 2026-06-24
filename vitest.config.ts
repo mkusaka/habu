@@ -19,7 +19,7 @@ export default defineConfig(async () => {
       },
     },
     test: {
-      include: ["src/lib/**/*.test.ts", "src/lib/**/*.test.tsx", "src/mcp/**/*.test.ts"],
+      include: ["src/lib/**/*.test.ts", "src/lib/**/*.test.tsx"],
       exclude: ["src/app/bookmarks/tags/*.test.tsx"],
     },
   };

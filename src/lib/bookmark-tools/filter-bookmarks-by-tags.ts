@@ -1,16 +1,16 @@
 import { z } from "zod";
 import { createSignedRequest } from "@/lib/hatena-oauth";
-import type { McpContext, ToolResult } from "../types";
-import { hasScope } from "../types";
+import { appendTagFilters, normalizeTagFilters } from "@/lib/bookmark-tag-filter";
+import type { BookmarkUserContext, ToolResult } from "./types";
 
 const HATENA_MY_API_URL = "https://bookmark.hatenaapis.com/rest/1/my";
 
-export const listBookmarksSchema = z.object({
-  limit: z.number().min(1).max(100).default(20).describe("Number of bookmarks to return (1-100)"),
-  offset: z.number().min(0).default(0).describe("Offset for pagination"),
+export const filterBookmarksByTagsSchema = z.object({
+  tags: z.array(z.string()).min(1).max(10).describe("Tags to filter bookmarks by"),
+  page: z.number().min(1).default(1).describe("Page number for pagination"),
 });
 
-type ListBookmarksInput = z.infer<typeof listBookmarksSchema>;
+type FilterBookmarksByTagsInput = z.infer<typeof filterBookmarksByTagsSchema>;
 
 interface BookmarkItem {
   url: string;
@@ -20,7 +20,9 @@ interface BookmarkItem {
   bookmarkedAt: string;
 }
 
-interface ListBookmarksResult {
+interface FilterBookmarksByTagsResult {
+  tags: string[];
+  page: number;
   bookmarks: BookmarkItem[];
   username: string;
 }
@@ -48,30 +50,25 @@ interface HatenaBookmarksApiResponse {
   };
 }
 
-export async function listBookmarks(
-  input: ListBookmarksInput,
-  context: McpContext,
+export async function filterBookmarksByTags(
+  input: FilterBookmarksByTagsInput,
+  context: BookmarkUserContext,
   env: { HATENA_CONSUMER_KEY: string; HATENA_CONSUMER_SECRET: string },
-): Promise<ToolResult<ListBookmarksResult>> {
-  // Check scope
-  if (!hasScope(context, "bookmark:read")) {
-    return { success: false, error: "Permission denied: bookmark:read scope required" };
-  }
-
-  // Check Hatena connection
+): Promise<ToolResult<FilterBookmarksByTagsResult>> {
   if (!context.hatenaToken) {
     return { success: false, error: "Hatena not connected" };
   }
 
-  const { accessToken, accessTokenSecret } = context.hatenaToken;
-  const { limit, offset } = input;
+  const tags = normalizeTagFilters(input.tags);
+  if (tags.length === 0) {
+    return { success: false, error: "At least one valid tag is required" };
+  }
 
-  // First, get the username
   const authHeaders = createSignedRequest(
     HATENA_MY_API_URL,
     "GET",
-    accessToken,
-    accessTokenSecret,
+    context.hatenaToken.accessToken,
+    context.hatenaToken.accessTokenSecret,
     env.HATENA_CONSUMER_KEY,
     env.HATENA_CONSUMER_SECRET,
   );
@@ -90,10 +87,9 @@ export async function listBookmarks(
   }
 
   const myData = (await myResponse.json()) as HatenaMyResponse;
-  const username = myData.name;
-
-  // Fetch bookmarks using unofficial API (supports proper pagination)
-  const bookmarksApiUrl = `https://b.hatena.ne.jp/api/users/${username}/bookmarks?limit=${limit}&offset=${offset}`;
+  const bookmarkParams = new URLSearchParams({ page: String(input.page) });
+  appendTagFilters(bookmarkParams, tags);
+  const bookmarksApiUrl = `https://b.hatena.ne.jp/api/users/${myData.name}/bookmarks?${bookmarkParams.toString()}`;
 
   const bookmarksResponse = await fetch(bookmarksApiUrl, {
     headers: {
@@ -109,8 +105,6 @@ export async function listBookmarks(
   }
 
   const bookmarksData = (await bookmarksResponse.json()) as HatenaBookmarksApiResponse;
-
-  // Map to BookmarkItem format
   const bookmarks: BookmarkItem[] = bookmarksData.item.bookmarks.map((item) => ({
     url: item.entry.canonical_url || item.url,
     title: item.entry.title,
@@ -122,8 +116,10 @@ export async function listBookmarks(
   return {
     success: true,
     data: {
+      tags,
+      page: input.page,
       bookmarks,
-      username,
+      username: myData.name,
     },
   };
 }

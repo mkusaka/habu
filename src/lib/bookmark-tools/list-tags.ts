@@ -1,7 +1,6 @@
 import { z } from "zod";
 import { fetchHatenaTags } from "@/lib/hatena-bookmark-api";
-import type { McpContext, ToolResult } from "../types";
-import { hasScope } from "../types";
+import type { BookmarkUserContext, ToolResult } from "./types";
 
 export const listTagsSchema = z.object({
   limit: z.number().min(1).max(100).default(50).describe("Number of tags to return (1-100)"),
@@ -20,13 +19,9 @@ interface ListTagsResult {
 
 export async function listTags(
   input: ListTagsInput,
-  context: McpContext,
+  context: BookmarkUserContext,
   env: { HATENA_CONSUMER_KEY: string; HATENA_CONSUMER_SECRET: string },
 ): Promise<ToolResult<ListTagsResult>> {
-  if (!hasScope(context, "bookmark:read")) {
-    return { success: false, error: "Permission denied: bookmark:read scope required" };
-  }
-
   if (!context.hatenaToken) {
     return { success: false, error: "Hatena not connected" };
   }

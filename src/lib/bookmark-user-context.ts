@@ -1,13 +1,20 @@
 import { eq } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { users } from "@/db/schema";
-import { MCP_SCOPES } from "@/lib/auth";
-import type { McpContext } from "@/mcp/types";
 
-export async function buildMcpContextForUser(
+export interface BookmarkUserContext {
+  userId: string;
+  hatenaId: string | null;
+  hatenaToken: {
+    accessToken: string;
+    accessTokenSecret: string;
+  } | null;
+}
+
+export async function buildBookmarkUserContextForUser(
   userId: string,
   dbBinding: D1Database,
-): Promise<McpContext | null> {
+): Promise<BookmarkUserContext | null> {
   const db = getDb(dbBinding);
   const user = await db.query.users.findFirst({
     where: eq(users.id, userId),
@@ -21,7 +28,6 @@ export async function buildMcpContextForUser(
   return {
     userId: user.id,
     hatenaId: user.hatenaId ?? null,
-    scopes: [...MCP_SCOPES],
     hatenaToken: user.hatenaToken
       ? {
           accessToken: user.hatenaToken.accessToken,

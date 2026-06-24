@@ -12,7 +12,7 @@ import {
 import { createOpenAI } from "@ai-sdk/openai";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { createAuth } from "@/lib/auth";
-import { buildMcpContextForUser } from "@/lib/bookmark-user-context";
+import { buildBookmarkUserContextForUser } from "@/lib/bookmark-user-context";
 import { applyChatRequestToMessages } from "@/lib/chat-request-messages";
 import { getChatThreadForHatenaAccount, saveChatThreadForHatenaAccount } from "@/lib/chat-history";
 import {
@@ -22,16 +22,19 @@ import {
   type PageMetadata,
 } from "@/lib/chat-context";
 import { buildChatToolSummary } from "@/lib/chat-tool-summary";
-import { fetchPageMarkdownSchema, fetchPageMarkdownTool } from "@/mcp/tools/fetch-page-markdown";
+import {
+  fetchPageMarkdownSchema,
+  fetchPageMarkdownTool,
+} from "@/lib/bookmark-tools/fetch-page-markdown";
 import {
   filterBookmarksByTags,
   filterBookmarksByTagsSchema,
-} from "@/mcp/tools/filter-bookmarks-by-tags";
-import { getBookmark, getBookmarkSchema } from "@/mcp/tools/get-bookmark";
-import { listBookmarks, listBookmarksSchema } from "@/mcp/tools/list-bookmarks";
-import { listTags, listTagsSchema } from "@/mcp/tools/list-tags";
-import { searchBookmarks, searchBookmarksSchema } from "@/mcp/tools/search-bookmarks";
-import type { ToolResult } from "@/mcp/types";
+} from "@/lib/bookmark-tools/filter-bookmarks-by-tags";
+import { getBookmark, getBookmarkSchema } from "@/lib/bookmark-tools/get-bookmark";
+import { listBookmarks, listBookmarksSchema } from "@/lib/bookmark-tools/list-bookmarks";
+import { listTags, listTagsSchema } from "@/lib/bookmark-tools/list-tags";
+import { searchBookmarks, searchBookmarksSchema } from "@/lib/bookmark-tools/search-bookmarks";
+import type { ToolResult } from "@/lib/bookmark-tools/types";
 
 interface ChatRequestBody {
   id?: string;
@@ -69,20 +72,20 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const mcpContext = await buildMcpContextForUser(session.user.id, env.DB);
-    if (!mcpContext) {
+    const bookmarkContext = await buildBookmarkUserContextForUser(session.user.id, env.DB);
+    if (!bookmarkContext) {
       return new Response(JSON.stringify({ error: "User not found" }), {
         status: 401,
         headers: { "Content-Type": "application/json" },
       });
     }
-    if (!mcpContext.hatenaId) {
+    if (!bookmarkContext.hatenaId) {
       return new Response(JSON.stringify({ error: "Hatena not connected" }), {
         status: 400,
         headers: { "Content-Type": "application/json" },
       });
     }
-    const hatenaId = mcpContext.hatenaId;
+    const hatenaId = bookmarkContext.hatenaId;
 
     const body = (await request.json()) as ChatRequestBody;
     const { context } = body;
@@ -143,36 +146,38 @@ export async function POST(request: NextRequest) {
           "Fetch the markdown content of a public web page by URL. Use this when you need the actual page content.",
         inputSchema: fetchPageMarkdownSchema,
         execute: async (input) =>
-          toToolOutput(await fetchPageMarkdownTool(input, mcpContext, toolEnv)),
+          toToolOutput(await fetchPageMarkdownTool(input, bookmarkContext, toolEnv)),
       }),
       list_bookmarks: tool({
         description:
           "List your Hatena bookmarks in reverse chronological order. Use this for browsing recent bookmarks or paginating through them.",
         inputSchema: listBookmarksSchema,
-        execute: async (input) => toToolOutput(await listBookmarks(input, mcpContext, toolEnv)),
+        execute: async (input) =>
+          toToolOutput(await listBookmarks(input, bookmarkContext, toolEnv)),
       }),
       list_tags: tool({
         description: "List your Hatena bookmark tags with counts.",
         inputSchema: listTagsSchema,
-        execute: async (input) => toToolOutput(await listTags(input, mcpContext, toolEnv)),
+        execute: async (input) => toToolOutput(await listTags(input, bookmarkContext, toolEnv)),
       }),
       search_bookmarks: tool({
         description:
           "Search your Hatena bookmarks by keyword across title, URL, comment text, and tags. Hatena search recall is imperfect, so use multiple related keyword passes and aggregate the results when the user asks about previously saved bookmarks.",
         inputSchema: searchBookmarksSchema,
-        execute: async (input) => toToolOutput(await searchBookmarks(input, mcpContext, toolEnv)),
+        execute: async (input) =>
+          toToolOutput(await searchBookmarks(input, bookmarkContext, toolEnv)),
       }),
       filter_bookmarks_by_tags: tool({
         description: "Filter your Hatena bookmarks by one or more tags.",
         inputSchema: filterBookmarksByTagsSchema,
         execute: async (input) =>
-          toToolOutput(await filterBookmarksByTags(input, mcpContext, toolEnv)),
+          toToolOutput(await filterBookmarksByTags(input, bookmarkContext, toolEnv)),
       }),
       get_bookmark: tool({
         description:
           "Get the exact Hatena bookmark for a specific URL. Use this when the user asks whether a URL is already bookmarked or wants its saved comment/tags.",
         inputSchema: getBookmarkSchema,
-        execute: async (input) => toToolOutput(await getBookmark(input, mcpContext, toolEnv)),
+        execute: async (input) => toToolOutput(await getBookmark(input, bookmarkContext, toolEnv)),
       }),
     };
 

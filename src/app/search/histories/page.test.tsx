@@ -8,13 +8,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const {
   cookiesMock,
   getSessionMock,
-  buildMcpContextForUserMock,
+  buildBookmarkUserContextForUserMock,
   listChatThreadsForHatenaAccountMock,
   searchHistoriesClientMock,
 } = vi.hoisted(() => ({
   cookiesMock: vi.fn(),
   getSessionMock: vi.fn(),
-  buildMcpContextForUserMock: vi.fn(),
+  buildBookmarkUserContextForUserMock: vi.fn(),
   listChatThreadsForHatenaAccountMock: vi.fn(),
   searchHistoriesClientMock: vi.fn(),
 }));
@@ -40,7 +40,7 @@ vi.mock("@/lib/auth", () => ({
 }));
 
 vi.mock("@/lib/bookmark-user-context", () => ({
-  buildMcpContextForUser: buildMcpContextForUserMock,
+  buildBookmarkUserContextForUser: buildBookmarkUserContextForUserMock,
 }));
 
 vi.mock("@/lib/chat-history", () => ({
@@ -70,7 +70,7 @@ beforeEach(() => {
     toString: () => "session=abc",
   });
   getSessionMock.mockReset();
-  buildMcpContextForUserMock.mockReset();
+  buildBookmarkUserContextForUserMock.mockReset();
   listChatThreadsForHatenaAccountMock.mockReset();
   searchHistoriesClientMock.mockReset();
   searchHistoriesClientMock.mockImplementation(
@@ -92,7 +92,7 @@ describe("SearchHistoriesPage", () => {
     render(await SearchHistoriesPage());
 
     assert.ok(screen.getByText("You need to sign in to use page search."));
-    expect(buildMcpContextForUserMock).not.toHaveBeenCalled();
+    expect(buildBookmarkUserContextForUserMock).not.toHaveBeenCalled();
   });
 
   it("shows settings guidance when Hatena is not connected", async () => {
@@ -101,7 +101,7 @@ describe("SearchHistoriesPage", () => {
         id: "user-1",
       },
     });
-    buildMcpContextForUserMock.mockResolvedValue(null);
+    buildBookmarkUserContextForUserMock.mockResolvedValue(null);
 
     render(await SearchHistoriesPage());
 
@@ -125,7 +125,7 @@ describe("SearchHistoriesPage", () => {
         id: "user-1",
       },
     });
-    buildMcpContextForUserMock.mockResolvedValue({
+    buildBookmarkUserContextForUserMock.mockResolvedValue({
       hatenaId: "hatena-user",
     });
     listChatThreadsForHatenaAccountMock.mockResolvedValue(historyThreads);

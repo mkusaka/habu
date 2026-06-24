@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { fetchPageMarkdown, isUrlSafeToFetch, type PageMarkdownSource } from "@/lib/page-markdown";
-import type { McpContext, ToolResult } from "../types";
+import type { BookmarkUserContext, ToolResult } from "./types";
 
 export const fetchPageMarkdownSchema = z.object({
   url: z.string().url().describe("The public URL of the web page to fetch as markdown"),
@@ -16,7 +16,7 @@ interface FetchPageMarkdownResult {
 
 export async function fetchPageMarkdownTool(
   input: FetchPageMarkdownInput,
-  _context: McpContext,
+  _context: BookmarkUserContext,
   env: { BROWSER_RENDERING_ACCOUNT_ID?: string; BROWSER_RENDERING_API_TOKEN?: string },
 ): Promise<ToolResult<FetchPageMarkdownResult>> {
   const urlCheck = isUrlSafeToFetch(input.url);

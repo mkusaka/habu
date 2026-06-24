@@ -1,6 +1,6 @@
 import { fetchMock } from "../../test-utils/fetch-mock";
 import { afterEach, beforeAll, describe, expect, it } from "vitest";
-import type { McpContext } from "../types";
+import type { BookmarkUserContext } from "./types";
 import { filterBookmarksByTags } from "./filter-bookmarks-by-tags";
 import { listTags } from "./list-tags";
 
@@ -13,10 +13,9 @@ afterEach(() => {
   fetchMock.assertNoPendingInterceptors();
 });
 
-const baseContext: McpContext = {
+const baseContext: BookmarkUserContext = {
   userId: "user-1",
   hatenaId: "hatena-user",
-  scopes: ["bookmark:read"],
   hatenaToken: {
     accessToken: "access-token",
     accessTokenSecret: "access-token-secret",

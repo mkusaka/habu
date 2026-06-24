@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { McpContext, ToolResult } from "../types";
+import type { BookmarkUserContext, ToolResult } from "./types";
 import { sendHatenaBookmarkRequest } from "./hatena-bookmark-request";
 
 export const getBookmarkSchema = z.object({
@@ -17,16 +17,10 @@ interface BookmarkInfo {
 
 export async function getBookmark(
   input: GetBookmarkInput,
-  context: McpContext,
+  context: BookmarkUserContext,
   env: { HATENA_CONSUMER_KEY: string; HATENA_CONSUMER_SECRET: string },
 ): Promise<ToolResult<BookmarkInfo>> {
-  const requestResult = await sendHatenaBookmarkRequest(
-    input.url,
-    "GET",
-    "bookmark:read",
-    context,
-    env,
-  );
+  const requestResult = await sendHatenaBookmarkRequest(input.url, "GET", context, env);
   if (!requestResult.success) {
     return requestResult;
   }

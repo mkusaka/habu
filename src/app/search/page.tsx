@@ -3,11 +3,11 @@ import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { AlertCircle } from "lucide-react";
 import { createAuth } from "@/lib/auth";
 import { SearchLandingClient } from "@/components/chat/search-landing-client";
-import { buildMcpContextForUser } from "@/lib/bookmark-user-context";
+import { buildBookmarkUserContextForUser } from "@/lib/bookmark-user-context";
 import { buildChatPageContextForUser } from "@/lib/chat-page-context";
 import { LinkButton } from "@/components/ui/link-button";
 import { listChatThreadsForHatenaAccount } from "@/lib/chat-history";
-import { listBookmarks } from "@/mcp/tools/list-bookmarks";
+import { listBookmarks } from "@/lib/bookmark-tools/list-bookmarks";
 
 interface SearchPageProps {
   searchParams: Promise<{ q?: string; url?: string }>;
@@ -41,8 +41,8 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
     );
   }
 
-  const mcpContext = await buildMcpContextForUser(session.user.id, env.DB);
-  if (!mcpContext?.hatenaId) {
+  const bookmarkContext = await buildBookmarkUserContextForUser(session.user.id, env.DB);
+  if (!bookmarkContext?.hatenaId) {
     return (
       <div className="mx-auto flex w-full max-w-xl flex-col items-center justify-center gap-4 py-16 text-center">
         <div className="inline-flex items-center gap-2 rounded-md border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
@@ -56,8 +56,8 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
     );
   }
 
-  const historyThreads = await listChatThreadsForHatenaAccount(mcpContext.hatenaId, env.DB);
-  const recentBookmarksResult = await listBookmarks({ limit: 5, offset: 0 }, mcpContext, {
+  const historyThreads = await listChatThreadsForHatenaAccount(bookmarkContext.hatenaId, env.DB);
+  const recentBookmarksResult = await listBookmarks({ limit: 5, offset: 0 }, bookmarkContext, {
     HATENA_CONSUMER_KEY: env.HATENA_CONSUMER_KEY,
     HATENA_CONSUMER_SECRET: env.HATENA_CONSUMER_SECRET,
   });

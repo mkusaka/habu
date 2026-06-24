@@ -1,7 +1,7 @@
-import { buildMcpContextForUser } from "@/lib/bookmark-user-context";
+import { buildBookmarkUserContextForUser } from "@/lib/bookmark-user-context";
 import type { ChatContext, PageMetadata } from "@/lib/chat-context";
 import { fetchPageMeta, isMetaExtractionResult } from "@/lib/page-meta";
-import { getBookmark } from "@/mcp/tools/get-bookmark";
+import { getBookmark } from "@/lib/bookmark-tools/get-bookmark";
 
 export async function buildChatPageContextForUser(params: {
   userId: string;
@@ -16,8 +16,8 @@ export async function buildChatPageContextForUser(params: {
   context: ChatContext;
   title: string;
 }> {
-  const [mcpContext, metaResult] = await Promise.all([
-    buildMcpContextForUser(params.userId, params.dbBinding),
+  const [bookmarkContext, metaResult] = await Promise.all([
+    buildBookmarkUserContextForUser(params.userId, params.dbBinding),
     params.url ? fetchPageMeta(params.url).catch(() => null) : Promise.resolve(null),
   ]);
 
@@ -38,8 +38,8 @@ export async function buildChatPageContextForUser(params: {
   let existingComment: string | undefined;
   let existingTags: string[] | undefined;
 
-  if (params.url && mcpContext?.hatenaToken) {
-    const bookmarkResult = await getBookmark({ url: params.url }, mcpContext, {
+  if (params.url && bookmarkContext?.hatenaToken) {
+    const bookmarkResult = await getBookmark({ url: params.url }, bookmarkContext, {
       HATENA_CONSUMER_KEY: params.env.HATENA_CONSUMER_KEY,
       HATENA_CONSUMER_SECRET: params.env.HATENA_CONSUMER_SECRET,
     });

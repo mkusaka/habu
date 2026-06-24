@@ -1,8 +1,8 @@
 import { fetchMock } from "../../test-utils/fetch-mock";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { searchBookmarks } from "./search-bookmarks";
-import type { McpContext } from "../types";
-import * as hatenaOauth from "../../lib/hatena-oauth";
+import type { BookmarkUserContext } from "./types";
+import * as hatenaOauth from "@/lib/hatena-oauth";
 
 beforeAll(() => {
   fetchMock.activate();
@@ -13,10 +13,9 @@ afterEach(() => {
   fetchMock.assertNoPendingInterceptors();
 });
 
-const baseContext: McpContext = {
+const baseContext: BookmarkUserContext = {
   userId: "user-1",
   hatenaId: "hatena-user",
-  scopes: ["bookmark:read"],
   hatenaToken: {
     accessToken: "access-token",
     accessTokenSecret: "access-token-secret",
@@ -24,19 +23,6 @@ const baseContext: McpContext = {
 };
 
 describe("searchBookmarks", () => {
-  it("returns permission denied without bookmark:read scope", async () => {
-    const result = await searchBookmarks(
-      { query: "ai", limit: 10, offset: 0 },
-      { ...baseContext, scopes: [] },
-      { HATENA_CONSUMER_KEY: "key", HATENA_CONSUMER_SECRET: "secret" },
-    );
-
-    expect(result).toEqual({
-      success: false,
-      error: "Permission denied: bookmark:read scope required",
-    });
-  });
-
   it("encodes spaces as %20 (not +) in query to avoid OAuth signature mismatch", async () => {
     const spy = vi.spyOn(hatenaOauth, "createSignedRequest").mockReturnValue({
       Authorization: "OAuth mock",

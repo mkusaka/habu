@@ -1,9 +1,8 @@
 import { fetchMock } from "../../test-utils/fetch-mock";
 import { afterEach, beforeAll, describe, expect, it } from "vitest";
-import { deleteBookmark } from "./delete-bookmark";
 import { getBookmark } from "./get-bookmark";
 import { sendHatenaBookmarkRequest } from "./hatena-bookmark-request";
-import type { McpContext } from "../types";
+import type { BookmarkUserContext } from "./types";
 
 beforeAll(() => {
   fetchMock.activate();
@@ -19,10 +18,9 @@ const env = {
   HATENA_CONSUMER_SECRET: "consumer-secret",
 };
 
-const connectedContext: McpContext = {
+const connectedContext: BookmarkUserContext = {
   userId: "user-1",
   hatenaId: "hatena-user",
-  scopes: ["bookmark:read", "bookmark:delete"],
   hatenaToken: {
     accessToken: "access-token",
     accessTokenSecret: "access-secret",
@@ -30,27 +28,11 @@ const connectedContext: McpContext = {
 };
 
 describe("sendHatenaBookmarkRequest", () => {
-  it("rejects missing scopes before any network call", async () => {
-    await expect(
-      sendHatenaBookmarkRequest(
-        "https://example.com",
-        "GET",
-        "bookmark:delete",
-        { ...connectedContext, scopes: ["bookmark:read"] },
-        env,
-      ),
-    ).resolves.toEqual({
-      success: false,
-      error: "Permission denied: bookmark:delete scope required",
-    });
-  });
-
   it("rejects requests when Hatena is not connected", async () => {
     await expect(
       sendHatenaBookmarkRequest(
         "https://example.com",
         "GET",
-        "bookmark:read",
         { ...connectedContext, hatenaToken: null },
         env,
       ),
@@ -69,7 +51,6 @@ describe("sendHatenaBookmarkRequest", () => {
     const result = await sendHatenaBookmarkRequest(
       "https://example.com/a?b=1",
       "GET",
-      "bookmark:read",
       connectedContext,
       env,
     );
@@ -123,39 +104,6 @@ describe("getBookmark", () => {
         tags: ["React"],
         createdAt: "2026-03-08T00:00:00Z",
       },
-    });
-  });
-});
-
-describe("deleteBookmark", () => {
-  it("treats 204 responses as successful deletes", async () => {
-    fetchMock
-      .get("https://bookmark.hatenaapis.com")
-      .intercept({ path: /\/rest\/1\/my\/bookmark\?url=/, method: "DELETE" })
-      .reply(204, "");
-
-    await expect(
-      deleteBookmark({ url: "https://example.com" }, connectedContext, env),
-    ).resolves.toEqual({
-      success: true,
-      data: {
-        url: "https://example.com",
-        deleted: true,
-      },
-    });
-  });
-
-  it("surfaces non-ok Hatena errors", async () => {
-    fetchMock
-      .get("https://bookmark.hatenaapis.com")
-      .intercept({ path: /\/rest\/1\/my\/bookmark\?url=/, method: "DELETE" })
-      .reply(500, "boom");
-
-    await expect(
-      deleteBookmark({ url: "https://example.com" }, connectedContext, env),
-    ).resolves.toEqual({
-      success: false,
-      error: "Hatena API error: 500 - boom",
     });
   });
 });

@@ -12,6 +12,3 @@ trustPolicy: no-downgrade
 blockExoticSubdeps: true
 trustPolicyExclude:
   - 'semver@6.3.1'
-
-overrides:
-  kysely: 0.29.2

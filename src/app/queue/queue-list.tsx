@@ -449,7 +449,7 @@ export function QueueList() {
                       {item.title || item.url}
                     </h3>
                     <div className="relative z-10 flex items-center gap-1 flex-shrink-0">
-                      {item.status === "done" && (
+                      {(item.status === "done" || item.status === "sending") && (
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <a

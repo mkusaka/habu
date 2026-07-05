@@ -11,7 +11,7 @@ import {
 } from "ai";
 import { createOpenAI } from "@ai-sdk/openai";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
-import { createAuth } from "@/lib/auth";
+import { getSessionWithRecovery } from "@/lib/auth";
 import { buildBookmarkUserContextForUser } from "@/lib/bookmark-user-context";
 import { applyChatRequestToMessages } from "@/lib/chat-request-messages";
 import { getChatThreadForHatenaAccount, saveChatThreadForHatenaAccount } from "@/lib/chat-history";
@@ -57,13 +57,10 @@ function toToolOutput<T>(result: ToolResult<T>): T | { error: string } {
 
 export async function POST(request: NextRequest) {
   try {
-    const { env } = getCloudflareContext();
-    const auth = createAuth(env.DB);
+    const { env, ctx } = getCloudflareContext();
 
     // Verify session
-    const session = await auth.api.getSession({
-      headers: request.headers,
-    });
+    const session = await getSessionWithRecovery(env.DB, request.headers, ctx);
 
     if (!session?.user) {
       return new Response(JSON.stringify({ error: "Not authenticated" }), {

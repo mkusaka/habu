@@ -4,7 +4,7 @@ import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { getDb } from "@/db/client";
 import { hatenaTokens, users } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import { createAuth } from "@/lib/auth";
+import { getSessionWithRecovery } from "@/lib/auth";
 import CryptoJS from "crypto-js";
 
 // Decrypt OAuth state
@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get env for secrets
-    const { env } = getCloudflareContext();
+    const { env, ctx } = getCloudflareContext();
 
     // Get credentials from env
     const consumerKey = env.HATENA_CONSUMER_KEY;
@@ -87,13 +87,10 @@ export async function GET(request: NextRequest) {
       consumerSecret,
     );
 
-    const auth = createAuth(env.DB);
     const db = getDb(env.DB);
 
     // Get current user session
-    const session = await auth.api.getSession({
-      headers: request.headers,
-    });
+    const session = await getSessionWithRecovery(env.DB, request.headers, ctx);
 
     if (!session?.user) {
       return NextResponse.redirect(new URL("/settings?error=not_authenticated", request.url));

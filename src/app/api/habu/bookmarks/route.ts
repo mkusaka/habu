@@ -4,7 +4,7 @@ import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { getDb } from "@/db/client";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import { createAuth } from "@/lib/auth";
+import { getSessionWithRecovery } from "@/lib/auth";
 import { appendTagFilters, normalizeTagFilters } from "@/lib/bookmark-tag-filter";
 
 const HATENA_MY_API_URL = "https://bookmark.hatenaapis.com/rest/1/my";
@@ -65,13 +65,10 @@ export async function GET(request: NextRequest) {
     const tags = normalizeTagFilters(searchParams.getAll("tag"));
 
     // Get DB connection for auth
-    const { env } = getCloudflareContext();
-    const auth = createAuth(env.DB);
+    const { env, ctx } = getCloudflareContext();
 
     // Get current user session
-    const session = await auth.api.getSession({
-      headers: request.headers,
-    });
+    const session = await getSessionWithRecovery(env.DB, request.headers, ctx);
 
     if (!session?.user) {
       return NextResponse.json(

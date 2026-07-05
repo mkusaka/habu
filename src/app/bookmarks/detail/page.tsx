@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { cookies } from "next/headers";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
-import { createAuth } from "@/lib/auth";
+import { getSessionWithRecovery } from "@/lib/auth";
 import { getDb } from "@/db/client";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
@@ -47,14 +47,9 @@ async function fetchBookmarkData(bookmarkUrl: string): Promise<FetchResult> {
   }
 
   const cookieStore = await cookies();
-  const { env } = getCloudflareContext();
-  const auth = createAuth(env.DB);
+  const { env, ctx } = getCloudflareContext();
 
-  const session = await auth.api.getSession({
-    headers: {
-      cookie: cookieStore.toString(),
-    },
-  });
+  const session = await getSessionWithRecovery(env.DB, { cookie: cookieStore.toString() }, ctx);
 
   if (!session?.user) {
     return { success: false, error: "Not authenticated" };

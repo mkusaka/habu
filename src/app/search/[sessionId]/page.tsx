@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import type { UIMessage } from "ai";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { AlertCircle } from "lucide-react";
-import { createAuth } from "@/lib/auth";
+import { getSessionWithRecovery } from "@/lib/auth";
 import { ChatPageClient } from "@/components/chat/chat-page-client";
 import { buildBookmarkUserContextForUser } from "@/lib/bookmark-user-context";
 import { LinkButton } from "@/components/ui/link-button";
@@ -30,14 +30,9 @@ export default async function SearchSessionPage({ params, searchParams }: Search
   const selectedUrl = queryParams.url?.trim() || undefined;
 
   const cookieStore = await cookies();
-  const { env } = getCloudflareContext();
-  const auth = createAuth(env.DB);
+  const { env, ctx } = getCloudflareContext();
 
-  const session = await auth.api.getSession({
-    headers: {
-      cookie: cookieStore.toString(),
-    },
-  });
+  const session = await getSessionWithRecovery(env.DB, { cookie: cookieStore.toString() }, ctx);
 
   if (!session?.user) {
     return (

@@ -1,20 +1,15 @@
 import { cookies } from "next/headers";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { eq } from "drizzle-orm";
-import { createAuth } from "@/lib/auth";
+import { getSessionWithRecovery } from "@/lib/auth";
 import { getDb } from "@/db/client";
 import { users } from "@/db/schema";
 
 export async function getHatenaConnectionStatus(): Promise<boolean> {
   const cookieStore = await cookies();
-  const { env } = getCloudflareContext();
-  const auth = createAuth(env.DB);
+  const { env, ctx } = getCloudflareContext();
 
-  const session = await auth.api.getSession({
-    headers: {
-      cookie: cookieStore.toString(),
-    },
-  });
+  const session = await getSessionWithRecovery(env.DB, { cookie: cookieStore.toString() }, ctx);
 
   if (!session?.user) {
     return false;

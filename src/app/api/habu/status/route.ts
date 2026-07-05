@@ -3,18 +3,15 @@ import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { getDb } from "@/db/client";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import { createAuth } from "@/lib/auth";
+import { getSessionWithRecovery } from "@/lib/auth";
 
 export async function GET(request: NextRequest) {
   try {
     // Get DB connection for auth
-    const { env } = getCloudflareContext();
-    const auth = createAuth(env.DB);
+    const { env, ctx } = getCloudflareContext();
 
     // Get current user session
-    const session = await auth.api.getSession({
-      headers: request.headers,
-    });
+    const session = await getSessionWithRecovery(env.DB, request.headers, ctx);
 
     if (!session?.user) {
       return NextResponse.json({

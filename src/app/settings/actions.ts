@@ -3,21 +3,16 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
-import { createAuth } from "@/lib/auth";
+import { getSessionWithRecovery } from "@/lib/auth";
 import { getDb } from "@/db/client";
 import { hatenaTokens, users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
 export async function disconnectHatena() {
   const cookieStore = await cookies();
-  const { env } = getCloudflareContext();
-  const auth = createAuth(env.DB);
+  const { env, ctx } = getCloudflareContext();
 
-  const session = await auth.api.getSession({
-    headers: {
-      cookie: cookieStore.toString(),
-    },
-  });
+  const session = await getSessionWithRecovery(env.DB, { cookie: cookieStore.toString() }, ctx);
 
   if (!session?.user) {
     redirect("/settings?error=not_authenticated");

@@ -2,21 +2,16 @@ import { cookies } from "next/headers";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { AlertCircle } from "lucide-react";
 import { SearchHistoriesClient } from "@/components/chat/search-histories-client";
-import { createAuth } from "@/lib/auth";
+import { getSessionWithRecovery } from "@/lib/auth";
 import { buildBookmarkUserContextForUser } from "@/lib/bookmark-user-context";
 import { LinkButton } from "@/components/ui/link-button";
 import { listChatThreadsForHatenaAccount } from "@/lib/chat-history";
 
 export default async function SearchHistoriesPage() {
   const cookieStore = await cookies();
-  const { env } = getCloudflareContext();
-  const auth = createAuth(env.DB);
+  const { env, ctx } = getCloudflareContext();
 
-  const session = await auth.api.getSession({
-    headers: {
-      cookie: cookieStore.toString(),
-    },
-  });
+  const session = await getSessionWithRecovery(env.DB, { cookie: cookieStore.toString() }, ctx);
 
   if (!session?.user) {
     return (

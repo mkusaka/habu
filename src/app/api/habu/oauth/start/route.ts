@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getRequestToken, getAuthorizeUrl } from "@/lib/hatena-oauth";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
-import { createAuth } from "@/lib/auth";
+import { createAuth, getSessionWithRecovery } from "@/lib/auth";
 import CryptoJS from "crypto-js";
 
 // Note: BETTER_AUTH_SECRET is accessed via getCloudflareContext().env in production
@@ -21,13 +21,11 @@ function encryptOAuthState(
 export async function GET(request: NextRequest) {
   try {
     // Get DB connection for auth
-    const { env } = getCloudflareContext();
-    const auth = createAuth(env.DB);
+    const { env, ctx } = getCloudflareContext();
+    const auth = createAuth(env.DB, ctx);
 
     // Ensure user has a session (create anonymous user if needed)
-    const session = await auth.api.getSession({
-      headers: request.headers,
-    });
+    const session = await getSessionWithRecovery(env.DB, request.headers, ctx);
 
     if (!session?.user) {
       // Create anonymous user session

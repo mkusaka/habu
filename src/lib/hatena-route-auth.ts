@@ -1,6 +1,6 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { eq } from "drizzle-orm";
-import { createAuth } from "@/lib/auth";
+import { getSessionWithRecovery } from "@/lib/auth";
 import { getDb } from "@/db/client";
 import { users } from "@/db/schema";
 
@@ -25,12 +25,9 @@ type HatenaRouteAuthResult =
     };
 
 export async function getHatenaRouteContext(headers: Headers): Promise<HatenaRouteAuthResult> {
-  const { env } = getCloudflareContext();
-  const auth = createAuth(env.DB);
+  const { env, ctx } = getCloudflareContext();
 
-  const session = await auth.api.getSession({
-    headers,
-  });
+  const session = await getSessionWithRecovery(env.DB, headers, ctx);
 
   if (!session?.user) {
     return { ok: false, status: 401, error: "Not authenticated" };

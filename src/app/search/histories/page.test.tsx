@@ -32,11 +32,7 @@ vi.mock("@opennextjs/cloudflare", () => ({
 }));
 
 vi.mock("@/lib/auth", () => ({
-  createAuth: () => ({
-    api: {
-      getSession: getSessionMock,
-    },
-  }),
+  getSessionWithRecovery: getSessionMock,
 }));
 
 vi.mock("@/lib/bookmark-user-context", () => ({

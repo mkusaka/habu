@@ -14,6 +14,9 @@ overrides:
   # next 16.2.11 が optionalDependencies で ^0.34.5 を指定しているため、
   # devDependencies の 0.35.3 に揃える。
   sharp: '^0.35.3'
+  # GHSA (high): postcss <= 8.5.17
+  # next 16.2.11 が 8.4.31 を完全固定しているため override で引き上げる。
+  postcss: '^8.5.23'
 minimumReleaseAge: 10080
 minimumReleaseAgeExclude:
   # GHSA (high): brace-expansion >= 2.0.0, < 2.1.3

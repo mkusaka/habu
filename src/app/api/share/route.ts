@@ -31,6 +31,7 @@ export async function POST(request: NextRequest) {
     shareUrl.pathname = "/";
     shareUrl.search = "";
 
+    shareUrl.searchParams.set("ac", "true");
     if (url) shareUrl.searchParams.set("url", url);
     if (title) shareUrl.searchParams.set("title", title);
     if (text) shareUrl.searchParams.set("text", text);
@@ -41,6 +42,7 @@ export async function POST(request: NextRequest) {
     const fallbackUrl = request.nextUrl.clone();
     fallbackUrl.pathname = "/";
     fallbackUrl.search = "";
+    fallbackUrl.searchParams.set("ac", "true");
     return NextResponse.redirect(fallbackUrl, 303);
   }
 }

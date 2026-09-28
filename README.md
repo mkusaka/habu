@@ -97,6 +97,8 @@ wrangler secret put HATENA_CONSUMER_SECRET
 2. Select "habu" from the share menu
 3. Bookmark is saved instantly
 
+Share-target saves attempt to close the share window; manual saves leave the app open and show the saved page.
+
 **Method 2: Manual Entry**
 1. Open habu
 2. Click "Add Bookmark"

@@ -7,7 +7,7 @@ import { eq } from "drizzle-orm";
 import { SaveForm } from "@/components/save-form";
 
 interface HomeProps {
-  searchParams: Promise<{ url?: string; title?: string; text?: string }>;
+  searchParams: Promise<{ url?: string; title?: string; text?: string; ac?: string }>;
 }
 
 export default async function Home({ searchParams }: HomeProps) {
@@ -35,6 +35,7 @@ export default async function Home({ searchParams }: HomeProps) {
       initialTitle={params.title || ""}
       initialComment={params.text || ""}
       hasHatena={hasHatena}
+      autoClose={params.ac === "true"}
     />
   );
 }

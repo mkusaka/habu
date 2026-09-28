@@ -51,6 +51,7 @@ interface SaveFormProps {
   initialTitle: string;
   initialComment: string;
   hasHatena: boolean;
+  autoClose: boolean;
 }
 
 interface DraftData {
@@ -119,7 +120,13 @@ function useDebounce<T>(value: T, delay: number): T {
   return debouncedValue;
 }
 
-export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }: SaveFormProps) {
+export function SaveForm({
+  initialUrl,
+  initialTitle,
+  initialComment,
+  hasHatena,
+  autoClose,
+}: SaveFormProps) {
   const { push, replace } = useRouter();
   const [url, setUrl] = useState(initialUrl);
   const [title, setTitle] = useState(initialTitle);
@@ -195,6 +202,7 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
   // Update URL params when form fields change (sync with share redirect format)
   useEffect(() => {
     const params = new URLSearchParams();
+    if (autoClose) params.set("ac", "true");
     if (debouncedUrl) params.set("url", debouncedUrl);
     if (debouncedTitle) params.set("title", debouncedTitle);
     if (debouncedComment) params.set("text", debouncedComment);
@@ -206,7 +214,7 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
     if (window.location.search !== (search ? `?${search}` : "")) {
       replace(newPath, { scroll: false });
     }
-  }, [debouncedUrl, debouncedTitle, debouncedComment, replace]);
+  }, [debouncedUrl, debouncedTitle, debouncedComment, autoClose, replace]);
 
   // Track online status
   useEffect(() => {
@@ -616,10 +624,9 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
     clearDraft();
     setIsSaving(false);
 
-    // Try to close window (works when opened as share target)
-    window.close();
+    if (autoClose) window.close();
 
-    // If window.close() didn't work, redirect to saved page
+    // If the window remains open, show the saved page
     replace("/saved");
   };
 
@@ -649,10 +656,9 @@ export function SaveForm({ initialUrl, initialTitle, initialComment, hasHatena }
       setGeneratedResult(null);
       clearDraft();
 
-      // Close the window immediately - SW handles the rest
-      window.close();
+      if (autoClose) window.close();
 
-      // If window.close() didn't work, redirect to saved page
+      // If the window remains open, show the saved page
       replace("/saved");
     }
     // Only run once on mount

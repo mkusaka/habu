@@ -169,6 +169,7 @@ async function handleShareRequest(request: Request): Promise<Response> {
 
     // Build redirect URL
     const redirectUrl = new URL("/", self.location.origin);
+    redirectUrl.searchParams.set("ac", "true");
     if (url) redirectUrl.searchParams.set("url", url);
     if (title) redirectUrl.searchParams.set("title", title);
     if (text) redirectUrl.searchParams.set("text", text);
@@ -178,7 +179,7 @@ async function handleShareRequest(request: Request): Promise<Response> {
   } catch (error) {
     console.error("SW: Error handling share request:", error);
     // Fallback: redirect to home page
-    return Response.redirect(new URL("/", self.location.origin).toString(), 303);
+    return Response.redirect(new URL("/?ac=true", self.location.origin).toString(), 303);
   }
 }
 

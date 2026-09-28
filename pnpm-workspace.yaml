@@ -22,6 +22,8 @@ minimumReleaseAgeExclude:
   # 2.1.3 は 2026-07-28 公開で minimumReleaseAge (7日) に引っかかるため一時的に除外。
   # 2026-08-07 以降は不要になるので削除してよい。
   - 'brace-expansion@2.1.4'
+  # Renovate security update: vitest@4.1.11
+  - vitest@4.1.11
 minimumReleaseAgeStrict: true
 strictDepBuilds: true
 trustPolicy: no-downgrade

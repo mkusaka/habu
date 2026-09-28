@@ -48,6 +48,9 @@ export const accounts = sqliteTable("accounts", {
   accessToken: text("access_token"),
   refreshToken: text("refresh_token"),
   idToken: text("id_token"),
+  accessTokenExpiresAt: integer("access_token_expires_at", { mode: "timestamp_ms" }),
+  refreshTokenExpiresAt: integer("refresh_token_expires_at", { mode: "timestamp_ms" }),
+  scope: text("scope"),
   expiresAt: integer("expires_at", { mode: "timestamp_ms" }),
   password: text("password"),
   createdAt: integer("created_at", { mode: "timestamp_ms" })
@@ -65,6 +68,9 @@ export const verifications = sqliteTable("verifications", {
   value: text("value").notNull(),
   expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
   createdAt: integer("created_at", { mode: "timestamp_ms" })
+    .notNull()
+    .default(sql`(unixepoch('now') * 1000)`),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" })
     .notNull()
     .default(sql`(unixepoch('now') * 1000)`),
 });

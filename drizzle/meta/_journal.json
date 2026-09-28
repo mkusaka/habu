@@ -92,6 +92,13 @@
       "when": 1782320896757,
       "tag": "0012_cheerful_supernaut",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "6",
+      "when": 1790598664456,
+      "tag": "0013_better_auth_1_7_schema",
+      "breakpoints": true
     }
   ]
 }

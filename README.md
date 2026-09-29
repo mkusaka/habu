@@ -68,6 +68,12 @@ First, build and preview locally:
 pnpm preview
 ```
 
+Apply pending D1 migrations before deploying a worker that requires the new schema:
+
+```bash
+pnpm db:migrate:remote
+```
+
 Then deploy:
 
 ```bash

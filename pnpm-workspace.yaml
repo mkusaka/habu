@@ -24,6 +24,8 @@ minimumReleaseAgeExclude:
   - 'brace-expansion@2.1.4'
   # Renovate security update: next@16.3.6
   - next@16.3.6
+  # Renovate security update: happy-dom@21.0.4
+  - happy-dom@21.0.4
 minimumReleaseAgeStrict: true
 strictDepBuilds: true
 trustPolicy: no-downgrade

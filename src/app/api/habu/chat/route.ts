@@ -5,7 +5,7 @@ import {
   createUIMessageStreamResponse,
   streamText,
   tool,
-  stepCountIs,
+  isStepCount,
   type ToolSet,
   type UIMessage,
 } from "ai";
@@ -225,7 +225,7 @@ export async function POST(request: NextRequest) {
           messages: await convertToModelMessages([...contextMessages, ...requestMessages]),
           tools,
           maxOutputTokens: 3072,
-          stopWhen: stepCountIs(8),
+          stopWhen: isStepCount(8),
           experimental_onToolCallFinish: ({ toolCall, success, output, error, durationMs }) => {
             writer.write({
               type: "data-tool-summary",
